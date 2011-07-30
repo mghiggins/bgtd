@@ -7,6 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C00B7D9F13D9E80100B3F10D /* board.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C00B7D9E13D9E80100B3F10D /* board.cpp */; };
+		C00B7DA413D9F0FE00B3F10D /* game.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C00B7DA313D9F0FE00B3F10D /* game.cpp */; };
+		C00B7DFE13D9F5F800B3F10D /* mersenne.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C00B7DFD13D9F5F800B3F10D /* mersenne.cpp */; };
+		C00B7E0413DA0BA400B3F10D /* gamefns.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C00B7E0313DA0BA400B3F10D /* gamefns.cpp */; };
+		C00B7E0C13DB197000B3F10D /* strategysimple.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C00B7E0B13DB197000B3F10D /* strategysimple.cpp */; };
+		C0202DE113E3362000F00B48 /* tests.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C0202DE013E3362000F00B48 /* tests.cpp */; };
+		C0202DE413E373BB00F00B48 /* strategypubeval.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C0202DE313E373BB00F00B48 /* strategypubeval.cpp */; };
+		C02618E913DC6784007A4539 /* strategytd.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C02618E813DC6784007A4539 /* strategytd.cpp */; };
+		C02618EB13DC76AB007A4539 /* strategy.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C02618EA13DC76AB007A4539 /* strategy.cpp */; };
 		C0E5DB5713D9BF8B009FC15A /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C0E5DB5613D9BF8B009FC15A /* main.cpp */; };
 		C0E5DB5913D9BF8B009FC15A /* bgtd.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = C0E5DB5813D9BF8B009FC15A /* bgtd.1 */; };
 /* End PBXBuildFile section */
@@ -25,9 +34,27 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C00B7D9E13D9E80100B3F10D /* board.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = board.cpp; sourceTree = "<group>"; };
+		C00B7DA113D9F0DD00B3F10D /* game.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = game.h; sourceTree = "<group>"; };
+		C00B7DA313D9F0FE00B3F10D /* game.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = game.cpp; sourceTree = "<group>"; };
+		C00B7DFC13D9F5CD00B3F10D /* randomc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = randomc.h; path = ../random/randomc.h; sourceTree = "<group>"; };
+		C00B7DFD13D9F5F800B3F10D /* mersenne.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mersenne.cpp; path = ../random/mersenne.cpp; sourceTree = "<group>"; };
+		C00B7DFF13D9F7DE00B3F10D /* strategy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = strategy.h; sourceTree = "<group>"; };
+		C00B7E0213DA0A4600B3F10D /* gamefns.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gamefns.h; sourceTree = "<group>"; };
+		C00B7E0313DA0BA400B3F10D /* gamefns.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = gamefns.cpp; sourceTree = "<group>"; };
+		C00B7E0913DB18F200B3F10D /* strategysimple.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = strategysimple.h; sourceTree = "<group>"; };
+		C00B7E0B13DB197000B3F10D /* strategysimple.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strategysimple.cpp; sourceTree = "<group>"; };
+		C0202DDE13E3361600F00B48 /* tests.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tests.h; sourceTree = "<group>"; };
+		C0202DE013E3362000F00B48 /* tests.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tests.cpp; sourceTree = "<group>"; };
+		C0202DE213E3732800F00B48 /* strategypubeval.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = strategypubeval.h; sourceTree = "<group>"; };
+		C0202DE313E373BB00F00B48 /* strategypubeval.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strategypubeval.cpp; sourceTree = "<group>"; };
+		C02618E613DC60C0007A4539 /* strategytd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = strategytd.h; sourceTree = "<group>"; };
+		C02618E813DC6784007A4539 /* strategytd.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strategytd.cpp; sourceTree = "<group>"; };
+		C02618EA13DC76AB007A4539 /* strategy.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strategy.cpp; sourceTree = "<group>"; };
 		C0E5DB5213D9BF8B009FC15A /* bgtd */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = bgtd; sourceTree = BUILT_PRODUCTS_DIR; };
 		C0E5DB5613D9BF8B009FC15A /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		C0E5DB5813D9BF8B009FC15A /* bgtd.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = bgtd.1; sourceTree = "<group>"; };
+		C0E5DB6113D9C029009FC15A /* board.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = board.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -44,6 +71,8 @@
 		C0E5DB4713D9BF8B009FC15A = {
 			isa = PBXGroup;
 			children = (
+				C00B7DFC13D9F5CD00B3F10D /* randomc.h */,
+				C00B7DFD13D9F5F800B3F10D /* mersenne.cpp */,
 				C0E5DB5513D9BF8B009FC15A /* bgtd */,
 				C0E5DB5313D9BF8B009FC15A /* Products */,
 			);
@@ -61,7 +90,23 @@
 			isa = PBXGroup;
 			children = (
 				C0E5DB5613D9BF8B009FC15A /* main.cpp */,
+				C0202DDE13E3361600F00B48 /* tests.h */,
+				C0202DE013E3362000F00B48 /* tests.cpp */,
+				C02618E613DC60C0007A4539 /* strategytd.h */,
+				C02618E813DC6784007A4539 /* strategytd.cpp */,
 				C0E5DB5813D9BF8B009FC15A /* bgtd.1 */,
+				C0E5DB6113D9C029009FC15A /* board.h */,
+				C00B7D9E13D9E80100B3F10D /* board.cpp */,
+				C00B7DA113D9F0DD00B3F10D /* game.h */,
+				C00B7DA313D9F0FE00B3F10D /* game.cpp */,
+				C00B7E0213DA0A4600B3F10D /* gamefns.h */,
+				C00B7E0313DA0BA400B3F10D /* gamefns.cpp */,
+				C0202DE213E3732800F00B48 /* strategypubeval.h */,
+				C0202DE313E373BB00F00B48 /* strategypubeval.cpp */,
+				C00B7DFF13D9F7DE00B3F10D /* strategy.h */,
+				C02618EA13DC76AB007A4539 /* strategy.cpp */,
+				C00B7E0913DB18F200B3F10D /* strategysimple.h */,
+				C00B7E0B13DB197000B3F10D /* strategysimple.cpp */,
 			);
 			path = bgtd;
 			sourceTree = "<group>";
@@ -114,6 +159,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				C0E5DB5713D9BF8B009FC15A /* main.cpp in Sources */,
+				C00B7D9F13D9E80100B3F10D /* board.cpp in Sources */,
+				C00B7DA413D9F0FE00B3F10D /* game.cpp in Sources */,
+				C00B7DFE13D9F5F800B3F10D /* mersenne.cpp in Sources */,
+				C00B7E0413DA0BA400B3F10D /* gamefns.cpp in Sources */,
+				C00B7E0C13DB197000B3F10D /* strategysimple.cpp in Sources */,
+				C02618E913DC6784007A4539 /* strategytd.cpp in Sources */,
+				C02618EB13DC76AB007A4539 /* strategy.cpp in Sources */,
+				C0202DE113E3362000F00B48 /* tests.cpp in Sources */,
+				C0202DE413E373BB00F00B48 /* strategypubeval.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -198,6 +252,7 @@
 				C0E5DB5E13D9BF8B009FC15A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
