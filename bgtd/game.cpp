@@ -159,3 +159,35 @@ int game::winner()
         throw string("Game is not over");
 }
 
+int game::winnerScore()
+{
+    if( gameOver() )
+    {
+        if( brd.bornIn() == 15 )
+        {
+            // check if it was a regular win
+            if( brd.otherBornIn() != 0 ) return 1;
+            
+            // check for a backgammon
+            for( int i=0; i<18; i++ )
+                if( brd.otherChecker( i ) != 0 ) return 3;
+            
+            // otherwise a regular gammon
+            return 2;
+        }
+        else
+        {
+            // check if it was a regular win
+            if( brd.bornIn() != 0 ) return 1;
+            
+            // check for a backgammon
+            for( int i=6; i<24; i++ )
+                if( brd.checker( i ) != 0 ) return 3;
+            
+            // otherwise a regular gammon
+            return 2;
+        }
+    }
+    else
+        throw string("Game is not over");
+}
