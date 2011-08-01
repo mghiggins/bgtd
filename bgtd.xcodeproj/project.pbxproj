@@ -18,6 +18,7 @@
 		C02618EB13DC76AB007A4539 /* strategy.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C02618EA13DC76AB007A4539 /* strategy.cpp */; };
 		C0E5DB5713D9BF8B009FC15A /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C0E5DB5613D9BF8B009FC15A /* main.cpp */; };
 		C0E5DB5913D9BF8B009FC15A /* bgtd.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = C0E5DB5813D9BF8B009FC15A /* bgtd.1 */; };
+		C0F201DF13E4BB100050D98F /* runners.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C0F201DE13E4BB100050D98F /* runners.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -55,6 +56,8 @@
 		C0E5DB5613D9BF8B009FC15A /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		C0E5DB5813D9BF8B009FC15A /* bgtd.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = bgtd.1; sourceTree = "<group>"; };
 		C0E5DB6113D9C029009FC15A /* board.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = board.h; sourceTree = "<group>"; };
+		C0F201DC13E4BB070050D98F /* runners.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = runners.h; sourceTree = "<group>"; };
+		C0F201DE13E4BB100050D98F /* runners.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = runners.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -90,6 +93,8 @@
 			isa = PBXGroup;
 			children = (
 				C0E5DB5613D9BF8B009FC15A /* main.cpp */,
+				C0F201DC13E4BB070050D98F /* runners.h */,
+				C0F201DE13E4BB100050D98F /* runners.cpp */,
 				C0202DDE13E3361600F00B48 /* tests.h */,
 				C0202DE013E3362000F00B48 /* tests.cpp */,
 				C02618E613DC60C0007A4539 /* strategytd.h */,
@@ -168,6 +173,7 @@
 				C02618EB13DC76AB007A4539 /* strategy.cpp in Sources */,
 				C0202DE113E3362000F00B48 /* tests.cpp in Sources */,
 				C0202DE413E373BB00F00B48 /* strategypubeval.cpp in Sources */,
+				C0F201DF13E4BB100050D98F /* runners.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
