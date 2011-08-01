@@ -278,7 +278,9 @@ vector<double> pubEvalInputs( const board& brd )
 
     int j, n;
     
-    /* first encode board locations 24-1 */
+    // first encode the board position in reverse order, from 24->1. Player
+    // and opponent counts are grouped together, with player using positive
+    // counts and opponent using negative.
     
     for( j=0; j<24; j++ ) 
     {
@@ -298,8 +300,10 @@ vector<double> pubEvalInputs( const board& brd )
         }
     }
     
-    inputs.at( 120 ) = -(float) brd.otherHit() / 2.;
-    inputs.at( 121 ) =  (float) brd.bornIn() / 15.;
+    // then the number of opponent hit and the number of player's borne in
+    
+    inputs.at( 120 ) = -brd.otherHit() / 2.;
+    inputs.at( 121 ) =  brd.bornIn()   / 15.;
     
     return inputs;
 }
@@ -321,7 +325,7 @@ double strategyPubEval::boardValue( const board& brd ) const
     // get the inputs from the board
     
     vector<double> inputs = pubEvalInputs( brd );
-    if( inputs.size() != weights->size() ) throw string( "Number of inputs does not match number of weights" );
+    //if( inputs.size() != weights->size() ) throw string( "Number of inputs does not match number of weights" );
     
     // calculate sum( weights * inputs ) - this is the board value
     
