@@ -9,9 +9,9 @@
 #ifndef bgtd_strategytd_h
 #define bgtd_strategytd_h
 
-#include "strategy.h"
+#include "strategytdbase.h"
 
-class strategytd : public strategy
+class strategytd : public strategytdbase
 {
     // TD gammon strategy - sets up a little neural network for predicting the
     // probability of winning a game. Can work in training mode where the weights
@@ -36,15 +36,6 @@ public:
     vector<double> getInputValues( const board& brd ) const;
     vector<double> getMiddleValues( const vector<double>& inputs ) const;
     double getOutput( const vector<double>& middles ) const;
-    
-    int nMiddle;   // number of middle nodes
-    
-    // then stuff used for learning
-    
-    bool learning; // true, it updates weights as it goes; false, it doesn't
-    double alpha;  // how far we move the weights to get them closer to the goal
-    double beta;   // sim for middle weights
-    double lambda; // how much we weight past estimates of target - btw 0 and 1 (0 means no memory)
     
     vector<double> getOutputWeights() const;
     vector< vector<double> > getMiddleWeights() const;
