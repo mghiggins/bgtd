@@ -9,6 +9,7 @@
 #include "runners.h"
 #include <string>
 #include <iostream>
+#include <sstream>
 #include <cmath>
 
 int main( int argc, char * argv [] )
@@ -19,9 +20,9 @@ int main( int argc, char * argv [] )
     
     // set default values for parameters
     
-    nMiddle = 40;
-    alpha0  = 0.5;
-    beta0   = 0.5;
+    nMiddle = 20;
+    alpha0  = 0.1;
+    beta0   = 0.1;
     fileSuffix = "";
     
     // override them if params are passed into the command line
@@ -36,13 +37,24 @@ int main( int argc, char * argv [] )
         beta0 = atof( argv[3] );
     if( argc > 4 )
         fileSuffix = argv[4];
+    else
+    {
+        stringstream ss;
+        ss << "exp_" << nMiddle << "_" << alpha0 << "_" << beta0;
+        fileSuffix = ss.str();
+    }
     
     cout << "nMiddle = " << nMiddle << endl;
     cout << "alpha0  = " << alpha0 << endl;
     cout << "beta0   = " << beta0 << endl;
     cout << "suffix  = " << fileSuffix << endl;
     
-    sim1( nMiddle, alpha0, beta0, fileSuffix );
-    //test1();
+    sim2( nMiddle, alpha0, beta0, fileSuffix );
     return 0;
 }
+/*
+int main( int argc, char * argv [] )
+{
+    test3();
+}
+*/
