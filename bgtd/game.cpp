@@ -91,25 +91,7 @@ void game::step()
     else
         strat = strat1;
     
-    if( moves.size() > 0 )
-    {
-        board  maxBoard;
-        double maxVal=-1E99, val;
-        
-        for( set<board>::iterator it=moves.begin(); it!=moves.end(); it++ )
-        {
-            val = strat->boardValue( *it );
-            if( val > maxVal )
-            {
-                maxVal   = val;
-                maxBoard = *it;
-            }
-        }
-        
-        // assign the board to this one and change the turn
-        
-        brd = maxBoard;
-    }
+    brd = strat->preferredBoard( oldBoard, moves );
     
     // if the strategy wants to update itself, do it
     
@@ -130,6 +112,7 @@ void game::step()
 
 void game::stepToEnd()
 {
+    if( verbose ) brd.print(); // show the starting config
     while( !this->gameOver() )
         this->step();
 }
