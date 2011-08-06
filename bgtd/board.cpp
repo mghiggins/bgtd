@@ -332,25 +332,32 @@ bool board::operator<( const board& otherBoard ) const
     
     if( this->operator==( otherBoard ) ) return false;
     
-    if( bornIn0 < otherBoard.bornIn0 ) return true;
-    if( bornIn1 > otherBoard.bornIn1 ) return false;
-    if( hit0 > otherBoard.hit0 ) return true;
-    if( hit1 < otherBoard.hit1 ) return false;
+    if( persp < otherBoard.persp ) return true;
+    if( persp > otherBoard.persp ) return false;
+    
+    if( bornIn() < otherBoard.bornIn() ) return true;
+    if( bornIn() > otherBoard.bornIn() ) return false;
+    if( otherBornIn() > otherBoard.otherBornIn() ) return false;
+    if( otherBornIn() < otherBoard.otherBornIn() ) return true;
+    if( hit() > otherBoard.hit() ) return true;
+    if( hit() < otherBoard.hit() ) return false;
+    if( otherHit() < otherBoard.otherHit() ) return false;
+    if( otherHit() > otherBoard.otherHit() ) return true;
     
     int i;
     
     for( i=0; i<24; i++ )
     {
-        if( checkers0[i] < otherBoard.checkers0[i] )
+        if( checker(i) < otherBoard.checker(i) )
             return true;
-        else if( checkers0[i] > otherBoard.checkers0[i] )
+        else if( checker(i) > otherBoard.checker(i) )
             return false;
     }
     for( i=0; i<24; i++ )
     {
-        if( checkers1[i] > otherBoard.checkers1[i] )
+        if( otherChecker(i) > otherBoard.otherChecker(i) )
             return true;
-        else if( checkers1[i] < otherBoard.checkers1[i] )
+        else if( otherChecker(i) < otherBoard.otherChecker(i) )
             return false;
     }
     
