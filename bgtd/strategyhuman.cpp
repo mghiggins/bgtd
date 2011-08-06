@@ -12,9 +12,23 @@
 
 board strategyhuman::preferredBoard( const board& oldBoard, const set<board>& possibleMoves ) const
 {
-    // keep cycling until they enter a valid move
+    // if there are no moves or just one move, apply them, but put an input break in
+    // so the user sees the move happening.
     
     string input;
+    
+    if( possibleMoves.size() < 2 )
+    {
+        cout << "No choice on move. Hit enter to continue.\n";
+        getline( cin, input );
+        if( possibleMoves.size() == 0 )
+            return oldBoard;
+        else
+            return *(possibleMoves.begin());
+    }
+    
+    // keep cycling until they enter a valid move
+    
     int count;
     vector<string> moveBits(2);
     
