@@ -70,8 +70,6 @@ board strategyhuman::preferredBoard( const board& oldBoard, const set<board>& po
             }
             else
             {
-                cout << moveBits[0] << '-' << moveBits[1] << endl;
-                
                 if( moveBits[0] == "b" )
                 {
                     if( newBoard.hit() == 0 )
