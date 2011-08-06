@@ -169,7 +169,8 @@ int game::winnerScore()
             if( brd.otherBornIn() != 0 ) return 1;
             
             // check for a backgammon
-            for( int i=0; i<18; i++ )
+            if( brd.otherHit() != 0 ) return 3;
+            for( int i=0; i<6; i++ )
                 if( brd.otherChecker( i ) != 0 ) return 3;
             
             // otherwise a regular gammon
@@ -181,7 +182,8 @@ int game::winnerScore()
             if( brd.bornIn() != 0 ) return 1;
             
             // check for a backgammon
-            for( int i=6; i<24; i++ )
+            if( brd.hit() != 0 ) return 3;
+            for( int i=18; i<24; i++ )
                 if( brd.checker( i ) != 0 ) return 3;
             
             // otherwise a regular gammon
