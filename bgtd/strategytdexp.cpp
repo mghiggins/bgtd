@@ -287,8 +287,8 @@ void strategytdexp::update( const board& oldBoard, const board& newBoard )
     
     vector<double> oldInputs  = getInputValues( oldBoard );
     vector<double> oldMiddles = getMiddleValues( oldInputs );
-    double oldProbOutput = getOutputProbValue( oldMiddles );
-    double oldGammonOutput = getOutputGammonValue( oldMiddles );
+    double oldProbOutput      = getOutputProbValue( oldMiddles );
+    double oldGammonOutput    = getOutputGammonValue( oldMiddles );
     
     // update the eligibility traces
     
