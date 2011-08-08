@@ -359,8 +359,9 @@ void strategytdexp::update( const board& oldBoard, const board& newBoard )
     }
     else
     {
-        newProbOutput   = getOutputProbValue(   getMiddleValues( getInputValues( newBoard ) ) );
-        newGammonOutput = getOutputGammonValue( getMiddleValues( getInputValues( newBoard ) ) );
+        vector<double> midVals( getMiddleValues( getInputValues( newBoard ) ) );
+        newProbOutput   = getOutputProbValue(   midVals );
+        newGammonOutput = getOutputGammonValue( midVals );
     }
     
     // update the weights
