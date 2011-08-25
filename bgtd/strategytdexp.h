@@ -9,8 +9,9 @@
 #ifndef bgtd_strategytdexp_h
 #define bgtd_strategytdexp_h
 
-#include "strategytdbase.h"
 #include <vector>
+#include <string>
+#include "strategytdbase.h"
 
 class strategytdexp : public strategytdbase
 {
@@ -29,6 +30,7 @@ public:
                    const vector< vector<double> >& middleProbTraces, const vector< vector<double> >& middleGammonTraces,
                    double alpha, double beta, double lambda );
     strategytdexp( const strategytdexp& otherStrat );
+    strategytdexp( const string& pathEnd, const string& fileSuffix );
     virtual ~strategytdexp();
     
     virtual double boardValue( const board& brd ) const;

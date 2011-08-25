@@ -8,6 +8,7 @@
 
 #include <string>
 #include <cmath>
+#include <fstream>
 #include "strategytdexp.h"
 #include "randomc.h"
 
@@ -71,6 +72,83 @@ strategytdexp::strategytdexp( const strategytdexp& otherStrat )
     beta                = otherStrat.beta;
     lambda              = otherStrat.lambda;
     learning            = otherStrat.learning;
+}
+
+strategytdexp::strategytdexp( const string& pathEnd, const string& fileSuffix )
+{
+    string path     = "/Users/mghiggins/bgtdres";
+    if( pathEnd != "" ) path += "/" + pathEnd;
+    string fopName  = path + "/weightsOutProb_" + fileSuffix + ".txt";
+    string fogName  = path + "/weightsOutGammon_" + fileSuffix + ".txt";
+    string foptName = path + "/tracesOutProb_" + fileSuffix + ".txt";
+    string fogtName = path + "/tracesOutGammon_" + fileSuffix + ".txt";
+    string fmName   = path + "/weightsMiddle_" + fileSuffix + ".txt";
+    string fmptName = path + "/tracesMiddleProb_" + fileSuffix + ".txt";
+    string fmgtName = path + "/tracesMiddleGammon_" + fileSuffix + ".txt";
+    
+    ifstream fop( fopName.c_str() );
+    ifstream fog( fogName.c_str() );
+    ifstream fopt( foptName.c_str() );
+    ifstream fogt( fogtName.c_str() );
+    ifstream fm( fmName.c_str() );
+    ifstream fmpt( fmptName.c_str() );
+    ifstream fmgt( fmgtName.c_str() );
+    
+    // start by loading the number of middle weights from the prob output weights file
+    
+    string line;
+    getline( fop, line );
+    nMiddle = atoi( line.c_str() );
+    
+    // resize all the vectors appropriately
+    
+    outputProbWeights.resize( nMiddle - 1 );
+    outputGammonWeights.resize( nMiddle + 1 );
+    outputProbTraces.resize( nMiddle - 1 );
+    outputGammonTraces.resize( nMiddle + 1 );
+    middleWeights.resize( nMiddle );
+    middleProbTraces.resize( nMiddle );
+    middleGammonTraces.resize( nMiddle );
+    
+    int i, j;
+    
+    for( i=0; i<nMiddle; i++ )
+    {
+        middleWeights[i].resize(98);
+        middleProbTraces[i].resize(98);
+        middleGammonTraces[i].resize(98);
+    }
+    
+    // load the output weights and traces for the prob and gammon nodes
+    
+    for( i=0; i<nMiddle-1; i++ )
+    {
+        getline( fop, line );
+        outputProbWeights[i] = atof( line.c_str() );
+        getline( fopt, line );
+        outputProbTraces[i] = atof( line.c_str() );
+    }
+    
+    for( i=0; i<nMiddle+1; i++ )
+    {
+        getline( fog, line );
+        outputGammonWeights[i] = atof( line.c_str() );
+        getline( fogt, line );
+        outputGammonTraces[i] = atof( line.c_str() );
+    }
+    
+    // load the middle weights and traces
+    
+    for( i=0; i<nMiddle; i++ )
+        for( j=0; j<98; j++ )
+        {
+            getline( fm, line );
+            middleWeights[i][j] = atof( line.c_str() );
+            getline( fmpt, line );
+            middleProbTraces[i][j] = atof( line.c_str() );
+            getline( fmgt, line );
+            middleGammonTraces[i][j] = atof( line.c_str() );
+        }
 }
 
 strategytdexp::~strategytdexp()
