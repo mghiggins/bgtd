@@ -38,7 +38,7 @@ public:
     // the next set of methods is used in evaluating the neural network outputs given the
     // inputs defined by the board.
     
-    vector<double> getInputValues( const board& brd ) const;
+    vector<double> getInputValues( const board& brd, bool holdDice ) const;
     vector<double> getMiddleValues( const vector<double>& inputs ) const;
     double getOutputProbValue( const vector<double>& middles ) const;
     double getOutputGammonWinValue( const vector<double>& middles, const board& brd ) const;
@@ -57,7 +57,7 @@ public:
     
     virtual bool needsUpdate() const;
     virtual void update( const board& oldBoard, const board& newBoard );
-    void updateLocal( const board& oldBoard, const board& newBoard, bool firstTime );
+    void updateLocal( const board& oldBoard, const board& newBoard, bool holdDice );
     
 protected:
     void setupExp( const strategytdexp& baseStrat );
