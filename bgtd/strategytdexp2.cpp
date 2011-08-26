@@ -48,11 +48,13 @@ void strategytdexp2::setupExp( const strategytdexp& baseStrat )
     // start with the prob-of-win weights. That has nMiddle-1 elements in the tdexp case
     // because the symmetry requires that sum of weights == 0. We put in -sum of weights
     // for the final weight here, so that we start basically the same as the original.
+    // Also add a bias weight (initialized to zero).
     
     outputProbWeights = baseStrat.getOutputProbWeights();
     double sum=0;
     for( i=0; i<nMiddle-1; i++ ) sum += outputProbWeights.at(i);
     outputProbWeights.insert( outputProbWeights.end(), -sum );
+    outputProbWeights.insert( outputProbWeights.end(), 0 );
     
     // next do the conditional-prob-of-gammon-win node. There is no constraint from symmetry
     // on its values, so just grab them. Note there are nMiddle+1 elements: nMiddle weights
@@ -104,7 +106,7 @@ void strategytdexp2::setupExp( const strategytdexp& baseStrat )
     
     // allocate memory for the partial deriv vectors
     
-    probDerivs.resize( nMiddle );
+    probDerivs.resize( nMiddle + 1 );
     gamWinDerivs.resize( nMiddle + 1 );
     gamLossDerivs.resize( nMiddle + 1 );
     probInputDerivs.resize( nMiddle );
@@ -216,6 +218,7 @@ double strategytdexp2::getOutputProbValue( const vector<double>& middles ) const
     double val=0;
     for( int i=0; i<nMiddle; i++ )
         val += outputProbWeights.at(i) * middles.at(i);
+    val += outputProbWeights.at(nMiddle); // bias node
     return  1. / ( 1 + exp( -val ) );
 }
 
@@ -302,6 +305,7 @@ void strategytdexp2::updateLocal( const board& oldBoard, const board& newBoard, 
             gamLossInputDerivs.at(i).at(j) = v3 * input * oldGammonLossOutput * ( 1 - oldGammonLossOutput ) * mid * ( 1 - mid );
         }
     }
+    probDerivs.at(nMiddle)    = oldProbOutput       * ( 1 - oldProbOutput );
     gamWinDerivs.at(nMiddle)  = oldGammonWinOutput  * ( 1 - oldGammonWinOutput );
     gamLossDerivs.at(nMiddle) = oldGammonLossOutput * ( 1 - oldGammonLossOutput );
     
@@ -370,10 +374,11 @@ void strategytdexp2::updateLocal( const board& oldBoard, const board& newBoard, 
         }
     }
     
+    outputProbWeights.at(nMiddle) += alpha * ( newProbOutput - oldProbOutput ) * probDerivs.at(nMiddle);
     if( trainGammonWin )
-        outputGammonWinWeights.at(nMiddle) += alpha * ( newGammonWinOutput - oldGammonWinOutput ) * gamWinDerivs.at(i);
+        outputGammonWinWeights.at(nMiddle) += alpha * ( newGammonWinOutput - oldGammonWinOutput ) * gamWinDerivs.at(nMiddle);
     if( trainGammonLoss )
-        outputGammonLossWeights.at(nMiddle) += alpha * ( newGammonLossOutput - oldGammonLossOutput ) * gamLossDerivs.at(i);
+        outputGammonLossWeights.at(nMiddle) += alpha * ( newGammonLossOutput - oldGammonLossOutput ) * gamLossDerivs.at(nMiddle);
     
     // the first time we go through we train from the perspective of the player; also train from the perspective of
     // the other player, since we have to make sure that we don't always train on ending prob of win==1 (or the network
