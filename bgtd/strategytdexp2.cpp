@@ -294,7 +294,7 @@ void strategytdexp2::updateLocal( const board& oldBoard, const board& newBoard, 
         gamWinDerivs.at(i)  = mid * oldGammonWinOutput  * ( 1 - oldGammonWinOutput );
         gamLossDerivs.at(i) = mid * oldGammonLossOutput * ( 1 - oldGammonLossOutput );
         
-        for( j=0; j<196; j++ )
+        for( j=0; j<197; j++ )
         {
             input = oldInputs.at(j);
             probInputDerivs.at(i).at(j)    = v1 * input * oldProbOutput       * ( 1 - oldProbOutput       ) * mid * ( 1 - mid );
@@ -360,7 +360,7 @@ void strategytdexp2::updateLocal( const board& oldBoard, const board& newBoard, 
         if( trainGammonLoss )
             outputGammonLossWeights.at(i) += alpha * ( newGammonLossOutput - oldGammonLossOutput ) * gamLossDerivs.at(i);
         
-        for( j=0; j<197; j++ )
+        for( j=0; j<196; j++ )
         {
             middleWeights.at(i).at(j) += beta * ( newProbOutput - oldProbOutput ) * probInputDerivs.at(i).at(j);
             if( trainGammonWin )
