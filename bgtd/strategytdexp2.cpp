@@ -77,14 +77,17 @@ void strategytdexp2::setupExp( const strategytdexp& baseStrat )
     
     // then do the middle weights. In the tdexp case there are only 98, not 196 (the
     // number of inputs), for each middle node, because the symmetry constrains the
-    // second half of weights to be -1*the first half weights.
+    // second half of weights to be -1*the first half weights. We also add a final
+    // input in this version which is 1 if the player holds the dice, and 0 if not;
+    // so we need to add an extra weight to this input for each middle node. We
+    // initialize those weights to zero.
     
     middleWeights.resize( nMiddle );
     vector< vector<double> > expMids( baseStrat.getMiddleWeights() );
     double w;
     for( i=0; i<nMiddle; i++ )
     {
-        middleWeights.at(i).resize(196);
+        middleWeights.at(i).resize(197);
         for( j=0; j<96; j++ )
         {
             w = expMids.at(i).at(j);
@@ -95,6 +98,8 @@ void strategytdexp2::setupExp( const strategytdexp& baseStrat )
         middleWeights.at(i).at(194) = -expMids.at(i).at(96);
         middleWeights.at(i).at(97)  =  expMids.at(i).at(97);
         middleWeights.at(i).at(195) = -expMids.at(i).at(97);
+        
+        middleWeights.at(i).at(196) = 0; // initial weight for the "whose turn is it" weight = 0
     }
     
     // allocate memory for the partial deriv vectors
@@ -108,17 +113,17 @@ void strategytdexp2::setupExp( const strategytdexp& baseStrat )
     
     for( i=0; i<nMiddle; i++ )
     {
-        probInputDerivs.at(i).resize(196);
-        gamWinInputDerivs.at(i).resize(196);
-        gamLossInputDerivs.at(i).resize(196);
+        probInputDerivs.at(i).resize(197);
+        gamWinInputDerivs.at(i).resize(197);
+        gamLossInputDerivs.at(i).resize(197);
     }
 }
 
 double strategytdexp2::boardValue( const board& brd ) const
 {
-    // get the inputs from the board
+    // get the inputs from the board, assuming the player holds the dice
     
-    vector<double> inputs = getInputValues( brd );
+    vector<double> inputs = getInputValues( brd, true );
     
     // calculate the middle layer node values
     
@@ -140,10 +145,10 @@ double strategytdexp2::boardValue( const board& brd ) const
          - ( 1 - probWin ) * ( 1 * ( 1 - probCondGammonLoss ) + 2 * probCondGammonLoss );
 }
 
-vector<double> strategytdexp2::getInputValues( const board& brd ) const
+vector<double> strategytdexp2::getInputValues( const board& brd, bool holdDice ) const
 {
     vector<double> inputs;
-    inputs.resize(196,0);
+    inputs.resize(197,0);
     vector<int> checks = brd.checkers();
     vector<int> otherChecks = brd.otherCheckers();
     
@@ -177,6 +182,13 @@ vector<double> strategytdexp2::getInputValues( const board& brd ) const
     inputs.at(97)  = brd.bornIn() / 15.;
     inputs.at(195) = brd.otherBornIn() / 15.;
     
+    // last input is 1 if we hold the dice, 0 if not
+    
+    if( holdDice )
+        inputs.at(196) = 1;
+    else
+        inputs.at(196) = 0;
+    
     return inputs;
 }
 
@@ -191,7 +203,7 @@ vector<double> strategytdexp2::getMiddleValues( const vector<double>& inputs ) c
     for( i=0; i<nMiddle; i++ )
     {
         val = 0;
-        for( j=0; j<196; j++ )
+        for( j=0; j<197; j++ )
             val += middleWeights.at(i).at(j) * inputs.at(j);
         mids.at(i) = 1. / ( 1 + exp( -val ) );
     }
@@ -252,11 +264,11 @@ void strategytdexp2::update( const board& oldBoard, const board& newBoard )
     updateLocal( oldBoard, newBoard, true );
 }
 
-void strategytdexp2::updateLocal( const board& oldBoard, const board& newBoard, bool firstTime )
+void strategytdexp2::updateLocal( const board& oldBoard, const board& newBoard, bool holdDice )
 {
     // get the values from the old board
     
-    vector<double> oldInputs   = getInputValues( oldBoard );
+    vector<double> oldInputs   = getInputValues( oldBoard, holdDice );
     vector<double> oldMiddles  = getMiddleValues( oldInputs );
     double oldProbOutput       = getOutputProbValue( oldMiddles );
     double oldGammonWinOutput  = getOutputGammonWinValue( oldMiddles, oldBoard );
@@ -330,7 +342,7 @@ void strategytdexp2::updateLocal( const board& oldBoard, const board& newBoard, 
     {
         // estimate from the new board's outputs
         
-        vector<double> midVals( getMiddleValues( getInputValues( newBoard ) ) );
+        vector<double> midVals( getMiddleValues( getInputValues( newBoard, holdDice ) ) );
         newProbOutput       = getOutputProbValue( midVals );
         newGammonWinOutput  = getOutputGammonWinValue( midVals, newBoard );
         newGammonLossOutput = getOutputGammonLossValue( midVals, newBoard );
@@ -348,7 +360,7 @@ void strategytdexp2::updateLocal( const board& oldBoard, const board& newBoard, 
         if( trainGammonLoss )
             outputGammonLossWeights.at(i) += alpha * ( newGammonLossOutput - oldGammonLossOutput ) * gamLossDerivs.at(i);
         
-        for( j=0; j<196; j++ )
+        for( j=0; j<197; j++ )
         {
             middleWeights.at(i).at(j) += beta * ( newProbOutput - oldProbOutput ) * probInputDerivs.at(i).at(j);
             if( trainGammonWin )
@@ -367,7 +379,7 @@ void strategytdexp2::updateLocal( const board& oldBoard, const board& newBoard, 
     // the other player, since we have to make sure that we don't always train on ending prob of win==1 (or the network
     // will converge to large +ve weights and always return 1 for prob of win).
     
-    if( firstTime )
+    if( holdDice )
     {
         // construct copies of the old and new boards, but with perspective flipped.
         
