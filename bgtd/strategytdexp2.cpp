@@ -7,6 +7,7 @@
 //
 
 #include <cmath>
+#include <fstream>
 #include "strategytdexp2.h"
 
 strategytdexp2::strategytdexp2( const strategytdexp& baseStrat )
@@ -16,10 +17,64 @@ strategytdexp2::strategytdexp2( const strategytdexp& baseStrat )
 
 strategytdexp2::strategytdexp2( const string& pathEnd, const string& fileSuffix, bool loadExp )
 {
-    if( !loadExp ) throw string( "Initializing from stored strategytdexp2 weights not yet supported" );
-    
-    strategytdexp s( pathEnd, fileSuffix );
-    setupExp( s );
+    if( loadExp )
+    {
+        strategytdexp s( pathEnd, fileSuffix );
+        setupExp( s );
+    }
+    else
+    {
+        string path = "/Users/mghiggins/bgtdres";
+        if( pathEnd != "" ) path += "/" + pathEnd;
+        string fopName  = path + "/weightsOutProb_" + fileSuffix + ".txt";
+        string fowName  = path + "/weightsOutGammonWin_" + fileSuffix + ".txt";
+        string folName  = path + "/weightsOutGammonLoss_" + fileSuffix + ".txt";
+        string fmName   = path + "/weightsMiddle_" + fileSuffix + ".txt";
+        
+        ifstream fop( fopName.c_str() );
+        ifstream fow( fowName.c_str() );
+        ifstream fol( folName.c_str() );
+        ifstream fm( fmName.c_str() );
+        
+        // start by loading the number of middle weights from the prob output weights file
+        
+        string line;
+        getline( fop, line );
+        nMiddle = atoi( line.c_str() );
+        
+        // resize all the vectors appropriately
+        
+        outputProbWeights.resize( nMiddle + 1 );
+        outputGammonWinWeights.resize( nMiddle + 1 );
+        outputGammonLossWeights.resize( nMiddle + 1 );
+        middleWeights.resize( nMiddle );
+        
+        int i, j;
+        
+        for( i=0; i<nMiddle; i++ )
+            middleWeights[i].resize(197);
+        
+        // load the weights for the three output nodes
+        
+        for( i=0; i<nMiddle+1; i++ )
+        {
+            getline( fop, line );
+            outputProbWeights[i] = atof( line.c_str() );
+            getline( fow, line );
+            outputGammonWinWeights[i] = atof( line.c_str() );
+            getline( fol, line );
+            outputGammonLossWeights[i] = atof( line.c_str() );
+        }
+        
+        // load the middle weights
+        
+        for( i=0; i<nMiddle; i++ )
+            for( j=0; j<197; j++ )
+            {
+                getline( fm, line );
+                middleWeights[i][j] = atof( line.c_str() );
+            }
+    }
 }
 
 void strategytdexp2::setupExp( const strategytdexp& baseStrat )
@@ -393,7 +448,7 @@ void strategytdexp2::updateLocal( const board& oldBoard, const board& newBoard, 
         board newBoardFlipped( newBoard );
         newBoardFlipped.setPerspective( ( newBoardFlipped.perspective() + 1 ) % 2 );
         
-        // update the weights again using this perspective
+        // update the weights again using this perspective, without holding the dice
         
         updateLocal( oldBoardFlipped, newBoardFlipped, false );
     }
