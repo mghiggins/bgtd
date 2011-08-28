@@ -80,6 +80,16 @@ public:
     
     void validate() const;
     
+    // "raw" interface returns the underlying elements without adjusting
+    // for board perspective.
+    
+    vector<int> checkers0Raw() const { return checkers0; }
+    vector<int> checkers1Raw() const { return checkers1; }
+    int hit0Raw() const { return hit0; }
+    int hit1Raw() const { return hit1; }
+    int bornIn0Raw() const { return bornIn0; }
+    int bornIn1Raw() const { return bornIn1; }
+    
 private:
     int         persp;
     vector<int> checkers0;
