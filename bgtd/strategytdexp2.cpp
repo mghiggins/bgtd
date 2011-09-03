@@ -399,9 +399,10 @@ void strategytdexp2::updateLocal( const board& oldBoard, const board& newBoard, 
     }
     else
     {
-        // estimate from the new board's outputs
+        // estimate from the new board's outputs, remembering that after the move is done,
+        // the other player gets the dice.
         
-        vector<double> midVals( getMiddleValues( getInputValues( newBoard, holdDice ) ) );
+        vector<double> midVals( getMiddleValues( getInputValues( newBoard, !holdDice ) ) );
         newProbOutput       = getOutputProbValue( midVals );
         newGammonWinOutput  = getOutputGammonWinValue( midVals, newBoard );
         newGammonLossOutput = getOutputGammonLossValue( midVals, newBoard );
@@ -419,7 +420,7 @@ void strategytdexp2::updateLocal( const board& oldBoard, const board& newBoard, 
         if( trainGammonLoss )
             outputGammonLossWeights.at(i) += alpha * ( newGammonLossOutput - oldGammonLossOutput ) * gamLossDerivs.at(i);
         
-        for( j=0; j<196; j++ )
+        for( j=0; j<197; j++ )
         {
             middleWeights.at(i).at(j) += beta * ( newProbOutput - oldProbOutput ) * probInputDerivs.at(i).at(j);
             if( trainGammonWin )
