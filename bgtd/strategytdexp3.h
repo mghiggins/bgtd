@@ -20,7 +20,7 @@ class strategytdexp3 : public strategytdbase
 public:
     // initialize with random weights
     strategytdexp3();
-    // initialize with the tdexp2 network
+    // initialize with the tdexp network
     strategytdexp3( const strategytdexp& baseStrat );
     // initialize using saved weights; if loadExp is true it assumes that the weights
     // are from a tdexp network, otherwise from a proper tdexp3 network
