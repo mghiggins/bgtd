@@ -74,6 +74,22 @@ strategytdexp2::strategytdexp2( const string& pathEnd, const string& fileSuffix,
                 getline( fm, line );
                 middleWeights[i][j] = atof( line.c_str() );
             }
+        
+        // allocate memory for the partial deriv vectors
+        
+        probDerivs.resize( nMiddle + 1 );
+        gamWinDerivs.resize( nMiddle + 1 );
+        gamLossDerivs.resize( nMiddle + 1 );
+        probInputDerivs.resize( nMiddle );
+        gamWinInputDerivs.resize( nMiddle );
+        gamLossInputDerivs.resize( nMiddle );
+        
+        for( i=0; i<nMiddle; i++ )
+        {
+            probInputDerivs.at(i).resize(197);
+            gamWinInputDerivs.at(i).resize(197);
+            gamLossInputDerivs.at(i).resize(197);
+        }
     }
 }
 
