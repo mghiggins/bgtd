@@ -246,7 +246,7 @@ double strategytdexp3::getOutputProbValue( const vector<double>& middles ) const
         sum += outputProbWeights.at(i);
     }
     val -= sum * middles.at(nMiddle-1); // the sum of the output weights for all nodes must be zero
-    return  1. / ( 1 + exp( -val ) );
+    return 1. / ( 1 + exp( -val ) );
 }
 
 double strategytdexp3::getOutputGammonWinValue( const vector<double>& middles, const board& brd ) const
@@ -267,6 +267,12 @@ double strategytdexp3::getOutputGammonWinValue( const vector<double>& middles, c
 
 double strategytdexp3::getOutputGammonLossValue( const vector<double>& middles, const board& brd ) const
 {
+    // special case - if the player has taken any pieces in, the gammon loss prob is zero
+    
+    if( brd.bornIn() > 0 ) return 0;
+    
+    // otherwise calculate the network value
+    
     double val=0, sum=0, v;
     
     // we require that flipping perspective means that the prob of a gammon win->prob
@@ -312,6 +318,7 @@ void strategytdexp3::updateLocal( const board& oldBoard, const board& newBoard, 
     
     int i, j;
     double input, mirrorInput, finalOutProbWeight=0, outProbWeight, outGammonWeight, midVal;
+    double midValLast = oldMiddles.at(nMiddle-1);
     
     for( i=0; i<nMiddle; i++ )
     {
@@ -319,7 +326,7 @@ void strategytdexp3::updateLocal( const board& oldBoard, const board& newBoard, 
         
         if( i < nMiddle - 1 )
         {
-            probDerivs.at(i)    = ( midVal - oldMiddles.at(nMiddle-1) ) * oldProbOutput * ( 1 - oldProbOutput );
+            probDerivs.at(i)    = ( midVal - midValLast ) * oldProbOutput * ( 1 - oldProbOutput );
             outProbWeight       = outputProbWeights.at(i);
             finalOutProbWeight -= outProbWeight;
         }
@@ -331,7 +338,7 @@ void strategytdexp3::updateLocal( const board& oldBoard, const board& newBoard, 
         
         // the prob of gammon win conditional on win output node does not require the same constraint on sum of weights==0; in fact, it
         // has an extra weight called a "bias weight" which is multiplied by 1 instead of a middle node value. But there are nMiddle
-        // weights that *are* weighted by middle node values and we need to track the traces for them.
+        // weights that *are* weighted by middle node values and we need to calculate the partials for them.
         
         gamWinDerivs.at(i) = midVal * oldGammonWinOutput * ( 1 - oldGammonWinOutput );
         outGammonWeight = outputGammonWinWeights.at(i);
@@ -348,7 +355,7 @@ void strategytdexp3::updateLocal( const board& oldBoard, const board& newBoard, 
         }
     }
     
-    // update the trace for the final weight of the gammon node, which is the bias weight
+    // calculate the derivative to the final weight of the gammon node, which is the bias weight
     
     gamWinDerivs.at(nMiddle) = oldGammonWinOutput * ( 1 - oldGammonWinOutput );
     
@@ -364,7 +371,7 @@ void strategytdexp3::updateLocal( const board& oldBoard, const board& newBoard, 
         if( newBoard.otherBornIn() == 0 )
             newGammonWinOutput = 1.; // gammon or backgammon
         else
-            newGammonWinOutput = 0;
+            newGammonWinOutput = 0.;
     }
     else if( newBoard.otherBornIn() == 15 )
     {
@@ -375,7 +382,7 @@ void strategytdexp3::updateLocal( const board& oldBoard, const board& newBoard, 
     {
         gameOver = false;
         vector<double> midVals( getMiddleValues( getInputValues( newBoard, !holdDice ) ) );
-        newProbOutput      = getOutputProbValue(   midVals );
+        newProbOutput      = getOutputProbValue( midVals );
         newGammonWinOutput = getOutputGammonWinValue( midVals, newBoard );
     }
     
@@ -384,14 +391,13 @@ void strategytdexp3::updateLocal( const board& oldBoard, const board& newBoard, 
     for( i=0; i<nMiddle; i++ )
     {
         if( i < nMiddle - 1 )
-            outputProbWeights.at(i) += alpha * ( newProbOutput - oldProbOutput   ) * probDerivs.at(i);
+            outputProbWeights.at(i) += alpha * ( newProbOutput - oldProbOutput ) * probDerivs.at(i);
         
         if( trainGammonWin )
             outputGammonWinWeights.at(i) += alpha * ( newGammonWinOutput - oldGammonWinOutput ) * gamWinDerivs.at(i);
         
         for( j=0; j<99; j++ )
         {
-            //if( j == 98 ) continue;
             middleWeights.at(i).at(j) += beta * ( newProbOutput - oldProbOutput ) * probInputDerivs.at(i).at(j);
             if( trainGammonWin )
                 middleWeights.at(i).at(j) += beta * ( newGammonWinOutput - oldGammonWinOutput ) * gamWinInputDerivs.at(i).at(j);
@@ -404,17 +410,17 @@ void strategytdexp3::updateLocal( const board& oldBoard, const board& newBoard, 
         outputGammonWinWeights.at(nMiddle) += alpha * ( newGammonWinOutput - oldGammonWinOutput ) * gamWinDerivs.at(nMiddle);
     
     // the first time we go through we train from the perspective of the player; also train from the perspective of
-    // the other player, since we have to make sure that we don't always train on ending prob of win==1 (or the network
-    // will converge to large +ve weights and always return 1 for prob of win).
+    // the other player to be symmetric. Though not really sure why this is required. If I don't do this, then the
+    // prob of win is fine but the conditional prob of gammon goes to 100%.
     
-    if( holdDice )
+    if( false && holdDice )
     {
         // construct copies of the old and new boards, but with perspective flipped.
         
         board oldBoardFlipped( oldBoard );
-        oldBoardFlipped.setPerspective( ( oldBoardFlipped.perspective() + 1 ) % 2 );
+        oldBoardFlipped.setPerspective( 1 - oldBoardFlipped.perspective() );
         board newBoardFlipped( newBoard );
-        newBoardFlipped.setPerspective( ( newBoardFlipped.perspective() + 1 ) % 2 );
+        newBoardFlipped.setPerspective( 1 - newBoardFlipped.perspective() );
         
         // update the weights again using this perspective, without holding the dice
         
