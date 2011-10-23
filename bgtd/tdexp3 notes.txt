@@ -1,0 +1,47 @@
+strategytdexp3 testing
+------------------------------
+
+For this testing I tried a bunch of different setups, corresponding to different tweaks to the training approach. For each set of tweaks I tried training networks with 20, 40, and 80 middle nodes to see whether there
+was any difference in behaviour based on # of middle nodes.
+
+1) useBg=false, weightLearning=false, stopGammonTraining=false, exactGammon=false,symmetric=true,trainFlipped=false: all stable. ie the same as tdexp, as expected. Off the starting board, prob of win==0.5 by 
+  construction, and prob of gammon jumps around a bit but doesn't go to 1 or 0. As expected, just like running the tdexp training. Performance vs the benchmark is as expected: mostly worse but occasionally marginally
+  better. Averages around -0.1ppg, 95% worst case around -0.25ppg, 95% best case around +0.05ppg.
+
+2) useBg=false, weightLearning=false, stopGammonTraining=false, exactGammon=false,symmetric=false,trainFlipped=false: not stable. Prob of win converges nicely to around 0.55 but prob of gammon goes to 1.
+  That happens very quickly - within 10-20k training steps. Interestingly: after a few thousand training steps, the prob of gammon gets large, but the performance vs the benchmark (which is tdexp with the same #
+  of middle nodes, max performer during the tdexp training) is quite good - beating it by 0.2 to 0.4ppg. But the performance declines as prob of gammon->1 and it starts losing by significant amounts.
+
+3) useBg=true, weightLearning=false, stopGammonTraining=false, exactGammon=false,symmetric=true,trainFlipped=false. Stable. This is like tdexp (symmetric, so no dependence on whose turn it is), but adds a backgammon
+  node in addition to the prob of win and prob of gammon nodes. The backgammon node returns the prob of a backgammon win conditioned on a gammon win. It performs incrementally better than tdexp itself, but not
+  materially. The prob of gammon bounces around a little, as does the prob of backgammon. Unconditional backgammon prob from the starting position is around 3-6% (for either person), which is comparable to the
+  realized prob of backgammon in matches it plays against itself, if a little high.
+
+4) useBg=false, weightLearning=true, stopGammonTraining=false, exactGammon=false,symmetric=false,trainFlipped=false. Not stable. This is like 2 but weightLearning is set to true, which changes alpha and beta (the learning rates)
+  for the gammon node to be weighted at each point by the post-move prob of winning. The idea here is that you want to train the conditional probability node the most when the prob of winning is highest, and least when
+  the prob of winning is lowest (since at that point the unconditional prob of gammon is low). Like 2, the conditional prob of gammon output quickly goes to 1.
+
+5) useBg=false, weightLearning=false, stopGammonTraining=true, exactGammon=true,symmetric=false,trainFlipped=false. Somewhat stable. This makes the board value evaluation note that when the other player has borne in at least one
+  checker, the prob of a gammon win goes to zero (and sim for a gammon loss). It changes the training as well: in the post-move state it notes that the prob of gammon win goes to zero if the other player has taken in at least
+  one checker, and importantly stops training the gammon win node after that happens for subsequent steps (even before the game is over), since we don't use it anywhere in the evaluation after that point. Effectively, for the
+  gammon node, the game is over when the other player bears in a checker. In training the 20-middle-node network, it seemed to be reasonably stable, though the prob of gammon ended up quite high, and when the bot played itself,
+  a lot of games ended up as gammons and even backgammons (15-20% for both types). That network ended up beating the reference 20-node tdexp network by around 0.2ppg. The 40- and 80-middle-node networks were not stable: 
+  the gammon probabilities ended up at 1 or 0 and the bots lost around 0.2-0.3ppg against the reference tdexp network. I didn't play a test game myself against the trained bots, but I suspect they would have done some silly things, or
+  they wouldn't end up with such a high backgammon probability when playing against themselves.
+
+6) useBg=false, weightLearning=true, stopGammonTraining=true, exactGammon=true,symmetric=false,trainFlipped=false. Like 5 except weightLearning set to true, to see whether that helps avoid the convergence to 1 or 0. Doesn't really
+  make much difference.
+
+7) useBg=false, weightLearning=true, stopGammonTraining=true, exactGammon=true,symmetric=false,trainFlipped=true. Like 6, except that at each step we train on the flipped-perspective board. Stable. Twice as slow as 6 because it
+  trains twice as much. 
+
+8) Same as 7, but with an extra tweak: we train on the flipped board only when the other player has taken in a checker, but the player has not. Testing the hypothesis that the reason 7 was stable was because it had extra training for the gammon
+  and backgammon outputs when one player has a nonzero prob of gammon but the other has a zero prob. Stable but noiser than 7.
+
+9) Same as 8, except that it trains the flipped board whenever either player has borne in at least one checker. A bit more frequent than 8. Also added useBg=true, so it uses and trains the backgammon prob node. stable, but it cnverged to
+  a weird solution where cond prob of gammon was around 85% and cond prob of backgammon was around 60%. And the bot it converged to played terrily against the reference - losing 0.4-0.9ppg.
+
+10) Same as 7, but running longer.
+
+
+

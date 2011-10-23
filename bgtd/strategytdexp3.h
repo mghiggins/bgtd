@@ -16,10 +16,10 @@ class strategytdexp3 : public strategytdbase
 {
     // Class like strategytdexp, where we still keep the symmetry assumptions, but
     // add an extra input for each player representing whether it's that player's turn.
-    // Also always uses lambda=0. 
+    // Also always uses lambda=0. Also includes prob of backgammon node.
 public:
     // initialize with random weights
-    strategytdexp3();
+    strategytdexp3( int nMiddle );
     // initialize with the tdexp network
     strategytdexp3( const strategytdexp& baseStrat );
     // initialize using saved weights; if loadExp is true it assumes that the weights
@@ -39,13 +39,16 @@ public:
     vector<double> getInputValues( const board& brd, bool holdDice ) const;
     vector<double> getMiddleValues( const vector<double>& inputs ) const;
     double getOutputProbValue( const vector<double>& middles ) const;
-    double getOutputGammonWinValue( const vector<double>& middles, const board& brd ) const;
-    double getOutputGammonLossValue( const vector<double>& middles, const board& brd ) const;
+    double getOutputGammonWinValue( const vector<double>& middles ) const;
+    double getOutputGammonLossValue( const vector<double>& middles ) const;
+    double getOutputBackgammonWinValue( const vector<double>& middles ) const;
+    double getOutputBackgammonLossValue( const vector<double>& middles ) const;
     
     // the next set of methods is used to introspect on the state of the weights
     
     vector<double> getOutputProbWeights() const;
     vector<double> getOutputGammonWinWeights() const;
+    vector<double> getOutputBackgammonWinWeights() const;
     
     vector< vector<double> > getMiddleWeights() const;
     
@@ -55,12 +58,45 @@ public:
     virtual bool needsUpdate() const;
     virtual void update( const board& oldBoard, const board& newBoard );
     
+    // these flags control the training/valuing behaviour
+    
+    // useBg determines whether the backgammon node is used - if off, it only uses the win & gammon
+    // nodes to evaluate the board (and for training).
+    
+    bool useBg;
+    
+    // weightLearning: false means that all nodes use unweighed alpha and beta for learning; true
+    // means that the alpha & beta for the gammon node are weighted by prob of win, and for the
+    // backgammon node by prob of win * cond prob of gammon.
+    
+    bool weightLearning;
+    
+    // stopGammonTraining: true, training of the gammon & backgammon nodes stops once the other
+    // player has taken in at least one checker; false, trains those nodes all the way to the end.
+    
+    bool stopGammonTraining;
+    
+    // exactGammon: true, uses zero for gammon prob when the other player has taken in at least
+    // one checker; false, always uses the network estimate.
+    
+    bool exactGammon;
+    
+    // symmetric: true, assigns zero weight to the "whose turn is it" input; false, trains that.
+    
+    bool symmetric;
+    
+    // trainFlipped: true, trains the flipped-perspective board each time too
+    
+    bool trainFlipped;
+    
 protected:
     void updateLocal( const board& oldBoard, const board& newBoard, bool holdDice );
     void setupExp( const strategytdexp& baseStrat );
+    void setFlags();
     
     vector<double> outputProbWeights;
     vector<double> outputGammonWinWeights;
+    vector<double> outputBackgammonWinWeights;
     
     vector< vector<double> > middleWeights;
     
@@ -70,8 +106,10 @@ protected:
     
     vector<double> probDerivs;                      // derivs of output prob node to its weights vs middle node values
     vector<double> gamWinDerivs;                    // derivs of output gammon win node to its weights vs middle node values
+    vector<double> bgWinDerivs;                     // derivs of output backgammon win node to its weights vs middle node values
     vector< vector<double> > probInputDerivs;       // deriv of the prob win output to all the middle->input weights
     vector< vector<double> > gamWinInputDerivs;     // deriv of the gammon win output to all the middle->input weights
+    vector< vector<double> > bgWinInputDerivs;      // deriv of the backgammon win output to all the middle->input weights
 };
 
 #endif

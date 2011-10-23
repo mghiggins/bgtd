@@ -305,6 +305,22 @@ void board::incrementBornIn()
         bornIn1 += 1;
 }
 
+void board::setBornIn( int n )
+{
+    if( persp == 0 )
+        bornIn0 = n;
+    else
+        bornIn1 = n;
+}
+
+void board::setOtherBornIn( int n )
+{
+    if( persp == 0 )
+        bornIn1 = n;
+    else
+        bornIn0 = n;
+}
+
 bool board::operator==( const board& otherBoard ) const
 {
     if( persp != otherBoard.persp ) return false;

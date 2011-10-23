@@ -68,6 +68,9 @@ public:
     
     void incrementBornIn();
     
+    void setBornIn( int n );
+    void setOtherBornIn( int n );
+    
     bool operator==( const board& otherBoard ) const;
     bool operator>( const board& otherBoard ) const;
     bool operator<( const board& otherBoard ) const;

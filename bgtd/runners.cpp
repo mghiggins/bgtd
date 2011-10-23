@@ -10,6 +10,7 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+#include <boost/thread.hpp>
 #include "runners.h"
 #include "strategytd.h"
 #include "strategytdexp.h"
@@ -221,7 +222,7 @@ void writeExp2WeightsToFiles( const vector<double>& outputProbWeights, const vec
     fm.close();
 }
 
-void writeExp3WeightsToFiles( const vector<double>& outputProbWeights, const vector<double>& outputGammonWinWeights, 
+void writeExp3WeightsToFiles( const vector<double>& outputProbWeights, const vector<double>& outputGammonWinWeights, const vector<double>& outputBgWinWeights,
                               const vector< vector<double> >& middleWeights, const string& fileSuffix )
 {
     // get the dimensions from the vectors
@@ -232,11 +233,13 @@ void writeExp3WeightsToFiles( const vector<double>& outputProbWeights, const vec
     
     string path     = "/Users/mghiggins/bgtdres";
     string fopName  = path + "/weightsOutProb_" + fileSuffix + ".txt";
-    string fowName  = path + "/weightsOutGammonWin_" + fileSuffix + ".txt";
+    string fogName  = path + "/weightsOutGammonWin_" + fileSuffix + ".txt";
+    string fobName  = path + "/weightsOutBgWin_" + fileSuffix + ".txt";
     string fmName   = path + "/weightsMiddle_" + fileSuffix + ".txt";
     
     ofstream fop( fopName.c_str() );
-    ofstream fow( fowName.c_str() );
+    ofstream fog( fogName.c_str() );
+    ofstream fob( fobName.c_str() );
     ofstream fm( fmName.c_str() );
     
     // one line at the top of the prob output weights file that specifies the number of middles.
@@ -246,14 +249,17 @@ void writeExp3WeightsToFiles( const vector<double>& outputProbWeights, const vec
     for( int j=0; j<nMiddle; j++ )
     {
         if( j<nMiddle-1 ) fop << outputProbWeights[j] << endl;
-        fow << outputGammonWinWeights[j] << endl;
+        fog << outputGammonWinWeights[j] << endl;
+        fop << outputBgWinWeights[j] << endl;
         for( int k=0; k<99; k++ )
             fm  << middleWeights[j][k] << endl;
     }
-    fow << outputGammonWinWeights[nMiddle] << endl;
+    fog << outputGammonWinWeights[nMiddle] << endl;
+    fob << outputBgWinWeights[nMiddle] << endl;
     
     fop.close();
-    fow.close();
+    fog.close();
+    fob.close();
     fm.close();
 }
 
@@ -378,6 +384,107 @@ void readExpWeightsFromFile( vector<double>& outputProbWeights, vector<double>& 
         }
 }
 
+vector<int> points;
+vector<int> steps;
+
+class worker
+{
+public:
+    worker( long i, strategytdbase& s1, strategy& s2, long n, long initSeed ) : i(i), s1(s1), s2(s2), n(n), initSeed(initSeed) {};
+    
+    void operator()()
+    {
+        game g( &s1, &s2, (int)(i+initSeed) );
+        g.setTurn( ((int) i)%2 );
+        g.stepToEnd();
+        double s = g.winnerScore();
+        if( g.winner() == 0 )
+            points[i] = s;
+        else
+            points[i] = -s;
+        steps[i] = g.nSteps;
+    }
+    
+private:
+    long i;
+    strategytdbase& s1;
+    strategy& s2;
+    long n;
+    long initSeed;
+};
+
+double playParallel( strategytdbase& s1, strategy& s2, long n, long initSeed, long displayIndex, const string& fileSuffix )
+{
+    using namespace boost;
+    
+    s1.learning = false;
+    
+    // run each game in its own thread
+    
+    if( points.size() < n ) 
+    {
+        points.resize(n);
+        steps.resize(n);
+    }
+    
+    thread_group ts;
+    for( long i=0; i<n; i++ ) ts.create_thread( worker( i, s1, s2, n, initSeed ) );
+    ts.join_all();
+    
+    double ppg=0, w0=0, q=0, avgSteps=0, ns=0, ng=0, nb=0;
+    int p, ap;
+    for( long i=0; i<n; i++ ) 
+    {
+        p  = points[i];
+        ap = abs( p );
+     
+        ppg += p;
+        q += ap;
+        if( p > 0 ) w0 += 1;
+        if( ap == 1 ) ns += 1;
+        if( ap == 2 ) ng += 1;
+        if( ap == 3 ) nb += 1;
+        avgSteps += steps[i];
+    }
+    ppg /= n;
+    w0  /= n;
+    q   /= n;
+    ns  /= n;
+    ng  /= n;
+    nb  /= n;
+    avgSteps /= n;
+    
+    cout << "Average ppg        = " << ppg << endl;
+    cout << "Prob of TD winning = " << w0 * 100 << endl;
+    cout << "Average abs ppg    = " << q << endl;
+    cout << "Frac single        = " << ns << endl;
+    cout << "Frac gammon        = " << ng << endl;
+    cout << "Frac backgammon    = " << nb << endl;
+    cout << "Average steps/game = " << avgSteps << endl;
+    cout << endl;
+    
+    // write out the results to a file
+    
+    if( fileSuffix != "nowrite" )
+    {
+        string path  = "/Users/mghiggins/bgtdres";
+        string fName = path + "/td_comparisonresults_" + fileSuffix + ".csv";
+        ofstream f;
+        if( displayIndex == 0 )
+            f.open( fName.c_str(), fstream::trunc ); // start a new file
+        else
+            f.open( fName.c_str(), fstream::app ); // append to an existing one
+        
+        // write the data
+        
+        f << displayIndex << "," << w0*100 << "," << avgSteps << "," << ppg << "," << q << "," << ns << "," << ng << "," << nb << endl;
+        
+        f.close();
+    }
+    
+    return ppg;
+}
+
 double playSerial( strategytdbase& s1, strategy& s2, long n, long initSeed, long displayIndex, const string& fileSuffix, bool returnPpg )
 {
     s1.learning = false;
@@ -391,8 +498,7 @@ double playSerial( strategytdbase& s1, strategy& s2, long n, long initSeed, long
     for( long i=0; i<n; i++ )
     {
         game g( &s1, &s2, (int)(i+initSeed) );
-        //g.setTurn( ((int) i)%2 );
-        g.setTurn(1);
+        g.setTurn( ((int) i)%2 );
         g.stepToEnd();
         s = g.winnerScore();
         if( g.winner() == 0 ) 
@@ -475,7 +581,8 @@ void sim1( int nMiddle, double alpha0, double beta0, const string& fileSuffix )
     s1.alpha = alpha0;
     s1.beta  = beta0;
     
-    playSerial( s1, s2, 200, 1, 0, "std" + fileSuffix );
+    //playSerial( s1, s2, 200, 1, 0, "std" + fileSuffix );
+    playParallel( s1, s2, 200, 1, 0, "std" + fileSuffix );
     
     for( long i=0; i<2000000; i++ )
     {
@@ -611,6 +718,7 @@ void sim2( int nMiddle, double alpha0, double beta0, const string& fileSuffix )
         s1.learning = true;
         
         game g( &s1, &s1, (int) (i+1) );
+        g.setTurn( (int) i%2 );
         try 
         {
             g.stepToEnd();
@@ -797,8 +905,9 @@ void sim4( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
     // just probability of win.
     
     strategytdexp3 s1( "benchmark", "exp_max" + srcSuffix, true );
-    //strategytdexp3 s1;
+    //strategytdexp3 s1( nMiddle );
     strategytdexp s2( "benchmark", "exp_max" + srcSuffix ); // opponent
+    //strategytdexp s2( "benchmark", "exp_maxexp_80_0.1_0.1" ); // opponent
     s2.learning = false;
     //strategyPubEval s2;
     
@@ -807,16 +916,26 @@ void sim4( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
     
     double maxPpg = -100;
     
-    playSerial( s1, s2, 200, 1, 0, "exp3_std" + fileSuffix, true );
+    playParallel( s1, s2, 500, 1, 0, "exp3_std" + fileSuffix );
+    playParallel( s1, s1, 500, 1, 0, "nowrite" );
     
     board b;
     vector<double> mids( s1.getMiddleValues( s1.getInputValues( b, true ) ) );
-    double pw = s1.getOutputProbValue( mids );
-    cout << "Prob of win = " << pw << endl;
-    cout << "Prob of gammon win = " << pw * s1.getOutputGammonWinValue( mids, b ) << endl;
-    cout << "Prob of gammon loss = " << ( 1 - pw ) * s1.getOutputGammonLossValue( mids, b ) << endl;
+    double pw  = s1.getOutputProbValue( mids );
+    double pwg = s1.getOutputGammonWinValue( mids );
+    double pwb = s1.getOutputBackgammonWinValue( mids );
+    double plg = s1.getOutputGammonLossValue( mids );
+    double plb = s1.getOutputBackgammonLossValue( mids );
+    if( !s1.useBg )
+        pwb = plb = 0;
+    cout << "Network probs       = " << pw << "   " << pwg << "   " << pwb << endl;
+    cout << "Prob of win         = " << pw << endl;
+    cout << "Prob of gammon win  = " << pw * pwg * ( 1 - pwb ) << endl;
+    cout << "Prob of gammon loss = " << ( 1 - pw ) * plg * ( 1 - plb ) << endl;
+    cout << "Prob of bg win      = " << pw * pwg * pwb << endl;
+    cout << "Prob of bg loss     = " << ( 1 - pw ) * plg * plb << endl;
     cout << endl;
-    
+
     int nw=0, ng=0, nb=0;
     
     for( long i=0; i<2000000; i++ )
@@ -875,24 +994,34 @@ void sim4( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
             mv   /= s1.nMiddle * 99;
             cout << (i+1) << "   " << fw << "   " << fg << "   " << fb << "   " << g.nSteps << " " << opv << "  " << ogv << "  " << mv << endl;
             
-            writeExp3WeightsToFiles( s1.getOutputProbWeights(), s1.getOutputGammonWinWeights(), s1.getMiddleWeights(), "exp3_std" + fileSuffix );
+            writeExp3WeightsToFiles( s1.getOutputProbWeights(), s1.getOutputGammonWinWeights(), s1.getOutputBackgammonWinWeights(), s1.getMiddleWeights(), "exp3_std" + fileSuffix );
         }
         
         if( (i+1)%1000 == 0 )
         {
-            double ppg = playSerial( s1, s2, 200, 1, i+1, "exp3_std" + fileSuffix, true );
+            double ppg = playParallel( s1, s2, 500, 1, i+1, "exp3_std" + fileSuffix );
             if( ppg > maxPpg )
             {
                 cout << "***** Rolling best ppg = " << ppg << " vs previous max " << maxPpg << "*****\n";
                 maxPpg = ppg;
-                writeExp3WeightsToFiles( s1.getOutputProbWeights(), s1.getOutputGammonWinWeights(), s1.getMiddleWeights(), "exp3_max" + fileSuffix );
+                writeExp3WeightsToFiles( s1.getOutputProbWeights(), s1.getOutputGammonWinWeights(), s1.getOutputBackgammonWinWeights(), s1.getMiddleWeights(), "exp3_max" + fileSuffix );
             }
+            playParallel( s1, s1, 500, 1, i+1, "nowrite" );
             board b;
             vector<double> mids( s1.getMiddleValues( s1.getInputValues( b, true ) ) );
-            double pw = s1.getOutputProbValue( mids );
-            cout << "Prob of win = " << pw << endl;
-            cout << "Prob of gammon win = " << pw * s1.getOutputGammonWinValue( mids, b ) << endl;
-            cout << "Prob of gammon loss = " << ( 1 - pw ) * s1.getOutputGammonLossValue( mids, b ) << endl;
+            pw  = s1.getOutputProbValue( mids );
+            pwg = s1.getOutputGammonWinValue( mids );
+            pwb = s1.getOutputBackgammonWinValue( mids );
+            plg = s1.getOutputGammonLossValue( mids );
+            plb = s1.getOutputBackgammonLossValue( mids );
+            if( !s1.useBg )
+                pwb = plb = 0;
+            cout << "Network probs       = " << pw << "   " << pwg << "   " << pwb << endl;
+            cout << "Prob of win         = " << pw << endl;
+            cout << "Prob of gammon win  = " << pw * pwg * ( 1 - pwb ) << endl;
+            cout << "Prob of gammon loss = " << ( 1 - pw ) * plg * ( 1 - plb ) << endl;
+            cout << "Prob of bg win      = " << pw * pwg * pwb << endl;
+            cout << "Prob of bg loss     = " << ( 1 - pw ) * plg * plb << endl;
             cout << endl;
         }
     }
@@ -1138,7 +1267,7 @@ void test4()
 {
     // try out playing against a human
     
-    strategytdexp2 s1( "benchmark", "exp2_maxexp_80_0.1_0.1", false );
+    strategytdexp3 s1( "", "exp3_maxexp_20_0.1_0.1", false );
     //strategytdexp s1( "benchmark", "exp_maxexp_80_0.1_0.1" );
     s1.learning = false;
     
@@ -1162,8 +1291,8 @@ void test4()
             // get the network probability of white winning & gammoning
             
             pw  = s1.getOutputProbValue( s1.getMiddleValues( s1.getInputValues( g.getBoard(), true ) ) );
-            pgw = pw * s1.getOutputGammonWinValue( s1.getMiddleValues( s1.getInputValues( g.getBoard(), true ) ), g.getBoard() );
-            pgl = ( 1 - pw ) * s1.getOutputGammonLossValue( s1.getMiddleValues( s1.getInputValues( g.getBoard(), true ) ), g.getBoard() );
+            pgw = pw * s1.getOutputGammonWinValue( s1.getMiddleValues( s1.getInputValues( g.getBoard(), true ) ) );
+            pgl = ( 1 - pw ) * s1.getOutputGammonLossValue( s1.getMiddleValues( s1.getInputValues( g.getBoard(), true ) ) );
             //pgw = pw * s1.getOutputGammonValue( s1.getMiddleValues( s1.getInputValues( g.getBoard() ) ) );
             //pgl = ( 1 - pw ) * s1.getOutputGammonLossValue( s1.getMiddleValues( s1.getInputValues( g.getBoard() ) ) );
             cout << "Probability of white win         = " << pw  << endl;
@@ -1197,4 +1326,100 @@ void test4()
     
     cout << endl;
     cout << "Average ppg = " << ppg << endl;
+}
+
+void printWeights3( const string& srcSuffix )
+{
+    strategytdexp3 s1( "", "exp3_max" + srcSuffix, false );
+    strategytdexp  s2( "benchmark", "exp_max" + srcSuffix ); // reference case
+    
+    // prob output
+    
+    int nMiddle = s1.nMiddle;
+    int i, j;
+    cout.precision( 3 );
+    vector<double> prob1( s1.getOutputProbWeights() );
+    cout.setf( ios::left );
+    cout << "Prob1: ";
+    for( i=0; i<nMiddle-1; i++ )
+    {
+        cout.setf( ios::right );
+        cout.setf( ios::fixed );
+        cout.width( 9 );
+        cout << prob1.at(i);
+    }
+    cout << endl;
+    vector<double> prob2( s2.getOutputProbWeights() );
+    cout.setf( ios::left );
+    cout << "Prob2: ";
+    for( i=0; i<nMiddle-1; i++ )
+    {
+        cout.setf( ios::right );
+        cout.setf( ios::fixed );
+        cout.width( 9 );
+        cout << prob2.at(i);
+    }
+    cout << endl << endl;
+    
+    // gammon output
+    
+    vector<double> gam1( s1.getOutputGammonWinWeights() );
+    cout.setf( ios::left );
+    cout << "Gam1:  ";
+    for( i=0; i<nMiddle+1; i++ )
+    {
+        cout.setf( ios::right );
+        cout.setf( ios::fixed );
+        cout.width( 9 );
+        cout << gam1.at(i);
+    }
+    cout << endl;
+    vector<double> gam2( s2.getOutputGammonWeights() );
+    cout.setf( ios::left );
+    cout << "Gam2:  ";
+    for( i=0; i<nMiddle+1; i++ )
+    {
+        cout.setf( ios::right );
+        cout.setf( ios::fixed );
+        cout.width( 9 );
+        cout << gam2.at(i);
+    }
+    cout << endl << endl;
+    
+    // middle weights
+    
+    vector< vector<double> > mid1( s1.getMiddleWeights() );
+    vector< vector<double> > mid2( s2.getMiddleWeights() );
+    
+    for( i=0; i<nMiddle; i++ )
+    {
+        cout.setf( ios::left );
+        cout << "Mid1";
+        cout.setf( ios::right );
+        cout.width( 4 );
+        cout << i;
+        for( j=0; j<99; j++ )
+        {
+            cout.setf( ios::right );
+            cout.setf( ios::fixed );
+            cout.width( 9 );
+            cout << mid1.at(i).at(j);
+        }
+        cout << endl;
+        cout << "Mid2";
+        cout.setf( ios::right );
+        cout.width( 4 );
+        cout << i;
+        for( j=0; j<99; j++ )
+        {
+            cout.setf( ios::right );
+            cout.setf( ios::fixed );
+            cout.width( 9 );
+            if( j<98 )
+                cout << mid2.at(i).at(j);
+            else
+                cout << 0.;
+        }
+        cout << endl << endl;
+    }
 }

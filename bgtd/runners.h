@@ -20,7 +20,7 @@ void writeExpWeightsToFiles( const vector<double>& outputProbWeights, const vect
                              const string& fileSuffix );
 void writeExp2WeightsToFiles( const vector<double>& outputProbWeights, const vector<double>& outputGammonWinWeights, const vector<double>& outputGammonLossWeights, 
                               const vector< vector<double> >& middleWeights, const string& fileSuffix );
-void writeExp3WeightsToFiles( const vector<double>& outputProbWeights, const vector<double>& outputGammonWinWeights,
+void writeExp3WeightsToFiles( const vector<double>& outputProbWeights, const vector<double>& outputGammonWinWeights, const vector<double>& outputBgWinWeights,
                               const vector< vector<double> >& middleWeights, const string& fileSuffix );
 void writeExp4WeightsToFiles( const vector<double>& outputProbWeights, const vector<double>& outputGammonWinWeights, const vector<double>& outputGammonLossWeights,
                               const vector< vector<double> >& middleWeights, const string& fileSuffix );
@@ -29,6 +29,7 @@ void readExpWeightsFromFile( vector<double>& outputProbWeights, vector<double>& 
                              vector<double>& outputProbTraces, vector<double>& outputGammonTraces, 
                              vector< vector<double> >& middleProbTraces, vector< vector<double> >& middleGammonTraces, 
                              const string& fileSuffix );
+double playParallel( strategytdbase& s1, strategy& s2, long n, long initSeed, long displayIndex, const string& fileSuffix );
 double playSerial( strategytdbase& s1, strategy& s2, long n, long initSeed, long displayIndex, const string& fileSuffix, bool returnPpg=false );
 void sim1( int nMiddle, double alpha0, double beta0, const string& fileSuffix );
 void sim2( int nMiddle, double alpha0, double beta0, const string& fileSuffix );
@@ -39,5 +40,7 @@ void test1();
 void test2();
 void test3();
 void test4();
+
+void printWeights3( const string& srcSuffix );
 
 #endif
