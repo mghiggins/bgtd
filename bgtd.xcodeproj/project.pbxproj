@@ -19,6 +19,8 @@
 		C05A6D14140A406F00DD8608 /* strategytdexp3.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C05A6D13140A406F00DD8608 /* strategytdexp3.cpp */; };
 		C07BA3931412AF600084D7F6 /* strategytdexp4.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C07BA3921412AF600084D7F6 /* strategytdexp4.cpp */; };
 		C0803D1B13E659E800ED598C /* strategytdexp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C0803D1A13E659E800ED598C /* strategytdexp.cpp */; };
+		C08926FE144F5EC100D8F606 /* bearofffns.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C08926FD144F5EC100D8F606 /* bearofffns.cpp */; };
+		C08927011450AF7700D8F606 /* strategytdmult.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C08927001450AF7700D8F606 /* strategytdmult.cpp */; };
 		C08B1A79140651590011778F /* strategytdexp2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C08B1A78140651590011778F /* strategytdexp2.cpp */; };
 		C0E5DB5713D9BF8B009FC15A /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C0E5DB5613D9BF8B009FC15A /* main.cpp */; };
 		C0E5DB5913D9BF8B009FC15A /* bgtd.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = C0E5DB5813D9BF8B009FC15A /* bgtd.1 */; };
@@ -64,6 +66,10 @@
 		C07BA3921412AF600084D7F6 /* strategytdexp4.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strategytdexp4.cpp; sourceTree = "<group>"; };
 		C0803D1813E6520200ED598C /* strategytdexp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = strategytdexp.h; sourceTree = "<group>"; };
 		C0803D1A13E659E800ED598C /* strategytdexp.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strategytdexp.cpp; sourceTree = "<group>"; };
+		C08926FB144F5D4D00D8F606 /* bearofffns.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bearofffns.h; sourceTree = "<group>"; };
+		C08926FD144F5EC100D8F606 /* bearofffns.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bearofffns.cpp; sourceTree = "<group>"; };
+		C08926FF1450AF5900D8F606 /* strategytdmult.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = strategytdmult.h; sourceTree = "<group>"; };
+		C08927001450AF7700D8F606 /* strategytdmult.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strategytdmult.cpp; sourceTree = "<group>"; };
 		C08B1A7614064F470011778F /* strategytdexp2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = strategytdexp2.h; sourceTree = "<group>"; };
 		C08B1A78140651590011778F /* strategytdexp2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strategytdexp2.cpp; sourceTree = "<group>"; };
 		C0E5DB5213D9BF8B009FC15A /* bgtd */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = bgtd; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -74,6 +80,7 @@
 		C0E87BD113ECD2770006CC15 /* strategyhuman.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strategyhuman.cpp; sourceTree = "<group>"; };
 		C0F201DC13E4BB070050D98F /* runners.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = runners.h; sourceTree = "<group>"; };
 		C0F201DE13E4BB100050D98F /* runners.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = runners.cpp; sourceTree = "<group>"; };
+		C0FA32DF142F78D60012FED9 /* tdexp3 notes.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "tdexp3 notes.txt"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -106,6 +113,7 @@
 		C0E5DB5513D9BF8B009FC15A /* bgtd */ = {
 			isa = PBXGroup;
 			children = (
+				C0FA32DF142F78D60012FED9 /* tdexp3 notes.txt */,
 				C05308A7141D96E70069D85F /* mersenne.cpp */,
 				C05308A8141D96E70069D85F /* randomc.h */,
 				C0E5DB5613D9BF8B009FC15A /* main.cpp */,
@@ -131,6 +139,10 @@
 				C08B1A78140651590011778F /* strategytdexp2.cpp */,
 				C05A6D11140A405600DD8608 /* strategytdexp3.h */,
 				C05A6D13140A406F00DD8608 /* strategytdexp3.cpp */,
+				C08926FF1450AF5900D8F606 /* strategytdmult.h */,
+				C08927001450AF7700D8F606 /* strategytdmult.cpp */,
+				C08926FB144F5D4D00D8F606 /* bearofffns.h */,
+				C08926FD144F5EC100D8F606 /* bearofffns.cpp */,
 				C07BA3911412AE2C0084D7F6 /* strategytdexp4.h */,
 				C07BA3921412AF600084D7F6 /* strategytdexp4.cpp */,
 				C0202DE213E3732800F00B48 /* strategypubeval.h */,
@@ -206,6 +218,8 @@
 				C05A6D14140A406F00DD8608 /* strategytdexp3.cpp in Sources */,
 				C07BA3931412AF600084D7F6 /* strategytdexp4.cpp in Sources */,
 				C05308A9141D96E70069D85F /* mersenne.cpp in Sources */,
+				C08926FE144F5EC100D8F606 /* bearofffns.cpp in Sources */,
+				C08927011450AF7700D8F606 /* strategytdmult.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -232,9 +246,13 @@
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = /opt/local/include;
+				LIBRARY_SEARCH_PATHS = /opt/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
 				ONLY_ACTIVE_ARCH = YES;
+				OTHER_LDFLAGS = "-lboost_thread-mt";
 				SDKROOT = macosx;
+				USER_HEADER_SEARCH_PATHS = "";
 			};
 			name = Debug;
 		};
@@ -252,8 +270,12 @@
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = /opt/local/include;
+				LIBRARY_SEARCH_PATHS = /opt/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				OTHER_LDFLAGS = "-lboost_thread-mt";
 				SDKROOT = macosx;
+				USER_HEADER_SEARCH_PATHS = "";
 			};
 			name = Release;
 		};
@@ -261,6 +283,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_HEADER_SEARCH_PATHS = "";
 			};
 			name = Debug;
 		};
@@ -268,6 +291,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_HEADER_SEARCH_PATHS = "";
 			};
 			name = Release;
 		};
