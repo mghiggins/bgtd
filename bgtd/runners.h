@@ -36,11 +36,17 @@ void sim2( int nMiddle, double alpha0, double beta0, const string& fileSuffix );
 void sim3( int nMiddle, double alpha0, double beta0, const string& fileSuffix, const string& srcSuffix );
 void sim4( int nMiddle, double alpha0, double beta0, const string& fileSuffix, const string& srcSuffix );
 void sim5( int nMiddle, double alpha0, double beta0, const string& fileSuffix, const string& srcSuffix );
+void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, const string& srcSuffix );
+void sim7( int nMiddle, double alpha0, double beta0 );
 void test1();
 void test2();
 void test3();
 void test4();
 
 void printWeights3( const string& srcSuffix );
+
+void playBearoff();
+void playBearoffOneSided();
+void compareBearoff();
 
 #endif

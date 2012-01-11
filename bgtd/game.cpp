@@ -91,9 +91,11 @@ void game::step()
     else
         strat = strat1;
     
+    // let the strategy choose the preferred move based on its internal evaluation function
+    
     brd = strat->preferredBoard( oldBoard, moves );
     
-    // if the strategy wants to update itself, do it
+    // if the strategy wants to update itself, do it. This eg trains neural networks.
     
     if( strat->needsUpdate() )
         strat->update( oldBoard, brd );

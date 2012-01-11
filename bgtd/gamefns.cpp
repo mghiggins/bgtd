@@ -222,18 +222,5 @@ set<board> possibleMoves( const board& brd, int die1, int die2 )
 
 bool isRace( const board& brd )
 {
-    // find the index for the further of the player's pieces
-    
-    int i;
-    for( i=23; i>=0; i-- )
-        if( brd.checker(i) > 0 ) break;
-    
-    // then check if there are any opponent pieces before that one
-    
-    for( int j=0; j<i; j++ )
-        if( brd.otherChecker(j) > 0 ) return false;
-    
-    // if not, it's a race
-    
-    return true;
+    return brd.isRace();
 }

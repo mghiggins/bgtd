@@ -36,6 +36,8 @@ public:
     // game's step method ends up calling preferredBoard, which by default
     // returns the board with the highest value. However, you can also have an
     // interactive strategy where a user enters their choice for the move directly.
+    // NOTE: boardValue is meant to return the value of the board *after* the player
+    // with perspective has moved, so when their opponent has the dice.
     
     virtual double boardValue( const board& brd ) const = 0;
     virtual board preferredBoard( const board& oldBoard, const set<board>& possibleMoves ) const;

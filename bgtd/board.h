@@ -58,6 +58,16 @@ public:
     int checker( int pos ) const;
     int otherChecker( int pos ) const;
     
+    // noBackgammon is true if there's no possibility of a backgammon; false otherwise.
+    // otherNoBackgammon is the same for the other player.
+    
+    bool noBackgammon() const;
+    bool otherNoBackgammon() const;
+    
+    // isRace is true if the board's in a race position
+    
+    bool isRace() const;
+    
     void setChecker( int pos, int num );
     void setOtherChecker( int pos, int num );
     

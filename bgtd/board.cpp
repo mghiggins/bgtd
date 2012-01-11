@@ -227,6 +227,66 @@ int board::otherChecker( int pos ) const
         return checkers0.at(23-pos);
 }
 
+bool board::noBackgammon() const
+{
+    if( bornIn() > 0 ) return true; // if the player has borne in any checkers, impossible to be backgammoned
+    if( hit() > 0 ) return false;   // if the player has pieces hit, it's possible to be backgammoned
+    
+    // if it's not a race, still possible to get hit & sent back
+    if( not isRace() ) return false;
+    
+    // if the player has any checkers in the opponent's home box, it's possible to be backgammoned
+    for( int i=18; i<24; i++ )
+        if( checker(i) > 0 )
+            return false;
+    
+    // otherwise it's no longer possible to be backgammoned
+    return true;
+}
+
+bool board::otherNoBackgammon() const
+{
+    if( otherBornIn() > 0 ) return true; // if the player has borne in any checkers, impossible to be backgammoned
+    if( otherHit() > 0 ) return false;   // if the player has pieces hit, it's possible to be backgammoned
+    
+    // if it's not a race, still possible to get hit & sent back
+    if( not isRace() ) return false;
+    
+    // if the player has any checkers in the opponent's home board, it's possible to be backgammoned
+    for( int i=0; i<6; i++ )
+        if( otherChecker(i) > 0 )
+            return false;
+    
+    // otherwise it's no longer possible to be backgammoned
+    return true;
+}
+
+bool board::isRace() const
+{
+    // if the game is over, it counts as a race
+    
+    if( bornIn() == 15 or otherBornIn() == 15 ) return true;
+    
+    // if either player is hit, it's not a race
+    
+    if( hit() > 0 or otherHit() > 0 ) return false;
+    
+    // find the index for the furthest of the player's pieces
+    
+    int i;
+    for( i=23; i>=0; i-- )
+        if( checker(i) > 0 ) break;
+    
+    // then check if there are any opponent pieces before that one
+    
+    for( int j=0; j<i; j++ )
+        if( otherChecker(j) > 0 ) return false;
+    
+    // if not, it's a race
+    
+    return true;
+}
+
 void board::setChecker( int pos, int num )
 {
     if( pos < 0 || pos > 23 )

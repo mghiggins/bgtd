@@ -11,15 +11,21 @@
 #include <fstream>
 #include <cmath>
 #include <boost/thread.hpp>
+#include <ncurses.h>
+#include "bearofffns.h"
 #include "runners.h"
 #include "strategytd.h"
 #include "strategytdexp.h"
 #include "strategytdexp2.h"
 #include "strategytdexp3.h"
 #include "strategytdexp4.h"
+#include "strategytdmult.h"
+#include "strategytdorig.h"
+#include "strategytdorigsym.h"
 #include "strategypubeval.h"
 #include "strategyhuman.h"
 #include "game.h"
+#include "gamefns.h"
 
 void writeWeightsToFiles( const vector<double>& outputWeights, const vector< vector<double> >& middleWeights, const vector<double>& outputTraces, const vector< vector<double> >& middleTraces, const string& fileSuffix )
 {
@@ -455,7 +461,7 @@ double playParallel( strategytdbase& s1, strategy& s2, long n, long initSeed, lo
     avgSteps /= n;
     
     cout << "Average ppg        = " << ppg << endl;
-    cout << "Prob of TD winning = " << w0 * 100 << endl;
+    cout << "Prob of P1 winning = " << w0 * 100 << endl;
     cout << "Average abs ppg    = " << q << endl;
     cout << "Frac single        = " << ns << endl;
     cout << "Frac gammon        = " << ng << endl;
@@ -528,7 +534,7 @@ double playSerial( strategytdbase& s1, strategy& s2, long n, long initSeed, long
     nb/=n;
     
     cout << "Average ppg        = " << p << endl;
-    cout << "Prob of TD winning = " << w0 * 100 << endl;
+    cout << "Prob of P1 winning = " << w0 * 100 << endl;
     cout << "Average abs ppg    = " << q << endl;
     cout << "Frac single        = " << ns << endl;
     cout << "Frac gammon        = " << ng << endl;
@@ -1147,6 +1153,461 @@ void sim5( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
     }
 }
 
+board referenceBoard( int index );
+
+board referenceBoard( int index )
+{
+    if( index == 0 )
+        return board(); // starting position
+    else if( index == 1 )
+    {
+        board bw; // board where the player will most likely win but no gammon
+        bw.setBornIn( 10 );
+        bw.setOtherBornIn( 7 );
+        for( int pos=0; pos<24; pos++ )
+        {
+            bw.setChecker( pos, 0 );
+            bw.setOtherChecker( pos, 0 );
+        }
+        bw.setChecker( 0, 2 );
+        bw.setChecker( 4, 3 );
+        bw.setOtherChecker( 23, 4 );
+        bw.setOtherChecker( 22, 3 );
+        bw.setOtherChecker( 18, 1 );
+        return bw;
+    }
+    else if( index == 2 )
+    {
+        board bl; // board where the player will most likely lose but no gammon
+        bl.setBornIn( 0 );
+        bl.setOtherBornIn( 11 );
+        for( int pos=0; pos<24; pos++ )
+        {
+            bl.setChecker( pos, 0 );
+            bl.setOtherChecker( pos, 0 );
+        }
+        bl.setChecker( 0, 2 );
+        bl.setChecker( 3, 3 );
+        bl.setChecker( 4, 3 );
+        bl.setChecker( 5, 4 );
+        bl.setChecker( 7, 1 );
+        bl.setChecker( 8, 2 );
+        bl.setOtherChecker( 23, 2 );
+        bl.setOtherChecker( 21, 2 );
+        return bl;
+    }
+    else if( index == 3 )
+    {
+        board bg; // board where player will win & gammon, probably, but not backgammon
+        bg.setBornIn( 10 );
+        for( int pos=0; pos<24; pos++ )
+        {
+            bg.setChecker( pos, 0 );
+            bg.setOtherChecker( pos, 0 );
+        }
+        bg.setChecker( 0, 2 );
+        bg.setChecker( 5, 3 );
+        bg.setOtherChecker( 23, 6 );
+        bg.setOtherChecker( 20, 5 );
+        bg.setOtherChecker( 13, 2 );
+        bg.setOtherChecker( 12, 2 );
+        return bg;
+    }
+    else if( index == 4 )
+    {
+        board bb; // board where player will win & probably backgammon
+        bb.setBornIn( 13 );
+        for( int pos=0; pos<24; pos++ )
+        {
+            bb.setChecker( pos, 0 );
+            bb.setOtherChecker( pos, 0 );
+        }
+        bb.setChecker( 3, 2 );
+        bb.setOtherChecker( 23, 6 );
+        bb.setOtherChecker( 20, 5 );
+        bb.setOtherChecker( 13, 2 );
+        bb.setOtherChecker( 4, 2 );
+        return bb;
+    }
+    else if( index == 5 )
+    {
+        board bgl; // board where player will probably lose a gammon, but not backgammon
+        bgl.setOtherBornIn( 12 );
+        for( int pos=0; pos<24; pos++ )
+        {
+            bgl.setChecker( pos, 0 );
+            bgl.setOtherChecker( pos, 0 );
+        }
+        bgl.setOtherChecker( 23, 2 );
+        bgl.setOtherChecker( 22, 1 );
+        bgl.setChecker( 1, 6 );
+        bgl.setChecker( 4, 5 );
+        bgl.setChecker( 13, 2 );
+        bgl.setChecker( 12, 2 );
+        return bgl;
+    }
+    else if( index == 6 )
+    {
+        board bbl; // board where player will probably lose a backgammon
+        bbl.setOtherBornIn( 13 );
+        for( int pos=0; pos<24; pos++ )
+        {
+            bbl.setChecker( pos, 0 );
+            bbl.setOtherChecker( pos, 0 );
+        }
+        bbl.setOtherChecker( 21, 2 );
+        bbl.setChecker( 1, 6 );
+        bbl.setChecker( 4, 5 );
+        bbl.setChecker( 13, 2 );
+        bbl.setChecker( 23, 2 );
+        return bbl;
+    }
+    
+    throw "invalid index";
+}
+
+void dispBoard( int ind, bool flipped, const strategytdmult& s, const board& b );
+void dispBoards( const strategytdmult& s );
+
+void dispBoard( int ind, bool flipped, const strategytdmult& s, const board& b )
+{
+    string eval( s.evaluator( b ) );
+    string netName;
+    if( eval == "bearoff" )
+        netName = "race";
+    else
+        netName = eval;
+    
+    vector<double> mids = s.getMiddleValues( s.getInputValues( b ), netName );
+    double pw  = s.getOutputProbValue( mids, netName );
+    double pg  = s.getOutputGammonValue( mids, netName );
+    double pgl = s.getOutputGammonLossValue( mids, netName );
+    double pb  = s.getOutputBackgammonValue( mids, netName );
+    double pbl = s.getOutputBackgammonLossValue( mids, netName );
+    
+    cout << "Reference board " << ind;
+    if( flipped ) 
+        cout << "*";
+    else
+        cout << " ";
+    cout << ": " << pw << "; ( " << pg << ", " << pgl << " ); ( " << pb << ", " << pbl << " )";
+    if( eval == "bearoff" )
+    {
+        double bpw = s.bearoffProbabilityWin( b );
+        double bpg = s.bearoffProbabilityGammon( b );
+        double bpgl = s.bearoffProbabilityGammonLoss( b );
+        cout << " --> bearoff (pwin,pgamwin,pgamloss) = ( " << bpw << ", " << bpg << ", " << bpgl << " )";
+    }
+    cout << endl;
+}
+
+void dispBoards( const strategytdmult& s )
+{
+    for( int ind=0; ind<7; ind++ ) 
+    {
+        board b( referenceBoard(ind) );
+        board fb( b );
+        fb.setPerspective( ( b.perspective() + 1 ) % 2 );
+        dispBoard( ind, false, s, b );
+        dispBoard( ind, true, s, fb );
+    }
+    cout << endl;
+}
+
+void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, const string& srcSuffix )
+{
+    // print out the reference boards
+    
+    for( int ind=0; ind<7; ind++ )
+    {
+        cout << "Reference board " << ind << endl;
+        board b( referenceBoard( ind ) );
+        b.print();
+        cout << endl;
+    }
+    
+    // try out the TD strategy with multiple networks
+    
+    //strategytdmult s1( "benchmark", "mult_stdmult_80_0.1_0.1"  );
+    strategytdmult s1( nMiddle );
+    strategytdexp2 s2( "benchmark", "exp2_max" + srcSuffix, false ); // opponent
+    s2.learning = false;
+    //strategyPubEval s2;
+    
+    s1.alpha = alpha0;
+    s1.beta  = beta0;
+    
+    /*
+    board rb( referenceBoard( 2 ) );
+    rb.print();
+    set<board> moves( possibleMoves( rb, 5, 5 ) );
+    for( set<board>::iterator it=moves.begin(); it!=moves.end(); it++ )
+    {
+        cout << "Possible board:\n";
+        it->print();
+        board flippedBoard( (*it) );
+        flippedBoard.setPerspective( 1 - it->perspective() );
+        cout << "Calculated equity = " << -s1.bearoffValue( flippedBoard ) << endl;
+        cout << "Prob of loss      = " << s1.bearoffProbabilityWin( flippedBoard ) << endl;
+        cout << "Prob of gammon    = " << s1.bearoffProbabilityGammon( flippedBoard ) << endl;
+        cout << endl;
+    }
+    rb = s1.preferredBoard( rb, moves );
+    cout << "Preferred board:\n";
+    rb.print();
+    
+    return;
+    */
+    
+    double maxPpg = -100;
+    long maxInd=-1;
+    
+    playParallel( s1, s2, 1000, 1, 0, "mult_std" + fileSuffix );
+    dispBoards( s1 );
+    
+    int nw=0, ng=0, nb=0, ns=0;
+    
+    for( long i=0; i<20000000; i++ )
+    {
+        if( i==200000 or i==1000000 or i==10000000 )
+        {
+            s1.alpha *= 1/sqrt(10);
+            s1.beta  *= 1/sqrt(10);
+            cout << "\n\n***** Dropped alpha and beta by a factor of sqrt(10)*****\n";
+            cout << "alpha = " << s1.alpha << endl;
+            cout << "beta  = " << s1.beta  << endl;
+            cout << endl;
+        }
+        s1.learning = true;
+        
+        game g( &s1, &s1, (int) (i+1) );
+        g.setTurn( (int) i%2 );
+        try 
+        {
+            g.stepToEnd();
+        }
+        catch( const string& errMsg )
+        {
+            cout << "ERROR :" << errMsg << endl;
+            return;
+        }
+        catch( exception& e )
+        {
+            cout << "Exception: " << e.what() << endl;
+            return;
+        }
+        catch( ... )
+        {
+            cout << "Some other kind of error...\n";
+            return;
+        }
+        
+        if( g.winner() == 0 ) nw += 1;
+        if( g.winnerScore() == 2 ) ng += 1;
+        if( g.winnerScore() == 3 ) nb += 1;
+        ns += g.nSteps;
+        
+        if( (i+1)%100 == 0 ) 
+        {
+            double fw = nw/100.;
+            double fg = ng/100.;
+            double fb = nb/100.;
+            double as = ns/100.;
+            nw = 0;
+            ng = 0;
+            nb = 0;
+            ns = 0;
+            
+            cout << (i+1) << "   " << fw << "   " << fg << "   " << fb << "   " << as << endl;
+            
+            s1.writeWeights( "mult_std" + fileSuffix );
+        }
+        
+        if( (i+1)%1000 == 0 )
+        {
+            cout << endl;
+            double ppg = playParallel( s1, s2, 1000, 1, i+1, "mult_std" + fileSuffix );
+            if( ppg > maxPpg )
+            {
+                cout << "***** Rolling best ppg = " << ppg << " vs previous max " << maxPpg << "*****\n";
+                maxPpg = ppg;
+                maxInd = i;
+                s1.writeWeights( "mult_max" + fileSuffix );
+            }
+            else
+                cout << "Prev best " << maxPpg << " at index " << maxInd+1 << endl;
+            cout << endl;
+            
+            dispBoards( s1 );
+        }
+    }
+}
+
+void sim7( int nMiddle, double alpha0, double beta0 )
+{
+    // compare simple networks: one that includes the symmetry on perspective flipping, and one 
+    // that doesn't.
+    
+    strategytdorig s1( nMiddle );
+    strategytdorigsym s1s( nMiddle );
+    //strategytdexp2 s2( "benchmark", "exp2_maxexp_80_0.1_0.1", false ); // opponent
+    //s2.learning = false;
+    strategyPubEval s2;
+    
+    s1.alpha = alpha0;
+    s1.beta  = beta0;
+    
+    // define some reference boards for checking sensibleness of network probability predictions
+    
+    board bs; // starting board
+    cout << "Starting board:\n";
+    bs.print();
+    cout << endl;
+    board bw; // board where the player will most likely win
+    bw.setBornIn( 10 );
+    bw.setOtherBornIn( 0 );
+    for( int pos=0; pos<24; pos++ )
+    {
+        bw.setChecker( pos, 0 );
+        bw.setOtherChecker( pos, 0 );
+    }
+    bw.setChecker( 0, 2 );
+    bw.setChecker( 4, 3 );
+    bw.setOtherChecker( 23, 7 );
+    bw.setOtherChecker( 22, 4 );
+    bw.setOtherChecker( 19, 2 );
+    bw.setOtherChecker( 17, 2 );
+    cout << "Winning board:\n";
+    bw.print();
+    cout << endl;
+    board bl; // board where the player will most likely lose
+    bl.setBornIn( 2 );
+    bl.setOtherBornIn( 9 );
+    for( int pos=0; pos<24; pos++ )
+    {
+        bl.setChecker( pos, 0 );
+        bl.setOtherChecker( pos, 0 );
+    }
+    bl.setChecker( 0, 2 );
+    bl.setChecker( 3, 3 );
+    bl.setChecker( 4, 6 );
+    bl.setChecker( 5, 2 );
+    bl.setOtherChecker( 23, 4 );
+    bl.setOtherChecker( 22, 2 );
+    cout << "Losing board:\n";
+    bl.print();
+    cout << endl;
+    
+    // make sure that the symmetry relationship holds for that strategy
+    
+    double prob1 = s1s.getOutput( s1s.getMiddleValues( s1s.getInputValues( bw, true ) ) );
+    cout << "sym board prob for winning board = " << prob1 << endl;
+    board bwf( bw );
+    bwf.setPerspective( 1 );
+    double prob2 = s1s.getOutput( s1s.getMiddleValues( s1s.getInputValues( bwf, false ) ) );
+    cout << "sym board value for flipped winning board = " << prob2 << endl;
+    cout << "Sum (should be 1) = " << prob1 + prob2 << endl;
+    
+    // do the initial runs using the random-weight networks as a benchmark starting point
+    
+    double maxPpg = -100, maxPpgs = -100;
+    
+    cout << "Normal:\n";
+    playParallel( s1, s2, 1000, 1, 0, "normal" );
+    cout << "Prob of win from initial board = " << s1.getOutput( s1.getMiddleValues( s1.getInputValues( bs ) ) ) << endl;
+    cout << "Prob of win from winning board = " << s1.getOutput( s1.getMiddleValues( s1.getInputValues( bw ) ) ) << endl;
+    cout << "Prob of win from losing board  = " << s1.getOutput( s1.getMiddleValues( s1.getInputValues( bl ) ) ) << endl;
+    
+    cout << "\nSymmetric:\n";
+    playParallel( s1s, s2, 1000, 1, 0, "sym" );
+    cout << "Prob of win from initial board = " << s1s.getOutput( s1s.getMiddleValues( s1s.getInputValues( bs, true ) ) ) << endl;
+    cout << "Prob of win from winning board = " << s1s.getOutput( s1s.getMiddleValues( s1s.getInputValues( bw, true ) ) ) << endl;
+    cout << "Prob of win from losing board  = " << s1s.getOutput( s1s.getMiddleValues( s1s.getInputValues( bl, true ) ) ) << endl;
+    
+    cout << "\nNormal vs Symmetric:\n";
+    s1s.learning = false;
+    playParallel( s1, s1s, 1000, 1, 0, "compete" );
+    cout << endl;
+    
+    // do the training
+    
+    int nw=0, ng=0, nb=0, ns=0;
+    int nws=0, ngs=0, nbs=0, nss=0;
+    
+    for( long i=0; i<2000000; i++ )
+    {
+        s1.learning  = true;
+        s1s.learning = true;
+        
+        game g( &s1, &s1, (int) (i+1) );
+        g.stepToEnd();
+        if( g.winner() == 0 ) nw += 1;
+        if( g.winnerScore() == 2 ) ng += 1;
+        if( g.winnerScore() == 3 ) nb += 1;
+        ns += g.nSteps;
+
+        game gs( &s1s, &s1s, (int) (i+1) );
+        gs.stepToEnd();
+        if( gs.winner() == 0 ) nws += 1;
+        if( gs.winnerScore() == 2 ) ngs += 1;
+        if( gs.winnerScore() == 3 ) nbs += 1;
+        nss += gs.nSteps;
+
+        if( (i+1)%100 == 0 ) 
+        {
+            double fw = nw/100.;
+            double fg = ng/100.;
+            double fb = nb/100.;
+            double as = ns/100.;
+            nw = 0;
+            ng = 0;
+            nb = 0;
+            ns = 0;
+            double fws = nws/100.;
+            double fgs = ngs/100.;
+            double fbs = nbs/100.;
+            double ass = nss/100.;
+            nws = 0;
+            ngs = 0;
+            nbs = 0;
+            nss = 0;
+            
+            cout << (i+1) << "   Normal   " << fw  << "   " << fg  << "   " << fb  << "   " << as  << endl;
+            cout << (i+1) << "   Symmet   " << fws << "   " << fgs << "   " << fbs << "   " << ass << endl;
+        }
+        
+        if( (i+1)%1000 == 0 )
+        {
+            cout << "Normal\n";
+            double ppg = playParallel( s1, s2, 1000, 1, i+1, "normal" );
+            if( ppg > maxPpg )
+            {
+                cout << "***** Normal: Rolling best ppg = " << ppg << " vs previous max " << maxPpg << "*****\n";
+                maxPpg = ppg;
+            }
+            cout << "Prob of win from initial board = " << s1.getOutput( s1.getMiddleValues( s1.getInputValues( bs ) ) ) << endl;
+            cout << "Prob of win from winning board = " << s1.getOutput( s1.getMiddleValues( s1.getInputValues( bw ) ) ) << endl;
+            cout << "Prob of win from losing board  = " << s1.getOutput( s1.getMiddleValues( s1.getInputValues( bl ) ) ) << endl;
+            
+            cout << "\nSymmetric:\n";
+            double ppgs = playParallel( s1s, s2, 1000, 1, i+1, "sym" );
+            if( ppgs > maxPpgs )
+            {
+                cout << "***** Symmetric: Rolling best ppg = " << ppgs << " vs previous max " << maxPpgs << "*****\n";
+                maxPpgs = ppgs;
+            }
+            cout << "Prob of win from initial board = " << s1s.getOutput( s1s.getMiddleValues( s1s.getInputValues( bs, true ) ) ) << endl;
+            cout << "Prob of win from winning board = " << s1s.getOutput( s1s.getMiddleValues( s1s.getInputValues( bw, true ) ) ) << endl;
+            cout << "Prob of win from losing board  = " << s1s.getOutput( s1s.getMiddleValues( s1s.getInputValues( bl, true ) ) ) << endl;
+            
+            cout << "\nNormal vs Symmetric:\n";
+            s1s.learning = false;
+            playParallel( s1, s1s, 1000, 1, i+1, "compete" );
+            cout << endl;
+        }
+    }
+}
+
 void test1()
 {
     // load the weights and traces from the saved files
@@ -1267,8 +1728,9 @@ void test4()
 {
     // try out playing against a human
     
-    strategytdexp3 s1( "", "exp3_maxexp_20_0.1_0.1", false );
+    //strategytdexp3 s1( "", "exp3_maxexp_20_0.1_0.1", false );
     //strategytdexp s1( "benchmark", "exp_maxexp_80_0.1_0.1" );
+    strategytdmult s1( "", "mult_maxmult_80_0.1_0.1" );
     s1.learning = false;
     
     //strategyPubEval s1;
@@ -1277,12 +1739,12 @@ void test4()
     vector<int> scores;
     int n=10;
     scores.resize(n,0);
-    double pw, pgw, pgl;
+    double pw, pgw, pgl, pbw, pbl;
     
     for( int i=0; i<n; i++ )
     {
         cout << "NEW GAME - game # " << i+1 << endl;
-        game g(&s2,&s1,i+925);
+        game g(&s2,&s1,i+5915);
         g.verbose = true;
         g.setTurn(i%2);
         g.getBoard().print();
@@ -1290,14 +1752,38 @@ void test4()
         {
             // get the network probability of white winning & gammoning
             
-            pw  = s1.getOutputProbValue( s1.getMiddleValues( s1.getInputValues( g.getBoard(), true ) ) );
-            pgw = pw * s1.getOutputGammonWinValue( s1.getMiddleValues( s1.getInputValues( g.getBoard(), true ) ) );
-            pgl = ( 1 - pw ) * s1.getOutputGammonLossValue( s1.getMiddleValues( s1.getInputValues( g.getBoard(), true ) ) );
-            //pgw = pw * s1.getOutputGammonValue( s1.getMiddleValues( s1.getInputValues( g.getBoard() ) ) );
-            //pgl = ( 1 - pw ) * s1.getOutputGammonLossValue( s1.getMiddleValues( s1.getInputValues( g.getBoard() ) ) );
+            string eval( s1.evaluator( g.getBoard() ) );
+            cout << "Evaluator = " << eval << endl;
+            if( eval == "done" )
+            {
+                
+            }
+            else if( eval == "bearoff" )
+            {
+                double ppg = s1.bearoffValue( g.getBoard() );
+                pw  = ( 1 + ppg ) / 2.;
+                pgw = 0;
+                pgl = 0;
+                pbw = 0;
+                pbl = 0;
+            }
+            else
+            {
+                vector<double> middles = s1.getMiddleValues( s1.getInputValues( g.getBoard() ), eval );
+                
+                pw  = s1.getOutputProbValue( middles, eval );
+                pgw = s1.getOutputGammonValue( middles, eval );
+                pgl = s1.getOutputGammonLossValue( middles, eval );
+                pbw = s1.getOutputBackgammonValue( middles, eval );
+                pbl = s1.getOutputBackgammonLossValue( middles, eval );
+            }
             cout << "Probability of white win         = " << pw  << endl;
             cout << "Probability of white gammon win  = " << pgw << endl;
             cout << "Probability of white gammon loss = " << pgl << endl;
+            cout << "Probability of white bg win      = " << pbw << endl;
+            cout << "Probability of white bg loss     = " << pbl << endl;
+            cout << "White pips                       = " << g.getBoard().pips() << endl;
+            cout << "Black pips                       = " << g.getBoard().otherPips() << endl;
             g.step();
         }
         
@@ -1423,3 +1909,192 @@ void printWeights3( const string& srcSuffix )
         cout << endl << endl;
     }
 }
+
+
+void playBearoff()
+{
+     /*
+     board b;
+     
+     int i;
+     for( i=0; i<24; i++ )
+     {
+     b.setChecker( i, 0 );
+     b.setOtherChecker( i, 0 );
+     }
+     
+     b.setBornIn( 11 );
+     b.setOtherBornIn( 13 );
+     
+     b.setChecker( 5, 4 );
+     b.setOtherChecker( 18, 2 );
+     
+     int nPnts=6;
+     
+     cout << boardID( b, nPnts ) << endl;
+     cout << getBoardPnt( b, nPnts ) << endl;
+     */
+    
+    int nPnts=6;
+    int nCheckers=8;
+    cout << nElementsTS( nPnts, nCheckers ) << " est elements\n";
+    constructBearoff( nPnts, nCheckers );
+    //loadBearoffDb( "/Users/mghiggins/bgtdres/bearoff.txt" );
+    
+    hash_map<string,double> * m = boardPnts();
+    
+    //for( hash_map<string,double>::iterator it=(*m).begin(); it!=(*m).end(); it++ )
+    //    cout << (*it).first << "   " << (*it).second << endl;
+    
+    if( m ) cout << m->size() << " elements" << endl;
+    
+    writeBearoffDb( "/Users/mghiggins/bgtdres/bearoff_6_8.txt" );
+}
+
+void playBearoffOneSided()
+{
+    /*
+    board b;
+    int i;
+    for( i=0; i<24; i++ )
+    {
+        b.setChecker( i, 0 );
+        b.setOtherChecker( i, 0 );
+    }
+    b.setOtherBornIn( 10 );
+    b.setBornIn( 0 );
+    
+    b.setChecker( 1, 10 );
+    b.setChecker( 2, 3 );
+    b.setChecker( 6, 1 );
+    b.setChecker( 10, 1 );
+    b.setOtherChecker( 23, 1 );
+    b.setOtherChecker( 22, 1 );
+    b.setOtherChecker( 19, 3 );
+    try
+    {
+        b.validate();
+    }
+    catch( ... )
+    {
+        cout << "Invalid board\n";
+        return;
+    }
+    //b.setPerspective( 1 );
+    b.print();
+    
+    strategytdexp2 s2( "benchmark", "exp2_maxexp_80_0.1_0.1", false ); // opponent
+    s2.learning = false;
+    
+    double ppg = s2.boardValue( b );
+    vector<double> mids( s2.getMiddleValues( s2.getInputValues( b, true ) ) );
+    double pw  = s2.getOutputProbValue( mids );
+    double pg  = s2.getOutputGammonWinValue( mids, b );
+    double pgl = s2.getOutputGammonLossValue( mids, b );
+    
+    int nPnts = 9;
+    
+    cout << getBoardPntOS( b, nPnts ) << "  " << ppg << endl;
+    cout << getProbabilityWin( b, nPnts ) << "   " << pw << endl;
+    cout << getProbabilityGammonWin( b, nPnts ) << "    " << pg << endl;
+    cout << getProbabilityGammonLoss( b, nPnts ) << "    " << pgl << endl;
+    cout << stepsProbs()->size() << endl;
+    cout << gamStepsProbs()->size() << endl;
+    
+    */
+    int nPnts=9;
+    int nCheckers=15;
+    int maxElem=10;
+    cout << nElementsOS( nPnts, nCheckers ) << " est elements\n";
+    //constructBearoffOneSidedParallel( nPnts, nCheckers, maxElem, 10, 5 );
+    loadBearoffDbOneSided( "/Users/mghiggins/bgtdres/benchmark/bearoffOS_9_15.csv" );
+    cout << "Regular db size = " << stepsProbs()->size() << endl;
+    constructGammonBearoffOneSided( nPnts, maxElem );
+    
+    cout << "Gammon db size  = " << gamStepsProbs()->size() << endl;
+    //writeGammonBearoffDbOneSided( "/Users/mghiggins/bgtdres/bearoffOSGam_9_15.csv" );
+}
+
+void compareBearoff()
+{
+    // compare one-sided to two-sided bearoff equity predictions
+    
+    loadBearoffDb( "/Users/mghiggins/bgtdres/benchmark/bearoff_6_9.txt" );
+    loadBearoffDbOneSided( "/Users/mghiggins/bgtdres/bearoffOS_6_9.csv" );
+    
+    hash_map<string,double> * pnts = boardPnts();
+    hash_map<string,stepsDistribution> * stepsd = stepsProbs();
+    
+    cout << "Number of elements in two-sided db = " << pnts->size() << endl;
+    cout << "Number of elements in one-sided db = " << stepsd->size() << endl;
+    cout << endl;
+    
+    int nPnts = 6;
+    long count = 0, countElem = 0;
+    double elemProb = 0;
+    double p1, p2, diff;
+    double avgDiff=0, avgDiffSq=0;
+    double maxDiff=-100, minDiff=100;
+    bool go=false;
+    
+    for( hash_map<string,double>::iterator it=pnts->begin(); it!=pnts->end(); it++ )
+    {
+        string ID = it->first;
+        board b( boardFromID( ID ) );
+        p2 = it->second;
+        p1 = getBoardPntOS( b, nPnts );
+        stepsDistribution dist = getStepsDistribution( b, nPnts );
+        if( dist.stepProbs.size() > 8 ) 
+        {
+            countElem ++;
+            vector<stepProbability> pairs( dist.pairsProbOrdered() );
+            for( int i=8; i<pairs.size(); i++ ) elemProb += pairs.at(i).prob;
+        }
+        diff = p1 - p2;
+        
+        avgDiff += diff;
+        avgDiffSq += diff * diff;
+        
+        go = false;
+        
+        if( diff > maxDiff ) 
+        {
+            maxDiff = diff;
+            go = true;
+        }
+        if( diff < minDiff ) 
+        {
+            minDiff = diff;
+            go = true;
+        }
+        
+        count += 1;
+        if( count % 1000000 == 0 || go )
+        {
+            b.print();
+            
+            cout << "Two-sided bearoff equity = " << p2 << endl;
+            cout << "One-sided bearoff equity = " << p1 << endl;
+            cout << "Diff                     = " << diff << endl;
+            if( fabs( diff ) > 1e-3 ) cout << "**** Diff bigger than 0.001\n";
+            if( go ) cout << "*** extreme running value\n";
+            cout << endl;
+        }
+    }
+    
+    long n( pnts->size() );
+    avgDiff /= n;
+    avgDiffSq /= n;
+    if( countElem > 0 ) elemProb /= countElem;
+    
+    double diffSD = sqrt( avgDiffSq - avgDiff * avgDiff );
+    double elemFrac = ( (float) countElem ) / n;
+    
+    cout << "Average diff = " << avgDiff << endl;
+    cout << "Diff std dev = " << diffSD << endl;
+    cout << "Max diff     = " << maxDiff << endl;
+    cout << "Min diff     = " << minDiff << endl;
+    cout << "Frac > 8 ps  = " << elemFrac << endl;
+    cout << "Prob > 8 ps  = " << elemProb << endl;
+}
+
