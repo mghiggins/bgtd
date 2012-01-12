@@ -38,6 +38,7 @@ void sim4( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
 void sim5( int nMiddle, double alpha0, double beta0, const string& fileSuffix, const string& srcSuffix );
 void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, const string& srcSuffix );
 void sim7( int nMiddle, double alpha0, double beta0 );
+void sim8( int nMiddle, double alpha0, double beta0, const string& fileSuffix, const string& srcSuffix );
 void test1();
 void test2();
 void test3();

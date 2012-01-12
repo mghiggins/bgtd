@@ -22,6 +22,7 @@
 #include "strategytdmult.h"
 #include "strategytdorig.h"
 #include "strategytdorigsym.h"
+#include "strategytdoriggam.h"
 #include "strategypubeval.h"
 #include "strategyhuman.h"
 #include "game.h"
@@ -1371,9 +1372,9 @@ void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
     {
         if( i==200000 or i==1000000 or i==10000000 )
         {
-            s1.alpha *= 1/sqrt(10);
-            s1.beta  *= 1/sqrt(10);
-            cout << "\n\n***** Dropped alpha and beta by a factor of sqrt(10)*****\n";
+            s1.alpha *= 1/5.;
+            s1.beta  *= 1/5.;
+            cout << "\n\n***** Dropped alpha and beta by a factor of 5*****\n";
             cout << "alpha = " << s1.alpha << endl;
             cout << "beta  = " << s1.beta  << endl;
             cout << endl;
@@ -1450,9 +1451,9 @@ void sim7( int nMiddle, double alpha0, double beta0 )
     
     strategytdorig s1( nMiddle );
     strategytdorigsym s1s( nMiddle );
-    //strategytdexp2 s2( "benchmark", "exp2_maxexp_80_0.1_0.1", false ); // opponent
-    //s2.learning = false;
-    strategyPubEval s2;
+    strategytdexp2 s2( "benchmark", "exp2_maxexp_80_0.1_0.1", false ); // opponent
+    s2.learning = false;
+    //strategyPubEval s2;
     
     s1.alpha = alpha0;
     s1.beta  = beta0;
@@ -1608,6 +1609,146 @@ void sim7( int nMiddle, double alpha0, double beta0 )
     }
 }
 
+void dispBoardGam( int ind, bool flipped, const strategytdoriggam& s, const board& b );
+void dispBoardsGam( const strategytdoriggam& s );
+
+void dispBoardGam( int ind, bool flipped, const strategytdoriggam& s, const board& b )
+{
+    vector<double> mids = s.getMiddleValues( s.getInputValues( b ) );
+    double pw  = s.getOutputWin( mids );
+    double pg  = s.getOutputGammon( mids );
+    double pgl = s.getOutputGammonLoss( mids );
+    
+    cout << "Reference board " << ind;
+    if( flipped ) 
+        cout << "*";
+    else
+        cout << " ";
+    cout << ": " << pw << "; ( " << pg << ", " << pgl << " )\n";
+    cout << endl;
+}
+
+void dispBoardsGam( const strategytdoriggam& s )
+{
+    for( int ind=0; ind<7; ind++ ) 
+    {
+        board b( referenceBoard(ind) );
+        board fb( b );
+        fb.setPerspective( ( b.perspective() + 1 ) % 2 );
+        dispBoardGam( ind, false, s, b );
+        dispBoardGam( ind, true, s, fb );
+    }
+    cout << endl;
+}
+
+void sim8( int nMiddle, double alpha0, double beta0, const string& fileSuffix, const string& srcSuffix )
+{
+    // train strategytdoriggam
+    
+    // print out the reference boards
+    
+    for( int ind=0; ind<7; ind++ )
+    {
+        cout << "Reference board " << ind << endl;
+        board b( referenceBoard( ind ) );
+        b.print();
+        cout << endl;
+    }
+    
+    // try out the TD strategy with multiple networks
+    
+    strategytdoriggam s1( nMiddle );
+    strategytdexp2 s2( "benchmark", "exp2_max" + srcSuffix, false ); // opponent
+    s2.learning = false;
+    //strategyPubEval s2;
+    
+    s1.alpha = alpha0;
+    s1.beta  = beta0;
+    
+    double maxPpg = -100;
+    long maxInd=-1;
+    
+    playParallel( s1, s2, 1000, 1, 0, "gam_std" + fileSuffix );
+    dispBoardsGam( s1 );
+    
+    int nw=0, ng=0, nb=0, ns=0;
+    
+    for( long i=0; i<20000000; i++ )
+    {
+        if( i==200000 or i==1000000 or i==10000000 )
+        {
+            s1.alpha *= 1/5.;
+            s1.beta  *= 1/5.;
+            cout << "\n\n***** Dropped alpha and beta by a factor of 5*****\n";
+            cout << "alpha = " << s1.alpha << endl;
+            cout << "beta  = " << s1.beta  << endl;
+            cout << endl;
+        }
+        s1.learning = true;
+        
+        game g( &s1, &s1, (int) (i+1) );
+        g.setTurn( (int) i%2 );
+        try 
+        {
+            g.stepToEnd();
+        }
+        catch( const string& errMsg )
+        {
+            cout << "ERROR :" << errMsg << endl;
+            return;
+        }
+        catch( exception& e )
+        {
+            cout << "Exception: " << e.what() << endl;
+            return;
+        }
+        catch( ... )
+        {
+            cout << "Some other kind of error...\n";
+            return;
+        }
+        
+        if( g.winner() == 0 ) nw += 1;
+        if( g.winnerScore() == 2 ) ng += 1;
+        if( g.winnerScore() == 3 ) nb += 1;
+        ns += g.nSteps;
+        
+        if( (i+1)%100 == 0 ) 
+        {
+            double fw = nw/100.;
+            double fg = ng/100.;
+            double fb = nb/100.;
+            double as = ns/100.;
+            nw = 0;
+            ng = 0;
+            nb = 0;
+            ns = 0;
+            
+            cout << (i+1) << "   " << fw << "   " << fg << "   " << fb << "   " << as << endl;
+            
+            s1.writeWeights( "gam_std" + fileSuffix );
+        }
+        
+        if( (i+1)%1000 == 0 )
+        {
+            cout << endl;
+            double ppg = playParallel( s1, s2, 1000, 1, i+1, "gam_std" + fileSuffix );
+            if( ppg > maxPpg )
+            {
+                cout << "***** Rolling best ppg = " << ppg << " vs previous max " << maxPpg << "*****\n";
+                maxPpg = ppg;
+                maxInd = i;
+                s1.writeWeights( "gam_max" + fileSuffix );
+            }
+            else
+                cout << "Prev best " << maxPpg << " at index " << maxInd+1 << endl;
+            cout << endl;
+            
+            dispBoardsGam( s1 );
+        }
+    }
+}
+
 void test1()
 {
     // load the weights and traces from the saved files
@@ -1744,7 +1885,7 @@ void test4()
     for( int i=0; i<n; i++ )
     {
         cout << "NEW GAME - game # " << i+1 << endl;
-        game g(&s2,&s1,i+5915);
+        game g(&s2,&s1,i+585);
         g.verbose = true;
         g.setTurn(i%2);
         g.getBoard().print();
@@ -1752,7 +1893,10 @@ void test4()
         {
             // get the network probability of white winning & gammoning
             
-            string eval( s1.evaluator( g.getBoard() ) );
+            board b( g.getBoard() );
+            b.setPerspective( g.turn() );
+            
+            string eval( s1.evaluator( b ) );
             cout << "Evaluator = " << eval << endl;
             if( eval == "done" )
             {
@@ -1760,16 +1904,15 @@ void test4()
             }
             else if( eval == "bearoff" )
             {
-                double ppg = s1.bearoffValue( g.getBoard() );
-                pw  = ( 1 + ppg ) / 2.;
-                pgw = 0;
-                pgl = 0;
+                pw  = s1.bearoffProbabilityWin( b );
+                pgw = s1.bearoffProbabilityGammon( b );
+                pgl = s1.bearoffProbabilityGammonLoss( b );
                 pbw = 0;
                 pbl = 0;
             }
             else
             {
-                vector<double> middles = s1.getMiddleValues( s1.getInputValues( g.getBoard() ), eval );
+                vector<double> middles = s1.getMiddleValues( s1.getInputValues( b ), eval );
                 
                 pw  = s1.getOutputProbValue( middles, eval );
                 pgw = s1.getOutputGammonValue( middles, eval );
@@ -1777,6 +1920,19 @@ void test4()
                 pbw = s1.getOutputBackgammonValue( middles, eval );
                 pbl = s1.getOutputBackgammonLossValue( middles, eval );
             }
+            if( g.turn() == 1 )
+            {
+                double temp;
+                pw = 1 - pw;
+                temp = pgw;
+                pgw  = pgl;
+                pgl  = temp;
+                temp = pbw;
+                pbw  = pbl;
+                pbl  = pbw;
+            }
+            double equity = ( pw - pgw - pbw ) + 2 * ( pgw - pbw ) + 3 * pbw - ( 1 - pw - pgl - pbl ) - 2 * ( pgl - pbl ) - 3 * pbl;
+            cout << "White equity                     = " << equity << endl;
             cout << "Probability of white win         = " << pw  << endl;
             cout << "Probability of white gammon win  = " << pgw << endl;
             cout << "Probability of white gammon loss = " << pgl << endl;
