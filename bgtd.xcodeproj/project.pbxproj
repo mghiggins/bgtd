@@ -18,6 +18,7 @@
 		C02618EB13DC76AB007A4539 /* strategy.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C02618EA13DC76AB007A4539 /* strategy.cpp */; };
 		C04CBF58149460E900F44375 /* strategytdorig.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C04CBF57149460E900F44375 /* strategytdorig.cpp */; };
 		C04CBF5C14946CBB00F44375 /* strategytdorigsym.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C04CBF5B14946CBB00F44375 /* strategytdorigsym.cpp */; };
+		C0513F8414BF64B200B0A02F /* strategytdoriggam.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C0513F8314BF64B200B0A02F /* strategytdoriggam.cpp */; };
 		C05308A9141D96E70069D85F /* mersenne.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C05308A7141D96E70069D85F /* mersenne.cpp */; };
 		C05A6D14140A406F00DD8608 /* strategytdexp3.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C05A6D13140A406F00DD8608 /* strategytdexp3.cpp */; };
 		C07BA3931412AF600084D7F6 /* strategytdexp4.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C07BA3921412AF600084D7F6 /* strategytdexp4.cpp */; };
@@ -67,6 +68,8 @@
 		C04CBF57149460E900F44375 /* strategytdorig.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strategytdorig.cpp; sourceTree = "<group>"; };
 		C04CBF5A14946CAC00F44375 /* strategytdorigsym.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = strategytdorigsym.h; sourceTree = "<group>"; };
 		C04CBF5B14946CBB00F44375 /* strategytdorigsym.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strategytdorigsym.cpp; sourceTree = "<group>"; };
+		C0513F8114BF62B700B0A02F /* strategytdoriggam.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = strategytdoriggam.h; sourceTree = "<group>"; };
+		C0513F8314BF64B200B0A02F /* strategytdoriggam.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strategytdoriggam.cpp; sourceTree = "<group>"; };
 		C05308A7141D96E70069D85F /* mersenne.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = mersenne.cpp; sourceTree = "<group>"; };
 		C05308A8141D96E70069D85F /* randomc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = randomc.h; sourceTree = "<group>"; };
 		C05A6D11140A405600DD8608 /* strategytdexp3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = strategytdexp3.h; sourceTree = "<group>"; };
@@ -146,6 +149,8 @@
 				C02618E813DC6784007A4539 /* strategytd.cpp */,
 				C04CBF56149460D600F44375 /* strategytdorig.h */,
 				C04CBF57149460E900F44375 /* strategytdorig.cpp */,
+				C0513F8114BF62B700B0A02F /* strategytdoriggam.h */,
+				C0513F8314BF64B200B0A02F /* strategytdoriggam.cpp */,
 				C04CBF5A14946CAC00F44375 /* strategytdorigsym.h */,
 				C04CBF5B14946CBB00F44375 /* strategytdorigsym.cpp */,
 				C0803D1813E6520200ED598C /* strategytdexp.h */,
@@ -238,6 +243,7 @@
 				C04CBF58149460E900F44375 /* strategytdorig.cpp in Sources */,
 				C04CBF5C14946CBB00F44375 /* strategytdorigsym.cpp in Sources */,
 				C01674D814A0490D00D91466 /* strategyply.cpp in Sources */,
+				C0513F8414BF64B200B0A02F /* strategytdoriggam.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -268,10 +274,7 @@
 				LIBRARY_SEARCH_PATHS = /opt/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_LDFLAGS = (
-					"-lboost_thread-mt",
-					"-lncurses",
-				);
+				OTHER_LDFLAGS = "-lboost_thread-mt";
 				SDKROOT = macosx;
 				USER_HEADER_SEARCH_PATHS = "";
 			};
@@ -294,10 +297,7 @@
 				HEADER_SEARCH_PATHS = /opt/local/include;
 				LIBRARY_SEARCH_PATHS = /opt/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
-				OTHER_LDFLAGS = (
-					"-lboost_thread-mt",
-					"-lncurses",
-				);
+				OTHER_LDFLAGS = "-lboost_thread-mt";
 				SDKROOT = macosx;
 				USER_HEADER_SEARCH_PATHS = "";
 			};

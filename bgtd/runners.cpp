@@ -11,7 +11,6 @@
 #include <fstream>
 #include <cmath>
 #include <boost/thread.hpp>
-#include <ncurses.h>
 #include "bearofffns.h"
 #include "runners.h"
 #include "strategytd.h"

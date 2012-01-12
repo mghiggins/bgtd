@@ -10,12 +10,11 @@
 #include <iostream>
 #include <sstream>
 #include <cmath>
-#include <ncurses.h>
 #include "runners.h"
 #include "tests.h"
 #include "randomc.h"
 
-
+/*
 int main( int argc, char * argv [] )
 {
     int nMiddle;
@@ -65,8 +64,8 @@ int main( int argc, char * argv [] )
     
     return 0;
 }
+*/
 
-/*
 int main( int argc, char * argv [] )
 {
     int nMiddle;
@@ -94,7 +93,7 @@ int main( int argc, char * argv [] )
     sim7( nMiddle, alpha0, beta0 );
     return 0;
 }
-
+/*
 int main( int argc, char * argv [] )
 {
     rollTest();
