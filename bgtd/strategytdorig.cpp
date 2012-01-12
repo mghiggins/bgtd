@@ -54,8 +54,23 @@ void strategytdorig::setup()
 
 double strategytdorig::boardValue( const board& brd ) const
 {
-    double prob = getOutput( getMiddleValues( getInputValues( brd ) ) );
-    return 2 * prob - 1; // expected points
+    // need the value in the state where the opponent holds the dice, so
+    // flip the board perspective around
+    
+    board flippedBoard( brd );
+    flippedBoard.setPerspective( 1 - brd.perspective() );
+    
+    // get the prob of win from the perspective of the opponent
+    
+    double prob = getOutput( getMiddleValues( getInputValues( flippedBoard ) ) );
+    
+    // get the equity from the perspective of the opponent
+    
+    double equity = 2 * prob - 1; 
+    
+    // return -1 * that to get the equity of the player
+    
+    return -equity;
 }
 
 vector<double> strategytdorig::getInputValues( const board& brd ) const
