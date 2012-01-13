@@ -1624,7 +1624,6 @@ void dispBoardGam( int ind, bool flipped, const strategytdoriggam& s, const boar
     else
         cout << " ";
     cout << ": " << pw << "; ( " << pg << ", " << pgl << " )\n";
-    cout << endl;
 }
 
 void dispBoardsGam( const strategytdoriggam& s )
@@ -1684,7 +1683,6 @@ void sim8( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
             cout << endl;
         }
         s1.learning = true;
-        
         game g( &s1, &s1, (int) (i+1) );
         g.setTurn( (int) i%2 );
         try 
@@ -1871,6 +1869,7 @@ void test4()
     //strategytdexp3 s1( "", "exp3_maxexp_20_0.1_0.1", false );
     //strategytdexp s1( "benchmark", "exp_maxexp_80_0.1_0.1" );
     strategytdmult s1( "", "mult_maxmult_80_0.1_0.1" );
+    //strategytdoriggam s1( "", "gam_maxgam_80_0.1_0.1" );
     s1.learning = false;
     
     //strategyPubEval s1;
@@ -1967,6 +1966,96 @@ void test4()
     
     cout << endl;
     cout << "Average ppg = " << ppg << endl;
+}
+
+void testOrigGam()
+{
+    // try out playing against a human
+    
+    strategytdoriggam s1( "benchmark", "gam_stdgam_80_0.1_0.1" );
+    s1.learning = false;
+    //strategytdmult s1( "benchmark", "mult_stdmult_80_0.1_0.1" );
+    //s1.learning = false;
+    
+    strategyPubEval s2;
+    
+    playParallel( s1, s2, 10000, 0, 0, "nowrite" );
+    
+    return;
+    /*
+    //strategyPubEval s1;
+    //strategyhuman s2;
+    
+    vector<int> scores;
+    int n=10;
+    scores.resize(n,0);
+    
+    double pw, pgw, pgl;
+    
+    for( int i=0; i<n; i++ )
+    {
+        cout << "NEW GAME - game # " << i+1 << endl;
+        game g(&s2,&s1,i+3585);
+        g.verbose = true;
+        g.setTurn(i%2);
+        g.getBoard().print();
+        while( !g.gameOver() )
+        {
+            // get the network probability of white winning & gammoning
+            
+            board b( g.getBoard() );
+            b.setPerspective( g.turn() );
+            
+            vector<double> middles = s1.getMiddleValues( s1.getInputValues( b ) );
+            
+            pw  = s1.getOutputWin( middles );
+            pgw = s1.getOutputGammon( middles );
+            pgl = s1.getOutputGammonLoss( middles );
+            
+            if( g.turn() == 1 )
+            {
+                double temp;
+                pw = 1 - pw;
+                temp = pgw;
+                pgw  = pgl;
+                pgl  = temp;
+            }
+            double equity = ( pw - pgw ) + 2 * pgw - ( 1 - pw - pgl ) - 2 * pgl;
+            cout << "White equity                     = " << equity << endl;
+            cout << "Probability of white win         = " << pw  << endl;
+            cout << "Probability of white gammon win  = " << pgw << endl;
+            cout << "Probability of white gammon loss = " << pgl << endl;
+            cout << "White pips                       = " << g.getBoard().pips() << endl;
+            cout << "Black pips                       = " << g.getBoard().otherPips() << endl;
+            g.step();
+        }
+        
+        cout << endl;
+        cout << "GAME OVER\n";
+        
+        if( g.winner() == 0 )
+        {
+            cout << "You won " << g.winnerScore() << " points\n";
+            scores.at(i) = g.winnerScore();
+        }
+        else
+        {
+            cout << "You lost " << g.winnerScore() << " points\n";
+            scores.at(i) = -g.winnerScore();
+        }
+    }
+    
+    double ppg=0;
+    for( int i=0; i<n; i++ ) 
+    {
+        cout << "Game " << i+1 << " had score " << scores.at(i) << endl;
+        ppg += scores.at(i);
+    }
+    ppg/=n;
+    
+    cout << endl;
+    cout << "Average ppg = " << ppg << endl;
+    */
 }
 
 void printWeights3( const string& srcSuffix )

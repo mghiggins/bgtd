@@ -43,6 +43,7 @@ void test1();
 void test2();
 void test3();
 void test4();
+void testOrigGam();
 
 void printWeights3( const string& srcSuffix );
 
