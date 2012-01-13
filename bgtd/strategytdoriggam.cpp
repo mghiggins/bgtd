@@ -295,7 +295,7 @@ void strategytdoriggam::writeWeights( const string& filePrefix ) const
         fop << outputWinWeights.at(j) << endl;
         fog << outputGammonWeights.at(j) << endl;
         fogl << outputGammonLossWeights.at(j) << endl;
-        for( int k=0; k<199; k++ )
+        for( int k=0; k<196; k++ )
             fm << middleWeights.at(j).at(k) << endl;
     }
     fop << outputWinWeights.at(nMiddle) << endl;
@@ -348,7 +348,7 @@ void strategytdoriggam::loadWeights( const string& subPath, const string& filePr
         getline( fogl, line );
         outputGammonLossWeights.at(i) = atof( line.c_str() );
         middleWeights.at(i).resize(196);
-        for( int j=0; j<199; j++ )
+        for( int j=0; j<196; j++ )
         {
             getline( fm, line );
             middleWeights.at(i).at(j) = atof( line.c_str() );
