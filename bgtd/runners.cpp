@@ -7,6 +7,7 @@
 //
 
 
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <cmath>
@@ -23,6 +24,7 @@
 #include "strategytdorigsym.h"
 #include "strategytdoriggam.h"
 #include "strategypubeval.h"
+#include "strategyply.h"
 #include "strategyhuman.h"
 #include "game.h"
 #include "gamefns.h"
@@ -503,6 +505,8 @@ double playSerial( strategytdbase& s1, strategy& s2, long n, long initSeed, long
     
     for( long i=0; i<n; i++ )
     {
+        if( (i+1)%1 == 0 ) cout << "Run " << i+1 << endl;
+        
         game g( &s1, &s2, (int)(i+initSeed) );
         g.setTurn( ((int) i)%2 );
         g.stepToEnd();
@@ -1262,6 +1266,27 @@ board referenceBoard( int index )
         bbl.setChecker( 23, 2 );
         return bbl;
     }
+    else if( index == 7 )
+    {
+        board b;
+        for( int pos=0; pos<24; pos++ )
+        {
+            b.setChecker( pos, 0 );
+            b.setOtherChecker( pos, 0 );
+        }
+        for( int pos=2; pos<6; pos++ ) b.setChecker( pos, 2 );
+        b.setChecker( 12, 5 );
+        b.setChecker( 19, 1 );
+        b.setChecker( 22, 1 );
+        b.setOtherChecker( 0, 2 );
+        b.setOtherChecker( 11, 5 );
+        b.setOtherChecker( 15, 1 );
+        b.setOtherChecker( 16, 2 );
+        b.setOtherChecker( 18, 3 );
+        b.setOtherChecker( 20, 2 );
+        b.setOtherChecker( 20, 2 );
+        return b;
+    }
     
     throw "invalid index";
 }
@@ -1328,9 +1353,9 @@ void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
     
     // try out the TD strategy with multiple networks
     
-    //strategytdmult s1( "benchmark", "mult_stdmult_80_0.1_0.1"  );
-    strategytdmult s1( nMiddle );
-    strategytdexp2 s2( "benchmark", "exp2_max" + srcSuffix, false ); // opponent
+    strategytdmult s1( "benchmark", "mult_stdmult_80_0.1_0.1"  );
+    //strategytdmult s1( nMiddle );
+    strategytdoriggam s2( "benchmark", "gam_stdgam_80_0.1_0.1" );
     s2.learning = false;
     //strategyPubEval s2;
     
@@ -1362,7 +1387,7 @@ void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
     double maxPpg = -100;
     long maxInd=-1;
     
-    playParallel( s1, s2, 1000, 1, 0, "mult_std" + fileSuffix );
+    playParallel( s1, s2, 400, 1, 0, "mult_std" + fileSuffix );
     dispBoards( s1 );
     
     int nw=0, ng=0, nb=0, ns=0;
@@ -1426,7 +1451,7 @@ void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
         if( (i+1)%1000 == 0 )
         {
             cout << endl;
-            double ppg = playParallel( s1, s2, 1000, 1, i+1, "mult_std" + fileSuffix );
+            double ppg = playParallel( s1, s2, 400, 1, i+1, "mult_std" + fileSuffix );
             if( ppg > maxPpg )
             {
                 cout << "***** Rolling best ppg = " << ppg << " vs previous max " << maxPpg << "*****\n";
@@ -1868,9 +1893,10 @@ void test4()
     
     //strategytdexp3 s1( "", "exp3_maxexp_20_0.1_0.1", false );
     //strategytdexp s1( "benchmark", "exp_maxexp_80_0.1_0.1" );
-    strategytdmult s1( "", "mult_maxmult_80_0.1_0.1" );
+    strategytdmult s1( "benchmark", "mult_stdmult_80_0.1_0.1" );
     //strategytdoriggam s1( "", "gam_maxgam_80_0.1_0.1" );
     s1.learning = false;
+    strategyply s1a( 1, 8, s1 );
     
     //strategyPubEval s1;
     strategyhuman s2;
@@ -1883,7 +1909,7 @@ void test4()
     for( int i=0; i<n; i++ )
     {
         cout << "NEW GAME - game # " << i+1 << endl;
-        game g(&s2,&s1,i+585);
+        game g(&s2,&s1a,i+585);
         g.verbose = true;
         g.setTurn(i%2);
         g.getBoard().print();
@@ -1968,18 +1994,62 @@ void test4()
     cout << "Average ppg = " << ppg << endl;
 }
 
+struct bandv
+{
+    board b;
+    double val;
+};
+
+bool bandvComp( const bandv& v1, const bandv& v2 );
+bool bandvComp( const bandv& v1, const bandv& v2 ) { return v1.val > v2.val; }
+
 void testOrigGam()
 {
     // try out playing against a human
     
-    strategytdoriggam s1( "benchmark", "gam_stdgam_80_0.1_0.1" );
+    //strategytdoriggam s1( "benchmark", "gam_stdgam_80_0.1_0.1" );
+    strategytdmult s1( "benchmark", "mult_maxmult_80_0.1_0.1" );
     s1.learning = false;
-    //strategytdmult s1( "benchmark", "mult_stdmult_80_0.1_0.1" );
-    //s1.learning = false;
+    strategyply s2( 3, 3, s1 );
     
-    strategyPubEval s2;
+    //strategyPubEval s2;
     
-    playParallel( s1, s2, 10000, 0, 0, "nowrite" );
+    //playParallel( s1, s2, 800, 2779, 0, "nowrite" );
+    //playSerial( s1, s2, 800, 2779, 0, "nowrite" );
+    
+    
+    board b( referenceBoard( 7 ) );
+    b.setPerspective(1);
+    b.print();
+    set<board> moves( possibleMoves( b, 6, 4 ) );
+    vector<bandv> vals;
+    for( set<board>::iterator it=moves.begin(); it!=moves.end(); it++ )
+    {
+        bandv val;
+        val.b = (*it);
+        val.val = s1.boardValue( (*it) );
+        vals.push_back( val );
+    }
+    
+    sort( vals.begin(), vals.end(), bandvComp );
+    
+    for( int i=0; i<4; i++ )
+    {
+        cout << "Sorted move " << i+1 << endl;
+        vals.at(i).b.print();
+        cout << "Norm Equity = " << vals.at(i).val << endl;
+        cout << "Ply Equity  = " << s2.boardValue( vals.at(i).b ) << endl;
+        cout << endl;
+    }
+    
+    //cout << s1.getOutputBackgammonLossValue( s1.getMiddleValues( s1.getInputValues( b ), "contact" ), "contact" ) << endl;
+    //b.setPerspective(1-b.perspective());
+    //cout << "Regular strategy = " << -s1.boardValue( b ) << endl;
+    //cout << "Ply strategy     = " << -s2.boardValue( b ) << endl;
+    
+    //long nRuns=10000;
+    //double rollVal = rolloutBoardValue( b, s1, nRuns, 12100 );
+    //cout << "Rollout          = " << -rollVal << endl;
     
     return;
     /*
@@ -2246,16 +2316,17 @@ void playBearoffOneSided()
     cout << gamStepsProbs()->size() << endl;
     
     */
-    int nPnts=9;
+    int nPnts=6;
     int nCheckers=15;
     int maxElem=10;
     cout << nElementsOS( nPnts, nCheckers ) << " est elements\n";
-    //constructBearoffOneSidedParallel( nPnts, nCheckers, maxElem, 10, 5 );
-    loadBearoffDbOneSided( "/Users/mghiggins/bgtdres/benchmark/bearoffOS_9_15.csv" );
+    constructBearoffOneSidedParallel( nPnts, nCheckers, maxElem, 10, 5 );
+    //loadBearoffDbOneSided( "/Users/mghiggins/bgtdres/benchmark/bearoffOS_9_15.csv" );
     cout << "Regular db size = " << stepsProbs()->size() << endl;
-    constructGammonBearoffOneSided( nPnts, maxElem );
+    writeBearoffDbOneSided( "/Users/mghiggins/bgtdres/bearoffOS_6_15.csv" );
+    //constructGammonBearoffOneSided( nPnts, maxElem );
     
-    cout << "Gammon db size  = " << gamStepsProbs()->size() << endl;
+    //cout << "Gammon db size  = " << gamStepsProbs()->size() << endl;
     //writeGammonBearoffDbOneSided( "/Users/mghiggins/bgtdres/bearoffOSGam_9_15.csv" );
 }
 

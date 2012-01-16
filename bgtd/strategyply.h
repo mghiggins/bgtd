@@ -17,21 +17,17 @@ class strategyply : public strategy
     // a certain number of "plies". One ply is one turn by one player.
     
 public:
-    // nPlies is the number of plies to search; baseStrat is the underlying strategy we 
+    // nPlies is the number of plies to search; nMoveFilter is the # of moves to include
+    // when doing deeper searches; baseStrat is the underlying strategy we 
     // use to dig into the tree.
     
-    strategyply( int nPlies, strategy& baseStrat );
+    strategyply( int nPlies, int nMoveFilter, strategy& baseStrat );
     virtual ~strategyply() {};
     
-    int nPlies;
+    int nPlies, nMoveFilter;
     
-    // boardValue will look up the look-ahead estimate of the board probability, but
-    // will do it as a consequence of the real calculation that's in preferredBoard.
-    // For games, boardValue is useful only for interesting diagnostic information;
-    // it's not used directly to decide moves.
-    
-    virtual double boardValue( const board& brd ) const { return 0.; };
-    virtual board preferredBoard( const board& oldBoard, const set<board>& possibleMoves ) const;
+    virtual double boardValue( const board& brd ) const;
+    double boardValueRecurse( const board& brd, int stepNPlies ) const;
     
 private:
     strategy& baseStrat;

@@ -46,6 +46,8 @@ public:
     bool verbose; // if true it prints out stuff internally when it steps
     int nSteps;
     
+    void setBoard( const board& newBrd ) { brd = newBrd; };   // sets the board for the game
+    
 private:
     board      brd;
     int        trn;

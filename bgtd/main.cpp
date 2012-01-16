@@ -23,7 +23,7 @@ int main( int argc, char * argv [] )
     
     // set default values for parameters
     
-    nMiddle = 10;
+    nMiddle = 80;
     alpha0  = 0.1;
     beta0   = 1 * alpha0;
     

@@ -87,11 +87,11 @@ void strategytdmult::setup()
     // used to determine prob of win; and one for the distribution of steps to take off the
     // first checker, used to determine the prob of gammon win/loss.
     
-    bearoffNPnts     = 9;
+    bearoffNPnts     = 6;
     bearoffNCheckers = 15;
     
-    loadBearoffDbOneSided( "/Users/mghiggins/bgtdres/benchmark/bearoffOS_9_15.csv" );
-    loadGammonBearoffDbOneSided( "/Users/mghiggins/bgtdres/benchmark/bearoffOSGam_9_15.csv" );
+    loadBearoffDbOneSided( "/Users/mghiggins/bgtdres/benchmark/bearoffOS_6_15.csv" );
+    loadGammonBearoffDbOneSided( "/Users/mghiggins/bgtdres/benchmark/bearoffOSGam_6_15.csv" );
     cout << "One-sided db size = " << stepsProbs()->size() << endl;
     cout << "Gammon db size    = " << gamStepsProbs()->size() << endl;
 }
@@ -131,11 +131,11 @@ double strategytdmult::boardValue( const board& brd ) const
         // get the probability of gammon win and loss.
         
         double pGam, pGamLoss;
-        if( brd.otherBornIn() == 0 )
+        if( flippedBoard.otherBornIn() == 0 )
             pGam = getOutputGammonValue( middles, eval );
         else
             pGam = 0;
-        if( brd.bornIn() == 0 )
+        if( flippedBoard.bornIn() == 0 )
             pGamLoss = getOutputGammonLossValue( middles, eval );
         else
             pGamLoss = 0;
@@ -148,11 +148,11 @@ double strategytdmult::boardValue( const board& brd ) const
         // get the probability of backgammon win and loss
         
         double pBg, pBgLoss;
-        if( brd.otherNoBackgammon() )
+        if( flippedBoard.otherNoBackgammon() )
             pBg = 0;
         else
             pBg = getOutputBackgammonValue( middles, eval );
-        if( brd.noBackgammon() )
+        if( flippedBoard.noBackgammon() )
             pBgLoss = 0;
         else
             pBgLoss = getOutputBackgammonLossValue( middles, eval );

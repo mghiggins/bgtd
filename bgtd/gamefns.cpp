@@ -10,6 +10,8 @@
 #include <map>
 #include <iostream>
 #include "gamefns.h"
+#include "randomc.h"
+#include "game.h"
 
 set<board> subPossibleMoves( const board& brd, vector<int> rolls );
 
@@ -223,4 +225,32 @@ set<board> possibleMoves( const board& brd, int die1, int die2 )
 bool isRace( const board& brd )
 {
     return brd.isRace();
+}
+
+double rolloutBoardValue( const board& brd, strategy& strat, long nRuns, int seed )
+{
+    CRandomMersenne rng(seed);
+    
+    double avgVal=0;
+    
+    for( long i=0; i<nRuns; i++ )
+    {
+        // start a new game and run it to completion
+        
+        game g( &strat, &strat, seed+( (int) i ) );
+        g.setBoard( brd );
+        g.setTurn( 1 - brd.perspective() ); // start with opponent on roll
+        
+        g.stepToEnd();
+        
+        // get the value from the perspective of the board
+        
+        if( g.winner() == brd.perspective() )
+            avgVal += g.winnerScore();
+        else
+            avgVal -= g.winnerScore();
+    }
+    
+    avgVal /= nRuns;
+    return avgVal;
 }

@@ -799,9 +799,9 @@ stepsDistribution getGammonStepsDistribution( const board& b, int nPnts, int max
     hash_map<string,stepsDistribution>::iterator it = _gamStepsProbs->find( id );
     if( it != _gamStepsProbs->end() ) return (*it).second;
     
-    cout << "Calculating gammon dist for board\n";
-    b.print();
-    cout << endl;
+    //cout << "Calculating gammon dist for board\n";
+    //b.print();
+    //cout << endl;
     
     // otherwise calculate it
     

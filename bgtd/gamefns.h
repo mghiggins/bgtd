@@ -11,6 +11,7 @@
 
 #include <set>
 #include "board.h"
+#include "strategy.h"
 
 using namespace std;
 
@@ -23,5 +24,12 @@ set<board> possibleMoves( const board& brd, int die1, int die2 );
 // contact) and false otherwise.
 
 bool isRace( const board& board );
+
+// rolloutBoardValue runs a Monte Carlo simulation to get a more accurate
+// estimate of the board value, using the supplied strategy to
+// figure out the moves. Assumes we start on the opponent's roll to
+// be consistent with strategy boardValue calculations.
+
+double rolloutBoardValue( const board& brd, strategy& strat, long nRuns, int seed );
 
 #endif
