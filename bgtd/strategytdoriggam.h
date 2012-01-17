@@ -41,9 +41,9 @@ public:
     // write and read weights
     
     void writeWeights( const string& filePrefix ) const;
-    void loadWeights( const string& path, const string& filePrefix );
+    void loadWeights( const string& subPath, const string& filePrefix );
     
-private:
+protected:
     void setup();
     
     vector<double> outputWinWeights;        // weights of the prob of win node to each of the hidden nodes

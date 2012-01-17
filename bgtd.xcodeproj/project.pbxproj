@@ -22,6 +22,7 @@
 		C05308A9141D96E70069D85F /* mersenne.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C05308A7141D96E70069D85F /* mersenne.cpp */; };
 		C05A6D14140A406F00DD8608 /* strategytdexp3.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C05A6D13140A406F00DD8608 /* strategytdexp3.cpp */; };
 		C07BA3931412AF600084D7F6 /* strategytdexp4.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C07BA3921412AF600084D7F6 /* strategytdexp4.cpp */; };
+		C07E426E14C533B700C748F6 /* strategytdorigbg.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C07E426D14C533B700C748F6 /* strategytdorigbg.cpp */; };
 		C0803D1B13E659E800ED598C /* strategytdexp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C0803D1A13E659E800ED598C /* strategytdexp.cpp */; };
 		C08926FE144F5EC100D8F606 /* bearofffns.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C08926FD144F5EC100D8F606 /* bearofffns.cpp */; };
 		C08927011450AF7700D8F606 /* strategytdmult.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C08927001450AF7700D8F606 /* strategytdmult.cpp */; };
@@ -76,6 +77,8 @@
 		C05A6D13140A406F00DD8608 /* strategytdexp3.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strategytdexp3.cpp; sourceTree = "<group>"; };
 		C07BA3911412AE2C0084D7F6 /* strategytdexp4.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = strategytdexp4.h; sourceTree = "<group>"; };
 		C07BA3921412AF600084D7F6 /* strategytdexp4.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strategytdexp4.cpp; sourceTree = "<group>"; };
+		C07E426B14C533A200C748F6 /* strategytdorigbg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = strategytdorigbg.h; sourceTree = "<group>"; };
+		C07E426D14C533B700C748F6 /* strategytdorigbg.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strategytdorigbg.cpp; sourceTree = "<group>"; };
 		C0803D1813E6520200ED598C /* strategytdexp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = strategytdexp.h; sourceTree = "<group>"; };
 		C0803D1A13E659E800ED598C /* strategytdexp.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strategytdexp.cpp; sourceTree = "<group>"; };
 		C08926FB144F5D4D00D8F606 /* bearofffns.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bearofffns.h; sourceTree = "<group>"; };
@@ -151,6 +154,8 @@
 				C04CBF57149460E900F44375 /* strategytdorig.cpp */,
 				C0513F8114BF62B700B0A02F /* strategytdoriggam.h */,
 				C0513F8314BF64B200B0A02F /* strategytdoriggam.cpp */,
+				C07E426B14C533A200C748F6 /* strategytdorigbg.h */,
+				C07E426D14C533B700C748F6 /* strategytdorigbg.cpp */,
 				C04CBF5A14946CAC00F44375 /* strategytdorigsym.h */,
 				C04CBF5B14946CBB00F44375 /* strategytdorigsym.cpp */,
 				C0803D1813E6520200ED598C /* strategytdexp.h */,
@@ -244,6 +249,7 @@
 				C04CBF5C14946CBB00F44375 /* strategytdorigsym.cpp in Sources */,
 				C01674D814A0490D00D91466 /* strategyply.cpp in Sources */,
 				C0513F8414BF64B200B0A02F /* strategytdoriggam.cpp in Sources */,
+				C07E426E14C533B700C748F6 /* strategytdorigbg.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

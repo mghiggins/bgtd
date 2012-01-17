@@ -23,6 +23,7 @@
 #include "strategytdorig.h"
 #include "strategytdorigsym.h"
 #include "strategytdoriggam.h"
+#include "strategytdorigbg.h"
 #include "strategypubeval.h"
 #include "strategyply.h"
 #include "strategyhuman.h"
@@ -1771,6 +1772,147 @@ void sim8( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
     }
 }
 
+void dispBoardBg( int ind, bool flipped, const strategytdorigbg& s, const board& b );
+void dispBoardsBg( const strategytdorigbg& s );
+
+void dispBoardBg( int ind, bool flipped, const strategytdorigbg& s, const board& b )
+{
+    vector<double> mids = s.getMiddleValues( s.getInputValues( b ) );
+    double pw  = s.getOutputWin( mids );
+    double pg  = s.getOutputGammon( mids );
+    double pgl = s.getOutputGammonLoss( mids );
+    double pb  = s.getOutputBackgammon( mids );
+    double pbl = s.getOutputBackgammonLoss( mids );
+    
+    cout << "Reference board " << ind;
+    if( flipped ) 
+        cout << "*";
+    else
+        cout << " ";
+    cout << ": " << pw << "; ( " << pg << ", " << pgl << " ); ( " << pb << ", " << pbl << " )\n";
+}
+
+void dispBoardsBg( const strategytdorigbg& s )
+{
+    for( int ind=0; ind<7; ind++ ) 
+    {
+        board b( referenceBoard(ind) );
+        board fb( b );
+        fb.setPerspective( ( b.perspective() + 1 ) % 2 );
+        dispBoardBg( ind, false, s, b );
+        dispBoardBg( ind, true, s, fb );
+    }
+    cout << endl;
+}
+
+
+void sim9( int nMiddle, double alpha0, double beta0, const string& fileSuffix, const string& srcSuffix )
+{
+    // train strategytdorigbg
+    
+    // print out the reference boards
+    
+    for( int ind=0; ind<7; ind++ )
+    {
+        cout << "Reference board " << ind << endl;
+        board b( referenceBoard( ind ) );
+        b.print();
+        cout << endl;
+    }
+    
+    // try out the TD strategy with multiple networks
+    
+    strategytdorigbg s1( "benchmark", "gam_max" + srcSuffix );
+    strategytdoriggam s2( "benchmark", "gam_max" + srcSuffix ); // opponent
+    s2.learning = false;
+    //strategyPubEval s2;
+    
+    s1.alpha = alpha0;
+    s1.beta  = beta0;
+    
+    double maxPpg = -100;
+    long maxInd=-1;
+    
+    playParallel( s1, s2, 1000, 1, 0, "bg_std" + fileSuffix );
+    dispBoardsBg( s1 );
+    
+    int nw=0, ng=0, nb=0, ns=0;
+    
+    for( long i=0; i<20000000; i++ )
+    {
+        if( i==200000 or i==1000000 or i==10000000 )
+        {
+            s1.alpha *= 1/5.;
+            s1.beta  *= 1/5.;
+            cout << "\n\n***** Dropped alpha and beta by a factor of 5*****\n";
+            cout << "alpha = " << s1.alpha << endl;
+            cout << "beta  = " << s1.beta  << endl;
+            cout << endl;
+        }
+        s1.learning = true;
+        game g( &s1, &s1, (int) (i+1) );
+        g.setTurn( (int) i%2 );
+        try 
+        {
+            g.stepToEnd();
+        }
+        catch( const string& errMsg )
+        {
+            cout << "ERROR :" << errMsg << endl;
+            return;
+        }
+        catch( exception& e )
+        {
+            cout << "Exception: " << e.what() << endl;
+            return;
+        }
+        catch( ... )
+        {
+            cout << "Some other kind of error...\n";
+            return;
+        }
+        
+        if( g.winner() == 0 ) nw += 1;
+        if( g.winnerScore() == 2 ) ng += 1;
+        if( g.winnerScore() == 3 ) nb += 1;
+        ns += g.nSteps;
+        
+        if( (i+1)%100 == 0 ) 
+        {
+            double fw = nw/100.;
+            double fg = ng/100.;
+            double fb = nb/100.;
+            double as = ns/100.;
+            nw = 0;
+            ng = 0;
+            nb = 0;
+            ns = 0;
+            
+            cout << (i+1) << "   " << fw << "   " << fg << "   " << fb << "   " << as << endl;
+            
+            s1.writeWeights( "bg_std" + fileSuffix );
+        }
+        
+        if( (i+1)%1000 == 0 )
+        {
+            cout << endl;
+            double ppg = playParallel( s1, s2, 1000, 1, i+1, "bg_std" + fileSuffix );
+            if( ppg > maxPpg )
+            {
+                cout << "***** Rolling best ppg = " << ppg << " vs previous max " << maxPpg << "*****\n";
+                maxPpg = ppg;
+                maxInd = i;
+                s1.writeWeights( "bg_max" + fileSuffix );
+            }
+            else
+                cout << "Prev best " << maxPpg << " at index " << maxInd+1 << endl;
+            cout << endl;
+            
+            dispBoardsBg( s1 );
+        }
+    }
+}
+
 void test1()
 {
     // load the weights and traces from the saved files
@@ -2010,7 +2152,7 @@ void testOrigGam()
     //strategytdoriggam s1( "benchmark", "gam_stdgam_80_0.1_0.1" );
     strategytdmult s1( "benchmark", "mult_maxmult_80_0.1_0.1" );
     s1.learning = false;
-    strategyply s2( 3, 3, s1 );
+    strategyply s2( 2, 5, s1 );
     
     //strategyPubEval s2;
     
@@ -2018,38 +2160,17 @@ void testOrigGam()
     //playSerial( s1, s2, 800, 2779, 0, "nowrite" );
     
     
-    board b( referenceBoard( 7 ) );
-    b.setPerspective(1);
+    board b( referenceBoard( 4 ) );
     b.print();
-    set<board> moves( possibleMoves( b, 6, 4 ) );
-    vector<bandv> vals;
-    for( set<board>::iterator it=moves.begin(); it!=moves.end(); it++ )
-    {
-        bandv val;
-        val.b = (*it);
-        val.val = s1.boardValue( (*it) );
-        vals.push_back( val );
-    }
+    cout << s1.getOutputBackgammonLossValue( s1.getMiddleValues( s1.getInputValues( b ), "contact" ), "contact" ) << endl;
+    b.setPerspective(1-b.perspective());
+    cout << "Regular strategy = " << -s1.boardValue( b ) << endl;
+    cout << "Ply strategy     = " << -s2.boardValue( b ) << endl;
     
-    sort( vals.begin(), vals.end(), bandvComp );
-    
-    for( int i=0; i<4; i++ )
-    {
-        cout << "Sorted move " << i+1 << endl;
-        vals.at(i).b.print();
-        cout << "Norm Equity = " << vals.at(i).val << endl;
-        cout << "Ply Equity  = " << s2.boardValue( vals.at(i).b ) << endl;
-        cout << endl;
-    }
-    
-    //cout << s1.getOutputBackgammonLossValue( s1.getMiddleValues( s1.getInputValues( b ), "contact" ), "contact" ) << endl;
-    //b.setPerspective(1-b.perspective());
-    //cout << "Regular strategy = " << -s1.boardValue( b ) << endl;
-    //cout << "Ply strategy     = " << -s2.boardValue( b ) << endl;
-    
-    //long nRuns=10000;
+    int nRuns=10000;
     //double rollVal = rolloutBoardValue( b, s1, nRuns, 12100 );
-    //cout << "Rollout          = " << -rollVal << endl;
+    double rollVal = rolloutBoardValueParallel( b, s1, nRuns, 20000, 16 );
+    cout << "Rollout          = " << -rollVal << endl;
     
     return;
     /*

@@ -64,7 +64,7 @@ int main( int argc, char * argv [] )
     
     return 0;
 }
-
+*/
 
 int main( int argc, char * argv [] )
 {
@@ -76,7 +76,7 @@ int main( int argc, char * argv [] )
     
     // set default values for parameters
     
-    nMiddle = 10;
+    nMiddle = 80;
     alpha0  = 0.1;
     beta0   = 1 * alpha0;
     
@@ -95,7 +95,7 @@ int main( int argc, char * argv [] )
     else
     {
         stringstream ss;
-        ss << "gam_" << nMiddle << "_" << alpha0 << "_" << beta0;
+        ss << "bg_" << nMiddle << "_" << alpha0 << "_" << beta0;
         fileSuffix = ss.str();
     }
     if( argc > 5 )
@@ -103,7 +103,7 @@ int main( int argc, char * argv [] )
     else
     {
         stringstream ss;
-        ss << "exp_80_0.1_0.1";
+        ss << "gam_80_0.1_0.1";
         srcSuffix = ss.str();
     }
     
@@ -113,11 +113,11 @@ int main( int argc, char * argv [] )
     cout << "suffix  = " << fileSuffix << endl;
     cout << "src     = " << srcSuffix << endl;
     
-    sim8( nMiddle, alpha0, beta0, fileSuffix, srcSuffix );
+    sim9( nMiddle, alpha0, beta0, fileSuffix, srcSuffix );
     
     return 0;
 }
-
+/*
 int main( int argc, char * argv [] )
 {
     int nMiddle;
@@ -150,12 +150,12 @@ int main( int argc, char * argv [] )
 {
     rollTest();
 }
-*/
+
 int main( int argc, char * argv [] )
 {
     testOrigGam();
 }
-/*
+
 int main( int argc, char * argv [] )
 {
     //compareBearoff();
