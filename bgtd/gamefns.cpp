@@ -7,6 +7,7 @@
 //
 
 #include <algorithm>
+#include <boost/thread.hpp>
 #include <map>
 #include <iostream>
 #include "gamefns.h"
@@ -227,17 +228,17 @@ bool isRace( const board& brd )
     return brd.isRace();
 }
 
-double rolloutBoardValue( const board& brd, strategy& strat, long nRuns, int seed )
+double rolloutBoardValue( const board& brd, strategy& strat, int nRuns, int seed )
 {
     CRandomMersenne rng(seed);
     
     double avgVal=0;
     
-    for( long i=0; i<nRuns; i++ )
+    for( int i=0; i<nRuns; i++ )
     {
         // start a new game and run it to completion
         
-        game g( &strat, &strat, seed+( (int) i ) );
+        game g( &strat, &strat, seed+i );
         g.setBoard( brd );
         g.setTurn( 1 - brd.perspective() ); // start with opponent on roll
         
@@ -253,4 +254,75 @@ double rolloutBoardValue( const board& brd, strategy& strat, long nRuns, int see
     
     avgVal /= nRuns;
     return avgVal;
+}
+
+vector<double> valsRollout;
+
+class workerRollout
+{
+public:
+    workerRollout( const board& brd, strategy& strat, int nRuns, int seed, int index ) : brd(brd), strat(strat), nRuns(nRuns), seed(seed), index(index) {};
+    
+    void operator()()
+    {
+        double val = rolloutBoardValue( brd, strat, nRuns, seed );
+        valsRollout.at(index) = val;
+    }
+    
+private:
+    const board& brd;
+    strategy& strat;
+    int nRuns;
+    int seed;
+    int index;
+};
+
+double rolloutBoardValueParallel( const board& brd, strategy& strat, int nRuns, int seed, int nThreads )
+{
+    using namespace boost;
+    
+    // initialize the vector that'll hold the results
+    
+    valsRollout.resize( nThreads );
+    
+    // break the runs into nThreads pieces. For each one we'll use a seed incremented by the bucket
+    // size. This isn't properly parallelization but it should be okay. Really we should use a PRNG
+    // like SPRNG.
+    
+    thread_group ts;
+    int runsPerThread = nRuns / nThreads;
+    
+    // the buckets from 0->nThreads-2 contain runsPerThread each
+    
+    for( int i=0; i<nThreads-1; i++ )
+        ts.create_thread( workerRollout( brd, strat, runsPerThread, seed+i*runsPerThread, i ) );
+    
+    // the last bucket contains the rest
+    
+    int lastNRuns = nRuns - runsPerThread * ( nThreads - 1 );
+    bool useLast=false;
+    if( lastNRuns > 0 )
+    {
+        ts.create_thread( workerRollout( brd, strat, nRuns - runsPerThread * ( nThreads - 1 ), seed+(nThreads-1)*runsPerThread, nThreads-1 ) );
+        useLast = true;
+    }
+    
+    // wait for the calcs
+    
+    ts.join_all();
+    
+    // calculate the average of the averages
+    
+    int count=nThreads-1;
+    double val=0;
+    for( int i=0; i<nThreads-1; i++ )
+        val += valsRollout.at(i);
+    if( useLast )
+    {
+        count ++;
+        val += valsRollout.at(nThreads-1);
+    }
+    
+    val /= count;
+    return val;
 }

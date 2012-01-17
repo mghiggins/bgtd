@@ -30,6 +30,11 @@ bool isRace( const board& board );
 // figure out the moves. Assumes we start on the opponent's roll to
 // be consistent with strategy boardValue calculations.
 
-double rolloutBoardValue( const board& brd, strategy& strat, long nRuns, int seed );
+double rolloutBoardValue( const board& brd, strategy& strat, int nRuns, int seed );
+
+// rolloutBoardValueParallel does the same thing but breaks the runs into nThreads
+// threads and runs them in parallel.
+
+double rolloutBoardValueParallel( const board& brd, strategy& strat, int nRuns, int seed, int nThreads );
 
 #endif
