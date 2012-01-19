@@ -326,3 +326,179 @@ double rolloutBoardValueParallel( const board& brd, strategy& strat, int nRuns, 
     val /= count;
     return val;
 }
+
+vector< set<roll> > * hittingRolls=0;
+
+void setupHittingRolls();
+void setupHittingRolls()
+{
+    // sets up the list that records the indirect ways to hit a blot for
+    // different numbers of steps away. "Indirect" means ways to hit with
+    // two dice, excluding any direct hits with a single die.
+    
+    if( hittingRolls != 0 ) return; // nothing to do
+    
+    // define the vector of hitting rolls
+    
+    hittingRolls = new vector< set<roll> >;
+    
+    // make it 24 elements long - but several of those elements are empty because there's no
+    // roll where an opponent can hit a blot that's 13, 14, 19, 21, 22, or 23 steps away
+    
+    hittingRolls->resize(24);
+    hittingRolls->at(1).insert( roll(1,1) ); // 2: (1,1)
+    hittingRolls->at(2).insert( roll(1,1) ); // 3: (1,1),(1,2)
+    hittingRolls->at(2).insert( roll(1,2) );
+    hittingRolls->at(3).insert( roll(1,1) ); // 4: (1,1),(2,2),(1,3)
+    hittingRolls->at(3).insert( roll(2,2) );
+    hittingRolls->at(3).insert( roll(1,3) );
+    hittingRolls->at(4).insert( roll(1,4) ); // 5: (1,4),(2,3)
+    hittingRolls->at(4).insert( roll(2,3) );
+    hittingRolls->at(5).insert( roll(2,2) ); // 6: (2,2), (3,3), (1,5), (2,4)
+    hittingRolls->at(5).insert( roll(3,3) );
+    hittingRolls->at(5).insert( roll(1,5) );
+    hittingRolls->at(5).insert( roll(2,4) );
+    hittingRolls->at(6).insert( roll(1,6) ); // 7: (1,6), (2,5), (3,4)
+    hittingRolls->at(6).insert( roll(2,5) );
+    hittingRolls->at(6).insert( roll(3,4) );
+    hittingRolls->at(7).insert( roll(2,2) ); // 8: (2,2), (4,4), (2,6), (3,5)
+    hittingRolls->at(7).insert( roll(4,4) );
+    hittingRolls->at(7).insert( roll(2,6) );
+    hittingRolls->at(7).insert( roll(3,5) );
+    hittingRolls->at(8).insert( roll(3,3) ); // 9: (3,3), (3,6), (4,5)
+    hittingRolls->at(8).insert( roll(3,6) );
+    hittingRolls->at(8).insert( roll(4,5) );
+    hittingRolls->at(9).insert( roll(5,5) ); // 10: (5,5), (4,6)
+    hittingRolls->at(9).insert( roll(4,6) );
+    hittingRolls->at(10).insert( roll(5,6) ); // 11: (5,6)
+    hittingRolls->at(11).insert( roll(3,3) ); // 12: (3,3), (4,4), (6,6)
+    hittingRolls->at(11).insert( roll(4,4) );
+    hittingRolls->at(11).insert( roll(6,6) );
+    hittingRolls->at(14).insert( roll(5,5) ); // 15: (5,5)
+    hittingRolls->at(15).insert( roll(4,4) ); // 16: (4,4)
+    hittingRolls->at(17).insert( roll(6,6) ); // 18: (6,6)
+    hittingRolls->at(19).insert( roll(5,5) ); // 20: (5,5)
+    hittingRolls->at(23).insert( roll(6,6) ); // 24: (6,6)
+}
+
+set<roll> hittingShots( const board& brd, bool forOpponent )
+{
+    // if we haven't initialized the hitting rolls list yet, do so now
+    
+    if( hittingRolls == 0 ) setupHittingRolls();
+    
+    // find all the player's blots and note which opponent rolls would hit them
+    
+    set<roll> shots;
+    
+    vector<int> checkers, otherCheckers;
+    int otherHit;
+    
+    if( forOpponent )
+    {
+        checkers = brd.checkers();
+        otherCheckers = brd.otherCheckers();
+        otherHit = brd.otherHit();
+    }
+    else
+    {
+        checkers = brd.otherCheckers();
+        otherCheckers = brd.checkers();
+        reverse( checkers.begin(), checkers.end() );
+        reverse( otherCheckers.begin(), otherCheckers.end() );
+        
+        otherHit = brd.hit();
+    }
+    int i, j, k, diff, nOtherChecker;
+    bool checkIndirect;
+    set<roll>::iterator it;
+    
+    for( i=0; i<24; i++ )
+    {
+        // if there's more than one checker on the bar, a checker outside the home board can't be
+        // hit
+        
+        if( otherHit > 1 and i > 5 ) break;
+        
+        // otherwise check for a blot
+           
+        if( checkers.at(i) == 1 )
+        {
+            // found a blot - see whether anything can hit it. Start at
+            // position "-1" which means a hit checker.
+            
+            for( j=-1; j<i; j++ )
+            {
+                diff = i-j;
+                
+                // some # of steps have no way to hit - skip them
+                
+                if( diff == 13 || diff == 14 || diff == 19 || diff == 21 || diff == 22 || diff == 23 ) continue;
+                
+                // if we're looking at a checker on the bar and there's two there, or if we're looking
+                // at a checker away from the bar and there's a checker on it, we can only use direct hits
+                // (doubles treated a bit separately).
+                
+                if( ( j == -1 and otherHit > 1 ) or ( j > -1 and otherHit > 0 ) )
+                    checkIndirect = false;
+                else
+                    checkIndirect = true;
+                
+                if( j == -1 )
+                    nOtherChecker = otherHit;
+                else
+                    nOtherChecker = otherCheckers.at(j);
+                
+                if( nOtherChecker > 0 )
+                {
+                    // if the diff is 1-6, we add all rolls that include that die. For comparison
+                    // purposes we always put the smaller die first in the roll object.
+                    
+                    if( diff < 7 )
+                    {
+                        for( k=1; k<=diff; k++ ) shots.insert( roll(k,diff) );
+                        for( k=diff+1; k<7; k++ ) shots.insert( roll(diff,k) );
+                    }
+                    
+                    // for each possible roll that could hit it indirectly, check whether it's valid
+                    
+                    for( it=hittingRolls->at(diff-1).begin(); it!=hittingRolls->at(diff-1).end(); it++ )
+                    {
+                        if( not checkIndirect and it->die1 != it->die2 ) continue;
+                        if( otherHit == 1 and it->die1 == it->die2 and diff == 4 * it->die1 ) continue;
+                        
+                        // if both intermediate slots are covered by the player, the opponent can't
+                        // use the roll
+                        
+                        if( checkers.at(i-it->die1) > 1 and checkers.at(i-it->die2) > 1 ) continue;
+                        
+                        // otherwise it's a possibility
+                        
+                        shots.insert( (*it) );
+                    }
+                }
+            }
+        }
+    }
+    
+    return shots;
+}
+
+double hittingProb( const board& brd, bool forOpponent )
+{
+    return hittingProb( hittingShots( brd, forOpponent ) );
+}
+
+double hittingProb( const set<roll>& shots )
+{
+    double count=0;
+    for( set<roll>::const_iterator it=shots.begin(); it!=shots.end(); it++ )
+    {
+        if( it->die1 == it->die2 )
+            count += 1;
+        else
+            count += 2;
+    }
+    
+    return count/36.;
+}

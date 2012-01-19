@@ -37,4 +37,28 @@ double rolloutBoardValue( const board& brd, strategy& strat, int nRuns, int seed
 
 double rolloutBoardValueParallel( const board& brd, strategy& strat, int nRuns, int seed, int nThreads );
 
+// roll is a simple class that holds a two-dice roll
+
+class roll
+{
+public:
+    roll( int die1, int die2 ) : die1(die1), die2(die2) {};
+    int die1, die2;
+    
+    bool operator==( const roll& otherRoll ) const { return die1==otherRoll.die1 and die2==otherRoll.die2; };
+    bool operator<( const roll& otherRoll ) const { return die1<otherRoll.die1 or ( die1==otherRoll.die1 and die2<otherRoll.die2 ); };
+};
+
+// hittingShots calculates the rolls of the opponent that would hit
+// any of a player's blots if forOpponent=true and the reverse if
+// forOpponent=false.
+
+set<roll> hittingShots( const board& brd, bool forOpponent );
+
+// hittingProb returns the probability of getting a hitting roll; takes
+// either a board or a pre-calculated set of shots.
+
+double hittingProb( const board& brd, bool forOpponent );
+double hittingProb( const set<roll>& shots );
+
 #endif
