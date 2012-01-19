@@ -23,14 +23,16 @@ class strategytdmult : public strategytdbase
 public:
     strategytdmult();
     strategytdmult( int nMiddle );
-    strategytdmult( const string& path, const string& filePrefix );
+    strategytdmult( const string& path, const string& filePrefix, bool useShotProbInput=false );
     virtual ~strategytdmult() {};
     
     virtual double boardValue( const board& brd ) const;
     
     string evaluator( const board& brd) const;
     
-    vector<double> getInputValues( const board& brd ) const;
+    int nInputs( const string& netName ) const;
+    vector<double> getInputValues( const board& brd, const string& netName ) const;
+    vector<double> getBaseInputValues( const board& brd ) const;
     vector<double> getMiddleValues( const vector<double>& inputs, const string& netName ) const;
     double getOutputProbValue( const vector<double>& middles, const string& netName ) const;
     double getOutputGammonValue( const vector<double>& middles, const string& netName ) const;
@@ -54,6 +56,10 @@ public:
     
     void writeWeights( const string& filePrefix ) const;
     void loadWeights( const string& path, const string& filePrefix );
+    
+    // define some parameters
+    
+    bool useShotProbInput;
     
 private:
     void setup();

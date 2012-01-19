@@ -9,6 +9,7 @@
 #include <cmath>
 #include <fstream>
 #include "bearofffns.h"
+#include "gamefns.h"
 #include "randomc.h"
 #include "strategytdmult.h"
 
@@ -27,17 +28,33 @@ vector<double> randomWeights( int nWeights, CRandomMersenne& rng )
 strategytdmult::strategytdmult()
 {
     setupRandomWeights( 40 ); // default # of middle nodes is 40
+    useShotProbInput = false;
 }
 
 strategytdmult::strategytdmult( int nMiddle )
 {
     setupRandomWeights( nMiddle );
+    useShotProbInput = false;
 }
 
-strategytdmult::strategytdmult( const string& path, const string& filePrefix )
+strategytdmult::strategytdmult( const string& path, const string& filePrefix, bool useShotProbInput )
 {
+    this->useShotProbInput = useShotProbInput; // overwritten if the stored data include the flag for this input
     loadWeights( path, filePrefix );
     setup();
+}
+
+int strategytdmult::nInputs( const string& netName ) const
+{
+    if( netName == "race" )
+        return 196;
+    else
+    {
+        if( useShotProbInput )
+            return 198;
+        else
+            return 196;
+    }
 }
 
 void strategytdmult::setupRandomWeights( int nMiddle )
@@ -55,7 +72,7 @@ void strategytdmult::setupRandomWeights( int nMiddle )
     nets[1] = "race";
     nets[2] = "crashed";
     
-    int i;
+    int i, nInput;
     
     for( vector<string>::iterator it=nets.begin(); it!=nets.end(); it++ )
     {
@@ -65,8 +82,10 @@ void strategytdmult::setupRandomWeights( int nMiddle )
         outputBgWeights[ (*it) ] = randomWeights( nMiddle + 1, rng );
         outputBgLossWeights[ (*it) ] = randomWeights( nMiddle + 1, rng );
         
+        nInput = nInputs( (*it) );
+        
         vector< vector<double> > middles(nMiddle);
-        for( i=0; i<nMiddle; i++ ) middles.at(i) = randomWeights( 199, rng );
+        for( i=0; i<nMiddle; i++ ) middles.at(i) = randomWeights( nInput+1, rng );
         middleWeights[ (*it) ] = middles;
     }
     
@@ -122,7 +141,7 @@ double strategytdmult::boardValue( const board& brd ) const
         // of gammon loss; prob of bg win; prob of bg loss. Sanity check to make sure probs are
         // ordered sensibly.
         
-        vector<double> middles( getMiddleValues( getInputValues(flippedBoard), eval ) );
+        vector<double> middles( getMiddleValues( getInputValues(flippedBoard,eval), eval ) );
         
         // get the prob of any kind of win - we always need this
         
@@ -170,8 +189,26 @@ double strategytdmult::boardValue( const board& brd ) const
     }
 }
 
-vector<double> strategytdmult::getInputValues( const board& brd ) const
+vector<double> strategytdmult::getInputValues( const board& brd, const string& netName ) const
 {
+    vector<double> inputs( getBaseInputValues( brd ) );
+    if( netName != "race" )
+    {
+        if( useShotProbInput )
+        {
+            inputs.push_back( hittingProb( brd, true ) );
+            inputs.push_back( hittingProb( brd, false ) );
+        }
+    }
+    
+    return inputs;
+}
+
+vector<double> strategytdmult::getBaseInputValues( const board& brd ) const
+{
+    // standard Tesauro inputs, except no inputs for whose turn it is, and new inputs for
+    // whether it's impossible to get a backgammon. These are common to the inputs for all networks.
+    
     vector<double> inputs;
     inputs.resize(198,0);
     vector<int> checks( brd.checkers() );
@@ -226,6 +263,7 @@ vector<double> strategytdmult::getMiddleValues( const vector<double>& inputs, co
     vector<double> vals;
     vals.resize( nMiddle );
     int i, j;
+    int nInput( nInputs( netName ) );
     double val;
     
     hash_map< string, vector< vector<double> > >::const_iterator it = middleWeights.find( netName );
@@ -236,9 +274,9 @@ vector<double> strategytdmult::getMiddleValues( const vector<double>& inputs, co
         
         val = 0;
                
-        for( j=0; j<198; j++ )
+        for( j=0; j<nInput; j++ )
             val += weights.at(j) * inputs.at(j);
-        val += weights.at(198); // bias weight
+        val += weights.at(nInput); // bias weight
         vals.at(i) = 1. / ( 1 + exp( -val ) );
     }
     
@@ -423,20 +461,16 @@ void strategytdmult::update( const board& oldBoard, const board& newBoard )
         netName = eval;
     
     // before we figure out the estimate of the correct values from newBoard (or bearoff), we'll calculate
-    // the partial derivatives of the network outputs to the network weights. Don't bother training
-    // the gammon node if there's no chance of a gammon win.
+    // the partial derivatives of the network outputs to the network weights. 
     
-    // some question on the gammon node training: do you train it when the probability of gammon is known
-    // to be zero? Should you explicitly use zero prob in board evaluation & move choice during training?
-    // Does it need to be consistent?
-    
-    vector<double> oldInputs( getInputValues(oldBoard) );
+    vector<double> oldInputs( getInputValues( oldBoard, netName ) );
     vector<double> oldMiddles( getMiddleValues( oldInputs, netName ) );
     double oldPWin = getOutputProbValue( oldMiddles, netName );
     double oldPGam = getOutputGammonValue( oldMiddles, netName );
     double oldPGamLoss = getOutputGammonLossValue( oldMiddles, netName );
     double oldPBg = getOutputBackgammonValue( oldMiddles, netName );
     double oldPBgLoss = getOutputBackgammonLossValue( oldMiddles, netName );
+    int nInput( nInputs( netName ) );
     
     vector<double> dProbdMiddle(nMiddle+1);         // derivs of prob win output to its weights vs the middle nodes, and one extra for its bias weight
     vector<double> dGamdMiddle(nMiddle+1);          // derivs of gam win output to its weights vs the middle nodes, and one extra for its bias weight
@@ -475,11 +509,11 @@ void strategytdmult::update( const board& oldBoard, const board& newBoard )
         dBgdMiddle.at(i) = pBgProd * mid;
         dBgLossdMiddle.at(i) = pBgLossProd * mid;
         
-        dProbdInputs.at(i).resize(199);
-        dGamdInputs.at(i).resize(199);
-        dGamLossdInputs.at(i).resize(199);
-        dBgdInputs.at(i).resize(199);
-        dBgLossdInputs.at(i).resize(199);
+        dProbdInputs.at(i).resize(nInput+1);
+        dGamdInputs.at(i).resize(nInput+1);
+        dGamLossdInputs.at(i).resize(nInput+1);
+        dBgdInputs.at(i).resize(nInput+1);
+        dBgLossdInputs.at(i).resize(nInput+1);
         
         middleProd = mid * ( 1 - mid );
         
@@ -495,7 +529,7 @@ void strategytdmult::update( const board& oldBoard, const board& newBoard )
         vector<double>& bgRow = dBgdInputs.at(i);
         vector<double>& bgLossRow = dBgLossdInputs.at(i);
         
-        for( j=0; j<198; j++ )
+        for( j=0; j<nInput; j++ )
         {
             input = oldInputs.at(j);
             probRow.at(j) = pWinProd * midProbWeight * middleProd * input;
@@ -504,11 +538,11 @@ void strategytdmult::update( const board& oldBoard, const board& newBoard )
             bgRow.at(j) = pBgProd * midBgWeight * middleProd * input;
             bgLossRow.at(j) = pBgLossProd * midBgLossWeight * middleProd * input;
         }
-        probRow.at(198) = pWinProd * midProbWeight * middleProd; // bias weight
-        gamRow.at(198) = pGamProd * midGamWeight * middleProd;
-        gamLossRow.at(198) = pGamLossProd * midGamLossWeight * middleProd;
-        bgRow.at(198) = pBgProd * midBgWeight * middleProd;
-        bgLossRow.at(198) = pBgLossProd * midBgLossWeight * middleProd;
+        probRow.at(nInput) = pWinProd * midProbWeight * middleProd; // bias weight
+        gamRow.at(nInput) = pGamProd * midGamWeight * middleProd;
+        gamLossRow.at(nInput) = pGamLossProd * midGamLossWeight * middleProd;
+        bgRow.at(nInput) = pBgProd * midBgWeight * middleProd;
+        bgLossRow.at(nInput) = pBgLossProd * midBgLossWeight * middleProd;
     }
     
     // don't forget the partial deriv of outputs to their bias weight
@@ -571,7 +605,7 @@ void strategytdmult::update( const board& oldBoard, const board& newBoard )
             // calculate the probabilities from the new board's network. Need to reflect that
             // the other player has the dice, so flip the board around.
             
-            vector<double> newMiddles( getMiddleValues( getInputValues(flippedBoard), newEval ) );
+            vector<double> newMiddles( getMiddleValues( getInputValues( flippedBoard, newEval ), newEval ) );
             newPWin = 1 - getOutputProbValue( newMiddles, newEval ); // player win prob = 1 - other player win prob
             if( newBoard.otherBornIn() == 0 )
                 newPGam = getOutputGammonLossValue( newMiddles, newEval ); // player gammon win prob = other's gammon loss prob
@@ -616,7 +650,7 @@ void strategytdmult::update( const board& oldBoard, const board& newBoard )
         vector<double>& bgRow = dBgdInputs.at(i);
         vector<double>& bgLossRow = dBgLossdInputs.at(i);
         
-        for( j=0; j<199; j++ )
+        for( j=0; j<nInput+1; j++ )
             midRow.at(j) += beta * ( probDiff * prodRow.at(j)
                                    + gamDiff * gamRow.at(j)
                                    + gamLossDiff * gamLossRow.at(j)
@@ -640,17 +674,25 @@ void strategytdmult::writeWeights( const string& filePrefix ) const
     string path = "/Users/mghiggins/bgtdres";
     
     // define the file name for the list of network names and open that file. This file will also contain the number
-    // of middle nodes.
+    // of middle nodes. Also entries for the optional parameters.
     
     string netName = path + "/netNames_" + filePrefix + ".txt";
     ofstream fn( netName.c_str() );
     fn << nMiddle << endl;
+    if( useShotProbInput )
+        fn << 1 << endl;
+    else
+        fn << 0 << endl;
     
     for( hash_map< string, vector<double> >::const_iterator itProb = outputProbWeights.begin(); itProb != outputProbWeights.end(); itProb ++ )
     {
         // write the network name to the file
         
         fn << itProb->first << endl;
+        
+        // get the # of inputs for this network
+        
+        int nInput( nInputs( itProb->first ) );
         
         // get references to the other weights vectors
         
@@ -683,7 +725,7 @@ void strategytdmult::writeWeights( const string& filePrefix ) const
             fogl << itGamLoss->second.at(j) << endl;
             fob << itBg->second.at(j) << endl;
             fobl << itBgLoss->second.at(j) << endl;
-            for( int k=0; k<199; k++ )
+            for( int k=0; k<nInput+1; k++ )
                 fm  << itMid->second.at(j).at(k) << endl;
         }
         fop << itProb->second.at(nMiddle) << endl;
@@ -720,6 +762,20 @@ void strategytdmult::loadWeights( const string& subPath, const string& filePrefi
     string line;
     getline( fn, line );
     nMiddle = atoi( line.c_str() );
+    
+    // the file may also contain values for the optional parameters. If so, load them. If not, assign them defaults.
+    
+    bool randomShotInput;
+    
+    if( fn.eof() )
+        randomShotInput = true;
+    else
+    {
+        randomShotInput = false;
+        getline( fn, line );
+        int shotBit = atoi( line.c_str() );
+        useShotProbInput = shotBit == 1;
+    }
     
     int i, j;
     
