@@ -64,7 +64,7 @@ int main( int argc, char * argv [] )
     
     return 0;
 }
-*/
+
 
 int main( int argc, char * argv [] )
 {
@@ -103,7 +103,7 @@ int main( int argc, char * argv [] )
     else
     {
         stringstream ss;
-        ss << "gam_80_0.1_0.1";
+        ss << "bg_80_0.1_0.1";
         srcSuffix = ss.str();
     }
     
@@ -117,7 +117,7 @@ int main( int argc, char * argv [] )
     
     return 0;
 }
-/*
+
 int main( int argc, char * argv [] )
 {
     int nMiddle;
@@ -150,10 +150,15 @@ int main( int argc, char * argv [] )
 {
     rollTest();
 }
-
+*/
 int main( int argc, char * argv [] )
 {
     testOrigGam();
+}
+/*
+int main( int argc, char * argv [] )
+{
+    testHittingShots();
 }
 
 int main( int argc, char * argv [] )

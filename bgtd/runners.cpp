@@ -1304,7 +1304,7 @@ void dispBoard( int ind, bool flipped, const strategytdmult& s, const board& b )
     else
         netName = eval;
     
-    vector<double> mids = s.getMiddleValues( s.getInputValues( b ), netName );
+    vector<double> mids = s.getMiddleValues( s.getInputValues( b, netName ), netName );
     double pw  = s.getOutputProbValue( mids, netName );
     double pg  = s.getOutputGammonValue( mids, netName );
     double pgl = s.getOutputGammonLossValue( mids, netName );
@@ -1822,8 +1822,8 @@ void sim9( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
     
     // try out the TD strategy with multiple networks
     
-    strategytdorigbg s1( "benchmark", "gam_max" + srcSuffix );
-    strategytdoriggam s2( "benchmark", "gam_max" + srcSuffix ); // opponent
+    strategytdorigbg s1( nMiddle );
+    strategytdorigbg s2( "benchmark", "bg_std" + srcSuffix ); // opponent
     s2.learning = false;
     //strategyPubEval s2;
     
@@ -2078,7 +2078,7 @@ void test4()
             }
             else
             {
-                vector<double> middles = s1.getMiddleValues( s1.getInputValues( b ), eval );
+                vector<double> middles = s1.getMiddleValues( s1.getInputValues( b, eval ), eval );
                 
                 pw  = s1.getOutputProbValue( middles, eval );
                 pgw = s1.getOutputGammonValue( middles, eval );
@@ -2097,7 +2097,7 @@ void test4()
                 pbw  = pbl;
                 pbl  = pbw;
             }
-            double equity = ( pw - pgw - pbw ) + 2 * ( pgw - pbw ) + 3 * pbw - ( 1 - pw - pgl - pbl ) - 2 * ( pgl - pbl ) - 3 * pbl;
+            double equity = ( pw - pgw ) + 2 * ( pgw - pbw ) + 3 * pbw - ( 1 - pw - pgl ) - 2 * ( pgl - pbl ) - 3 * pbl;
             cout << "White equity                     = " << equity << endl;
             cout << "Probability of white win         = " << pw  << endl;
             cout << "Probability of white gammon win  = " << pgw << endl;
@@ -2149,17 +2149,25 @@ void testOrigGam()
 {
     // try out playing against a human
     
-    //strategytdoriggam s1( "benchmark", "gam_stdgam_80_0.1_0.1" );
-    strategytdmult s1( "benchmark", "mult_maxmult_80_0.1_0.1" );
+    strategytdorigbg s1( "", "bg_maxbg_120_0.1_0.1" );
+    strategytdorigbg s2( "benchmark", "bg_stdbg_80_0.1_0.1" );
+    //strategytdoriggam s2( "benchmark", "gam_maxgam_80_0.1_0.1" );
+    //strategytdmult s2( "benchmark", "mult_maxmult_80_0.1_0.1" );
     s1.learning = false;
-    strategyply s2( 2, 5, s1 );
+    s2.learning = false;
+    //strategyply s2( 2, 5, s1 );
     
     //strategyPubEval s2;
     
-    //playParallel( s1, s2, 800, 2779, 0, "nowrite" );
+    double avgVal=0;
+    for( int i=0; i<10; i++ )
+        avgVal += playParallel( s1, s2, 1000, 1001 + i*1000, 0, "nowrite" );
+    avgVal /= 10.;
+    cout << "Average equity = " << avgVal << endl;
+    
     //playSerial( s1, s2, 800, 2779, 0, "nowrite" );
     
-    
+    /*
     board b( referenceBoard( 4 ) );
     b.print();
     cout << s1.getOutputBackgammonLossValue( s1.getMiddleValues( s1.getInputValues( b ), "contact" ), "contact" ) << endl;
@@ -2172,21 +2180,19 @@ void testOrigGam()
     double rollVal = rolloutBoardValueParallel( b, s1, nRuns, 20000, 16 );
     cout << "Rollout          = " << -rollVal << endl;
     
-    return;
-    /*
     //strategyPubEval s1;
-    //strategyhuman s2;
+    strategyhuman s2;
     
     vector<int> scores;
     int n=10;
     scores.resize(n,0);
     
-    double pw, pgw, pgl;
+    double pw, pgw, pgl, pbw, pbl;
     
     for( int i=0; i<n; i++ )
     {
         cout << "NEW GAME - game # " << i+1 << endl;
-        game g(&s2,&s1,i+3585);
+        game g(&s2,&s1,i+3985);
         g.verbose = true;
         g.setTurn(i%2);
         g.getBoard().print();
@@ -2202,6 +2208,8 @@ void testOrigGam()
             pw  = s1.getOutputWin( middles );
             pgw = s1.getOutputGammon( middles );
             pgl = s1.getOutputGammonLoss( middles );
+            pbw = s1.getOutputBackgammon( middles );
+            pbl = s1.getOutputBackgammonLoss( middles );
             
             if( g.turn() == 1 )
             {
@@ -2210,12 +2218,17 @@ void testOrigGam()
                 temp = pgw;
                 pgw  = pgl;
                 pgl  = temp;
+                temp = pbw;
+                pbw = pbl;
+                pbl = temp;
             }
-            double equity = ( pw - pgw ) + 2 * pgw - ( 1 - pw - pgl ) - 2 * pgl;
+            double equity = ( pw - pgw ) + 2 * ( pgw - pbw ) + 3 * pbw - ( 1 - pw - pgl ) - 2 * ( pgl - pbl ) - 3 * pbl;
             cout << "White equity                     = " << equity << endl;
             cout << "Probability of white win         = " << pw  << endl;
             cout << "Probability of white gammon win  = " << pgw << endl;
             cout << "Probability of white gammon loss = " << pgl << endl;
+            cout << "Probability of white bg win      = " << pbw << endl;
+            cout << "Probability of white bg loss     = " << pbl << endl;
             cout << "White pips                       = " << g.getBoard().pips() << endl;
             cout << "Black pips                       = " << g.getBoard().otherPips() << endl;
             g.step();
@@ -2534,3 +2547,30 @@ void compareBearoff()
     cout << "Prob > 8 ps  = " << elemProb << endl;
 }
 
+void testHittingShots()
+{
+    board b( referenceBoard(7) );
+    /*
+    for( int i=0; i<24; i++ )
+    {
+        b.setChecker( i, 0 );
+        b.setOtherChecker( i, 0 );
+    }
+    b.setBornIn(14);
+    b.setChecker(6,1);
+    b.setOtherBornIn(13);
+    b.incrementOtherHit();
+    b.setOtherChecker( 2, 1 );
+    */
+    b.validate();
+    b.print();
+    
+    set<roll> hittingRolls( hittingShots( b, true ) );
+    cout << hittingRolls.size() << " hitting rolls\n";
+    cout << "Prob of a hit = " << hittingProb( hittingRolls ) << endl;
+    cout << endl;
+    
+    for( set<roll>::iterator it=hittingRolls.begin(); it!=hittingRolls.end(); it++ )
+        cout << "( " << it->die1 << ", " << it->die2 << " )\n";
+    
+}
