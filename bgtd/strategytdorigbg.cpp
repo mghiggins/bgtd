@@ -89,7 +89,7 @@ double strategytdorigbg::boardValue( const board& brd ) const
     
     // get the equity from the perspective of the opponent
     
-    double equity = 1 * ( pw - pg - pb ) + 2 * ( pg - pb ) + 3 * pb - 1 * ( 1 - pw - pgl - pbl ) - 2 * ( pgl - pbl ) - 3 * pbl; 
+    double equity = 1 * ( pw - pg ) + 2 * ( pg - pb ) + 3 * pb - 1 * ( 1 - pw - pgl ) - 2 * ( pgl - pbl ) - 3 * pbl; 
     
     // return -1 * that to get the equity of the player
     
@@ -150,6 +150,7 @@ void strategytdorigbg::loadWeights( const string& subPath, const string& filePre
     // other outputs.
     
     string path = "/Users/mghiggins/bgtdres";
+    if( subPath != "" ) path += "/" + subPath;
     
     // define the file names for the weights files
     
