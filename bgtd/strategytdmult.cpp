@@ -37,23 +37,23 @@ strategytdmult::strategytdmult( int nMiddle )
     useShotProbInput = false;
 }
 
-strategytdmult::strategytdmult( const string& path, const string& filePrefix, bool useShotProbInput )
+strategytdmult::strategytdmult( const string& path, const string& filePrefix, bool useShotProbInput, bool randomShotInput )
 {
     this->useShotProbInput = useShotProbInput; // overwritten if the stored data include the flag for this input
-    loadWeights( path, filePrefix );
+    loadWeights( path, filePrefix, randomShotInput );
     setup();
 }
 
 int strategytdmult::nInputs( const string& netName ) const
 {
     if( netName == "race" )
-        return 196;
+        return 198;
     else
     {
         if( useShotProbInput )
-            return 198;
+            return 200;
         else
-            return 196;
+            return 198;
     }
 }
 
@@ -745,7 +745,7 @@ void strategytdmult::writeWeights( const string& filePrefix ) const
     fn.close();
 }
 
-void strategytdmult::loadWeights( const string& subPath, const string& filePrefix )
+void strategytdmult::loadWeights( const string& subPath, const string& filePrefix, bool randomShotInput )
 {
     // load the # of middle nodes and the network names from the names file
     
@@ -765,19 +765,8 @@ void strategytdmult::loadWeights( const string& subPath, const string& filePrefi
     
     // the file may also contain values for the optional parameters. If so, load them. If not, assign them defaults.
     
-    bool randomShotInput;
-    
-    if( fn.eof() )
-        randomShotInput = true;
-    else
-    {
-        randomShotInput = false;
-        getline( fn, line );
-        int shotBit = atoi( line.c_str() );
-        useShotProbInput = shotBit == 1;
-    }
-    
-    int i, j;
+    CRandomMersenne rng(1); // used for random weights if we're loading weights from a file with no shot prob weight but the network needs one
+    int i, j, nInput;
     
     // clear any existing elements from the weights maps
     
@@ -823,6 +812,8 @@ void strategytdmult::loadWeights( const string& subPath, const string& filePrefi
             ifstream fobl( foblName.c_str() );
             ifstream fm( fmName.c_str() );
             
+            nInput = nInputs( netName );
+            
             for( i=0; i<nMiddle; i++ )
             {
                 getline( fop, line );
@@ -835,11 +826,24 @@ void strategytdmult::loadWeights( const string& subPath, const string& filePrefi
                 bgWeights.at(i) = atof( line.c_str() );
                 getline( fobl, line );
                 bgLossWeights.at(i) = atof( line.c_str() );
-                midWeights.at(i).resize(199);
-                for( j=0; j<199; j++ )
+                midWeights.at(i).resize(nInput+1);
+                for( j=0; j<nInput+1; j++ )
                 {
-                    getline( fm, line );
-                    midWeights.at(i).at(j) = atof( line.c_str() );
+                    if( j < 198 or not randomShotInput or netName == "race" )
+                    {
+                        getline( fm, line );
+                        midWeights.at(i).at(j) = atof( line.c_str() );
+                    }
+                    else if( j == nInput )
+                    {
+                        getline( fm, line );
+                        midWeights.at(i).at(nInput) = atof( line.c_str() ); // bias weight - needs to be in the last slot no matter what
+                    }
+                    else
+                    {
+                        // assign a random weight, since the weights file we're loading doesn't include a shot prob input weight
+                        midWeights.at(i).at(j) = rng.IRandom(-100,100)/1000.;
+                    }
                 }
             }
             getline( fop, line );

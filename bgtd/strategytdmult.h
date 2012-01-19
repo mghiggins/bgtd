@@ -23,7 +23,7 @@ class strategytdmult : public strategytdbase
 public:
     strategytdmult();
     strategytdmult( int nMiddle );
-    strategytdmult( const string& path, const string& filePrefix, bool useShotProbInput=false );
+    strategytdmult( const string& path, const string& filePrefix, bool useShotProbInput=false, bool randomShotInput=true );
     virtual ~strategytdmult() {};
     
     virtual double boardValue( const board& brd ) const;
@@ -55,7 +55,7 @@ public:
     // writeWeights writes the weights for each network to files (one per network, suffixed with the network name)
     
     void writeWeights( const string& filePrefix ) const;
-    void loadWeights( const string& path, const string& filePrefix );
+    void loadWeights( const string& path, const string& filePrefix, bool randomShotInput );
     
     // define some parameters
     

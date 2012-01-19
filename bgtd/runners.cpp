@@ -30,6 +30,13 @@
 #include "game.h"
 #include "gamefns.h"
 
+void dispBoard( int ind, bool flipped, const strategytdmult& s, const board& b );
+void dispBoards( const strategytdmult& s );
+void dispBoardGam( int ind, bool flipped, const strategytdoriggam& s, const board& b );
+void dispBoardsGam( const strategytdoriggam& s );
+void dispBoardBg( int ind, bool flipped, const strategytdorigbg& s, const board& b );
+void dispBoardsBg( const strategytdorigbg& s );
+
 void writeWeightsToFiles( const vector<double>& outputWeights, const vector< vector<double> >& middleWeights, const vector<double>& outputTraces, const vector< vector<double> >& middleTraces, const string& fileSuffix )
 {
     // get the dimensions from the vectors
@@ -506,7 +513,7 @@ double playSerial( strategytdbase& s1, strategy& s2, long n, long initSeed, long
     
     for( long i=0; i<n; i++ )
     {
-        if( (i+1)%1 == 0 ) cout << "Run " << i+1 << endl;
+        //if( (i+1)%1 == 0 ) cout << "Run " << i+1 << endl;
         
         game g( &s1, &s2, (int)(i+initSeed) );
         g.setTurn( ((int) i)%2 );
@@ -1292,9 +1299,6 @@ board referenceBoard( int index )
     throw "invalid index";
 }
 
-void dispBoard( int ind, bool flipped, const strategytdmult& s, const board& b );
-void dispBoards( const strategytdmult& s );
-
 void dispBoard( int ind, bool flipped, const strategytdmult& s, const board& b )
 {
     string eval( s.evaluator( b ) );
@@ -1354,41 +1358,20 @@ void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
     
     // try out the TD strategy with multiple networks
     
-    strategytdmult s1( "benchmark", "mult_stdmult_80_0.1_0.1"  );
+    strategytdmult s1( "benchmark", "mult_stdmult_80_0.1_0.1", true, true  );
     //strategytdmult s1( nMiddle );
-    strategytdoriggam s2( "benchmark", "gam_stdgam_80_0.1_0.1" );
+    strategytdorigbg s2( "benchmark", "bg_stdbg_80_0.1_0.1" );
     s2.learning = false;
     //strategyPubEval s2;
     
     s1.alpha = alpha0;
     s1.beta  = beta0;
     
-    /*
-    board rb( referenceBoard( 2 ) );
-    rb.print();
-    set<board> moves( possibleMoves( rb, 5, 5 ) );
-    for( set<board>::iterator it=moves.begin(); it!=moves.end(); it++ )
-    {
-        cout << "Possible board:\n";
-        it->print();
-        board flippedBoard( (*it) );
-        flippedBoard.setPerspective( 1 - it->perspective() );
-        cout << "Calculated equity = " << -s1.bearoffValue( flippedBoard ) << endl;
-        cout << "Prob of loss      = " << s1.bearoffProbabilityWin( flippedBoard ) << endl;
-        cout << "Prob of gammon    = " << s1.bearoffProbabilityGammon( flippedBoard ) << endl;
-        cout << endl;
-    }
-    rb = s1.preferredBoard( rb, moves );
-    cout << "Preferred board:\n";
-    rb.print();
-    
-    return;
-    */
-    
     double maxPpg = -100;
     long maxInd=-1;
     
-    playParallel( s1, s2, 400, 1, 0, "mult_std" + fileSuffix );
+    //playSerial( s1, s2, 400, 1, 0, "mult_std" + fileSuffix, true );
+    playParallel( s1, s2, 1000, 1, 0, "mult_std" + fileSuffix );
     dispBoards( s1 );
     
     int nw=0, ng=0, nb=0, ns=0;
@@ -1452,7 +1435,9 @@ void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
         if( (i+1)%1000 == 0 )
         {
             cout << endl;
-            double ppg = playParallel( s1, s2, 400, 1, i+1, "mult_std" + fileSuffix );
+            //double ppg = playSerial( s1, s2, 400, 1, i+1, "mult_std" + fileSuffix, true );
+            double ppg = playParallel( s1, s2, 1000, 1, i+1, "mult_std" + fileSuffix );
+
             if( ppg > maxPpg )
             {
                 cout << "***** Rolling best ppg = " << ppg << " vs previous max " << maxPpg << "*****\n";
@@ -1634,9 +1619,6 @@ void sim7( int nMiddle, double alpha0, double beta0 )
     }
 }
 
-void dispBoardGam( int ind, bool flipped, const strategytdoriggam& s, const board& b );
-void dispBoardsGam( const strategytdoriggam& s );
-
 void dispBoardGam( int ind, bool flipped, const strategytdoriggam& s, const board& b )
 {
     vector<double> mids = s.getMiddleValues( s.getInputValues( b ) );
@@ -1771,9 +1753,6 @@ void sim8( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
         }
     }
 }
-
-void dispBoardBg( int ind, bool flipped, const strategytdorigbg& s, const board& b );
-void dispBoardsBg( const strategytdorigbg& s );
 
 void dispBoardBg( int ind, bool flipped, const strategytdorigbg& s, const board& b )
 {
@@ -2147,21 +2126,19 @@ bool bandvComp( const bandv& v1, const bandv& v2 ) { return v1.val > v2.val; }
 
 void testOrigGam()
 {
-    // try out playing against a human
-    
-    strategytdorigbg s1( "", "bg_maxbg_120_0.1_0.1" );
-    strategytdorigbg s2( "benchmark", "bg_stdbg_80_0.1_0.1" );
+    strategytdmult s1( "benchmark", "mult_maxmult_80_0.1_0.1", true, true );
+    //strategytdorigbg s2( "benchmark", "bg_stdbg_80_0.1_0.1" );
     //strategytdoriggam s2( "benchmark", "gam_maxgam_80_0.1_0.1" );
-    //strategytdmult s2( "benchmark", "mult_maxmult_80_0.1_0.1" );
+    //strategytdmult s1( "benchmark", "mult_maxmult_80_0.1_0.1" );
     s1.learning = false;
-    s2.learning = false;
+    //s2.learning = false;
     //strategyply s2( 2, 5, s1 );
     
-    //strategyPubEval s2;
+    strategyPubEval s2;
     
     double avgVal=0;
     for( int i=0; i<10; i++ )
-        avgVal += playParallel( s1, s2, 1000, 1001 + i*1000, 0, "nowrite" );
+        avgVal += playParallel( s1, s2, 10, 1001 + i*1000, 0, "nowrite" );
     avgVal /= 10.;
     cout << "Average equity = " << avgVal << endl;
     
