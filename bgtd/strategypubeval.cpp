@@ -302,8 +302,8 @@ vector<double> pubEvalInputs( const board& brd )
     
     // then the number of opponent hit and the number of player's borne in
     
-    inputs.at( 120 ) = -brd.otherHit() / 2.;
-    inputs.at( 121 ) =  brd.bornIn()   / 15.;
+    inputs.at( 120 ) = brd.otherHit() / 2.;
+    inputs.at( 121 ) = brd.bornIn() / 15.;
     
     return inputs;
 }
