@@ -26,7 +26,7 @@ public:
     strategytdmult( const string& path, const string& filePrefix, bool useShotProbInput=false, bool randomShotInput=true );
     virtual ~strategytdmult() {};
     
-    virtual double boardValue( const board& brd ) const;
+    virtual double boardValue( const board& brd, const hash_map<string,int>* context=0 ) const;
     
     string evaluator( const board& brd) const;
     

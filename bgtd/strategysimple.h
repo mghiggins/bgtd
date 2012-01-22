@@ -19,7 +19,7 @@ public:
     strategySimple( double singletonWeight, double towerWeight, double runWeight );
     virtual ~strategySimple() {};
     
-    virtual double boardValue( const board& brd ) const;
+    virtual double boardValue( const board& brd, const hash_map<string,int>* context=0 ) const;
     
     double singletonWeight;
     double towerWeight;

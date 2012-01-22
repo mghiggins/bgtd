@@ -87,6 +87,7 @@
 		C08927001450AF7700D8F606 /* strategytdmult.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strategytdmult.cpp; sourceTree = "<group>"; };
 		C08B1A7614064F470011778F /* strategytdexp2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = strategytdexp2.h; sourceTree = "<group>"; };
 		C08B1A78140651590011778F /* strategytdexp2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strategytdexp2.cpp; sourceTree = "<group>"; };
+		C093671B14CBA59600C67D90 /* common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = common.h; sourceTree = "<group>"; };
 		C0E5DB5213D9BF8B009FC15A /* bgtd */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = bgtd; sourceTree = BUILT_PRODUCTS_DIR; };
 		C0E5DB5613D9BF8B009FC15A /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		C0E5DB5813D9BF8B009FC15A /* bgtd.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = bgtd.1; sourceTree = "<group>"; };
@@ -143,6 +144,7 @@
 				C00B7DA313D9F0FE00B3F10D /* game.cpp */,
 				C00B7E0213DA0A4600B3F10D /* gamefns.h */,
 				C00B7E0313DA0BA400B3F10D /* gamefns.cpp */,
+				C093671B14CBA59600C67D90 /* common.h */,
 				C00B7DFF13D9F7DE00B3F10D /* strategy.h */,
 				C02618EA13DC76AB007A4539 /* strategy.cpp */,
 				C01674D514A048F500D91466 /* strategyply.h */,

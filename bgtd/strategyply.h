@@ -26,8 +26,8 @@ public:
     
     int nPlies, nMoveFilter;
     
-    virtual double boardValue( const board& brd ) const;
-    double boardValueRecurse( const board& brd, int stepNPlies ) const;
+    virtual double boardValue( const board& brd, const hash_map<string,int>* context=0 ) const;
+    double boardValueRecurse( const board& brd, int stepNPlies, const hash_map<string,int>* context ) const;
     
 private:
     strategy& baseStrat;

@@ -23,7 +23,7 @@ strategySimple::strategySimple( double singletonWeight, double towerWeight, doub
     this->runWeight       = runWeight;
 }
 
-double strategySimple::boardValue( const board& brd ) const
+double strategySimple::boardValue( const board& brd, const hash_map<string,int>* context ) const
 {
     // start with pips^2
     

@@ -320,7 +320,7 @@ double strategytdexp::getOutputGammonLossValue( const vector<double>& middles ) 
     return  1. / ( 1 + exp( -val ) );
 }
 
-double strategytdexp::boardValue( const board& brd ) const
+double strategytdexp::boardValue( const board& brd, const hash_map<string,int>* context ) const
 {
     // get the inputs from the board
     

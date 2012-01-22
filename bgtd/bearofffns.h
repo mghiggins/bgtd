@@ -11,19 +11,7 @@
 
 #import <hash_map.h>
 #import "board.h"
-
-// define a hash fn for string so that hash_map can use strings as keys
-
-namespace __gnu_cxx                                                                                 
-{                                                                                             
-    template<> struct hash< std::string >                                                       
-    {                                                                                           
-        size_t operator()( const std::string& x ) const                                           
-        {                                                                                         
-            return hash< const char* >()( x.c_str() );                                              
-        }                                                                                         
-    };                                                                                          
-}   
+#include "common.h"
 
 // boardID returns a unique ID for the board (from the perspective of 
 // the board, assuming the player with perspective has the dice), given

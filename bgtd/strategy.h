@@ -9,8 +9,10 @@
 #ifndef bgtd_strategy_h
 #define bgtd_strategy_h
 
+#import <hash_map.h>
 #include <set>
 #include "board.h"
+#include "common.h"
 
 class strategy
 {
@@ -37,10 +39,17 @@ public:
     // returns the board with the highest value. However, you can also have an
     // interactive strategy where a user enters their choice for the move directly.
     // NOTE: boardValue is meant to return the value of the board *after* the player
-    // with perspective has moved, so when their opponent has the dice.
+    // with perspective has moved, so when their opponent has the dice. Also takes
+    // an optional pointer to a hash of string->int that holds context for the 
+    // board value. For example, pubeval uses this to tell the evaluator whether to
+    // use the race or contact regressions; and the game can tell the board to
+    // evaluate based on just prob of win (eg in a match one game from completion).
+    // boardValueContext returns a map specific to that strategy (by default it returns
+    // an empty hash).
     
-    virtual double boardValue( const board& brd ) const = 0;
-    virtual board preferredBoard( const board& oldBoard, const set<board>& possibleMoves ) const;
+    virtual double boardValue( const board& brd, const hash_map<string,int>* context=0 ) const = 0;
+    virtual board preferredBoard( const board& oldBoard, const set<board>& possibleMoves, const hash_map<string,int>* context=0 ) const;
+    virtual hash_map<string,int> boardContext( const board& brd ) const { hash_map<string,int> empty; return empty; };
 };
 
 #endif

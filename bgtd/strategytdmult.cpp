@@ -115,7 +115,7 @@ void strategytdmult::setup()
     cout << "Gammon db size    = " << gamStepsProbs()->size() << endl;
 }
 
-double strategytdmult::boardValue( const board& brd ) const
+double strategytdmult::boardValue( const board& brd, const hash_map<string,int>* context ) const
 {
     // represents the expected points in the game. (Cubeless.) Used to evaluate possible
     // moves, and so needs to represent the value of the game assuming the player isn't

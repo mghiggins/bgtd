@@ -2180,21 +2180,22 @@ bool bandvComp( const bandv& v1, const bandv& v2 ) { return v1.val > v2.val; }
 
 void testOrigGam()
 {
-    strategytdmult s1( "benchmark", "mult_maxmult_80_0.02_0.02", true, false );
-    strategytdmult s2( "benchmark", "mult_stdmult_80_0.1_0.1" );
+    //strategytdmult s1( "benchmark", "mult_maxmult_80_0.02_0.02", true, false );
+    strategytdmult s1( "benchmark", "mult_stdmult_80_0.1_0.1" );
     //strategytdorigbg s1( "", "bg_maxbg_120_0.1_0.1" );
     //strategytdorigbg s2( "benchmark", "bg_stdbg_80_0.1_0.1" );
     //strategytdoriggam s2( "benchmark", "gam_maxgam_80_0.1_0.1" );
     //strategytdmult s1( "benchmark", "mult_maxmult_80_0.1_0.1" );
     s1.learning = false;
-    s2.learning = false;
+    //s2.learning = false;
     //strategyply s2( 2, 5, s1 );
     
     //strategyPubEval s1;
-    //strategyPubEval s2;
+    strategyPubEval s2;
     
-    int nTot=30000;
-    int nBkt=30;
+    /*
+    int nTot=1000;
+    int nBkt=10;
     int nStep=nTot/nBkt;
     
     double avgVal=0;
@@ -2205,9 +2206,9 @@ void testOrigGam()
     }
     avgVal /= nBkt;
     cout << "Average equity = " << avgVal << endl;
-     
+    */
     
-    //playSerial( s1, s2, 800, 2779, 0, "nowrite" );
+    playSerial( s1, s2, 1000, 1, 0, "nowrite" );
     
     /*
     board b( referenceBoard( 4 ) );

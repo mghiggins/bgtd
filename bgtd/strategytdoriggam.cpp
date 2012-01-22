@@ -61,7 +61,7 @@ void strategytdoriggam::setup()
     lambda = 0;
 }
 
-double strategytdoriggam::boardValue( const board& brd ) const
+double strategytdoriggam::boardValue( const board& brd, const hash_map<string,int>* context ) const
 {
     // need the value in the state where the opponent holds the dice, so
     // flip the board perspective around

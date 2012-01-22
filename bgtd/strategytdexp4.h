@@ -38,7 +38,7 @@ public:
     // make. Returns the value from the perspective of the board, since that is the
     // standard API, regardless of how the network is configured internally.
     
-    virtual double boardValue( const board& brd ) const;
+    virtual double boardValue( const board& brd, const hash_map<string,int>* context=0 ) const;
     
     // the next set of methods is used in evaluating the neural network outputs given the
     // inputs defined by the board. The inputs are always laid out from player 0's perspective

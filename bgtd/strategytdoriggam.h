@@ -24,7 +24,7 @@ public:
     strategytdoriggam( const string& subPath, const string& filePrefix );
     virtual ~strategytdoriggam() {};
     
-    virtual double boardValue( const board& brd ) const;
+    virtual double boardValue( const board& brd, const hash_map<string,int>* context=0 ) const;
     
     vector<double> getInputValues( const board& brd ) const;
     vector<double> getMiddleValues( const vector<double>& inputs ) const;

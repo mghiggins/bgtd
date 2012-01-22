@@ -178,7 +178,7 @@ double strategytd::getOutput( const vector<double>& middles ) const
     return 1. / ( 1 + exp( -val ) );
 }
 
-double strategytd::boardValue( const board& brd ) const
+double strategytd::boardValue( const board& brd, const hash_map<string,int>* context ) const
 {
     // get the inputs from the board
     

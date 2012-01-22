@@ -33,7 +33,7 @@ public:
     // win given the board setup. This is what the game uses to determine which move to
     // make.
     
-    virtual double boardValue( const board& brd ) const;
+    virtual double boardValue( const board& brd, const hash_map<string,int>* context=0 ) const;
     
     // the next set of methods is used in evaluating the neural network outputs given the
     // inputs defined by the board.

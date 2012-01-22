@@ -50,7 +50,7 @@ void strategytdorigbg::setup()
     setupBgWeights();
 }
 
-double strategytdorigbg::boardValue( const board& brd ) const
+double strategytdorigbg::boardValue( const board& brd, const hash_map<string,int>* context ) const
 {
     // need the value in the state where the opponent holds the dice, so
     // flip the board perspective around

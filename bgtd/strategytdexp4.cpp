@@ -151,7 +151,7 @@ void strategytdexp4::setupExp( const strategytdexp2& baseStrat )
     }
 }
 
-double strategytdexp4::boardValue( const board& brd ) const
+double strategytdexp4::boardValue( const board& brd, const hash_map<string,int>* context ) const
 {
     // get the inputs from the board, assuming the player holds the dice
     

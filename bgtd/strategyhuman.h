@@ -22,8 +22,8 @@ public:
     // board and makes sure what they chose is in the list of allowed
     // moves.
     
-    virtual double boardValue( const board& brd ) const { return 0.; };
-    virtual board preferredBoard( const board& oldBoard, const set<board>& possibleMoves ) const;
+    virtual double boardValue( const board& brd, const hash_map<string,int>* context=0 ) const { return 0.; };
+    virtual board preferredBoard( const board& oldBoard, const set<board>& possibleMoves, const hash_map<string,int>* context=0 ) const;
 };
 
 #endif

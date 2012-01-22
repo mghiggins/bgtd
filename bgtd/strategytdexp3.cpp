@@ -228,7 +228,7 @@ void strategytdexp3::setFlags()
     trainFlipped       = false;
 }
 
-double strategytdexp3::boardValue( const board& brd ) const
+double strategytdexp3::boardValue( const board& brd, const hash_map<string,int>* context ) const
 {
     // get the inputs from the board
     

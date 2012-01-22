@@ -308,16 +308,25 @@ vector<double> pubEvalInputs( const board& brd )
     return inputs;
 }
 
-double strategyPubEval::boardValue( const board& brd ) const
+double strategyPubEval::boardValue( const board& brd, const hash_map<string,int>* context ) const
 {
     // if all the pieces are in, return the highest score
     
     if( brd.bornIn() == 15 ) return 1e12;
     
-    // figure out which weights we're using
+    // figure out which weights we're using. This comes from the context, not the current board,
+    // because we need to make sure that when we're comparing possible moves based on the original
+    // board, all possible moves are evaluated using the same weights (since the two sets of weights
+    // don't give similar values).
     
     const vector<double> * weights;
-    if( isRace( brd ) )
+    bool isRace;
+    if( context == 0 ) throw "Need to have context to decide whether the network is race or contact";
+    hash_map<string,int>::const_iterator it=context->find( "isRace" );
+    if( it == context->end() ) throw "Cannot find isRace key in context hash";
+    isRace = ( it->second == 1 );
+    
+    if( isRace )
         weights = &weightsRace;
     else
         weights = &weightsContact;
@@ -334,4 +343,13 @@ double strategyPubEval::boardValue( const board& brd ) const
         sum += weights->at(i) * inputs.at(i);
     
     return sum;
+}
+
+hash_map<string,int> strategyPubEval::boardContext( const board& brd ) const
+{
+    // add a bit of context that defines whether the board is in race or contact
+    
+    hash_map<string,int> map;
+    map[ "isRace" ] = brd.isRace() ? 1 : 0;
+    return map;
 }

@@ -26,12 +26,12 @@ strategyply::strategyply( int nPlies, int nMoveFilter, strategy& baseStrat ) : n
 {
 }
 
-double strategyply::boardValue( const board& brd ) const
+double strategyply::boardValue( const board& brd, const hash_map<string,int>* context ) const
 {
-    return boardValueRecurse( brd, nPlies );
+    return boardValueRecurse( brd, nPlies, context );
 }
 
-double strategyply::boardValueRecurse( const board& brd, int stepNPlies ) const
+double strategyply::boardValueRecurse( const board& brd, int stepNPlies, const hash_map<string,int>* context ) const
 {
     // if the game is over, return the appropriate points
     
@@ -63,7 +63,7 @@ double strategyply::boardValueRecurse( const board& brd, int stepNPlies ) const
     // if there are zero plies, call the underlying strategy
     
     if( stepNPlies == 0 )
-        return baseStrat.boardValue( brd );
+        return baseStrat.boardValue( brd, context );
     
     // otherwise recurse down through the next level of moves; flip to
     // the opponent's perspective and run through their moves.
@@ -94,7 +94,7 @@ double strategyply::boardValueRecurse( const board& brd, int stepNPlies ) const
             vector<boardAndVal> moveVals;
             for( set<board>::iterator it=moves.begin(); it!=moves.end(); it++ )
             {
-                val = baseStrat.boardValue( (*it) );
+                val = baseStrat.boardValue( (*it), context );
                 if( val > maxVal )
                     maxVal = val;
                 if( stepNPlies > 1 )
@@ -122,7 +122,7 @@ double strategyply::boardValueRecurse( const board& brd, int stepNPlies ) const
                 if( nElems > nMoveFilter ) nElems = nMoveFilter;
                 for( int i=0; i<nElems; i++ )
                 {
-                    val = boardValueRecurse( moveVals.at(i).brd, stepNPlies-1 );
+                    val = boardValueRecurse( moveVals.at(i).brd, stepNPlies-1, context );
                     if( val > maxVal )
                         maxVal = val;
                 }
@@ -134,7 +134,7 @@ double strategyply::boardValueRecurse( const board& brd, int stepNPlies ) const
             // left with the original board.
             
             if( maxVal == -1000 )
-                maxVal = boardValueRecurse( stepBoard, stepNPlies - 1 );
+                maxVal = boardValueRecurse( stepBoard, stepNPlies - 1, context );
             
             // add the optimal board value to the weighted average
             

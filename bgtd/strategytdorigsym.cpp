@@ -51,7 +51,7 @@ void strategytdorigsym::setup()
     lambda = 0;
 }
 
-double strategytdorigsym::boardValue( const board& brd ) const
+double strategytdorigsym::boardValue( const board& brd, const hash_map<string,int>* context ) const
 {
     // evaluation function for a board - highest boardValue is the chosen move.
     // It returns the expected number of points in the game, which it estimates
