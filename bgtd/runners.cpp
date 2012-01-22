@@ -579,6 +579,60 @@ double playSerial( strategytdbase& s1, strategy& s2, long n, long initSeed, long
         return w0;
 }
 
+double playSerialGen( strategy& s1, strategy& s2, long n, long initSeed )
+{
+    float w0=0;
+    float p=0, q=0;
+    float avgSteps=0;
+    float ns=0, ng=0, nb=0;
+    int   s;
+    
+    for( long i=0; i<n; i++ )
+    {
+        //if( (i+1)%1 == 0 ) cout << "Run " << i+1 << endl;
+        
+        game g( &s1, &s2, (int)(i+initSeed) );
+        g.setTurn( ((int) i)%2 );
+        g.stepToEnd();
+        s = g.winnerScore();
+        if( g.winner() == 0 ) 
+        {
+            w0 ++;
+            p += s;
+        }
+        else
+            p -= s;
+        q += s;
+        if( s == 1 )
+            ns ++;
+        else if( s == 2 )
+            ng ++;
+        else
+            nb ++;
+        
+        avgSteps += g.nSteps;
+    }
+    
+    w0/=n;
+    avgSteps/=n;
+    p/=n;
+    q/=n;
+    ns/=n;
+    ng/=n;
+    nb/=n;
+    
+    cout << "Average ppg        = " << p << endl;
+    cout << "Prob of P1 winning = " << w0 * 100 << endl;
+    cout << "Average abs ppg    = " << q << endl;
+    cout << "Frac single        = " << ns << endl;
+    cout << "Frac gammon        = " << ng << endl;
+    cout << "Frac backgammon    = " << nb << endl;
+    cout << "Average steps/game = " << avgSteps << endl;
+    cout << endl;
+    
+    return p;
+}
+
 void sim1( int nMiddle, double alpha0, double beta0, const string& fileSuffix )
 {
     // try out the TD learning strategy
@@ -2126,21 +2180,32 @@ bool bandvComp( const bandv& v1, const bandv& v2 ) { return v1.val > v2.val; }
 
 void testOrigGam()
 {
-    strategytdmult s1( "benchmark", "mult_maxmult_80_0.1_0.1", true, true );
+    strategytdmult s1( "benchmark", "mult_maxmult_80_0.02_0.02", true, false );
+    strategytdmult s2( "benchmark", "mult_stdmult_80_0.1_0.1" );
+    //strategytdorigbg s1( "", "bg_maxbg_120_0.1_0.1" );
     //strategytdorigbg s2( "benchmark", "bg_stdbg_80_0.1_0.1" );
     //strategytdoriggam s2( "benchmark", "gam_maxgam_80_0.1_0.1" );
     //strategytdmult s1( "benchmark", "mult_maxmult_80_0.1_0.1" );
     s1.learning = false;
-    //s2.learning = false;
+    s2.learning = false;
     //strategyply s2( 2, 5, s1 );
     
-    strategyPubEval s2;
+    //strategyPubEval s1;
+    //strategyPubEval s2;
+    
+    int nTot=30000;
+    int nBkt=30;
+    int nStep=nTot/nBkt;
     
     double avgVal=0;
-    for( int i=0; i<10; i++ )
-        avgVal += playParallel( s1, s2, 10, 1001 + i*1000, 0, "nowrite" );
-    avgVal /= 10.;
+    for( int i=0; i<nBkt; i++ )
+    {
+        cout << "Bucket " << i << endl;
+        avgVal += playParallel( s1, s2, nStep, 1001 + i*nStep, 0, "nowrite" );
+    }
+    avgVal /= nBkt;
     cout << "Average equity = " << avgVal << endl;
+     
     
     //playSerial( s1, s2, 800, 2779, 0, "nowrite" );
     

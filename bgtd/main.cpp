@@ -14,7 +14,7 @@
 #include "tests.h"
 #include "randomc.h"
 
-
+/*
 int main( int argc, char * argv [] )
 {
     int nMiddle;
@@ -150,12 +150,12 @@ int main( int argc, char * argv [] )
 {
     rollTest();
 }
-
+*/
 int main( int argc, char * argv [] )
 {
     testOrigGam();
 }
-
+/*
 int main( int argc, char * argv [] )
 {
     testHittingShots();

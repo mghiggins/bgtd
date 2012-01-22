@@ -31,6 +31,7 @@ void readExpWeightsFromFile( vector<double>& outputProbWeights, vector<double>& 
                              const string& fileSuffix );
 double playParallel( strategytdbase& s1, strategy& s2, long n, long initSeed, long displayIndex, const string& fileSuffix );
 double playSerial( strategytdbase& s1, strategy& s2, long n, long initSeed, long displayIndex, const string& fileSuffix, bool returnPpg=false );
+double playSerialGen( strategy& s1, strategy& s2, long n, long initSeed );
 void sim1( int nMiddle, double alpha0, double beta0, const string& fileSuffix );
 void sim2( int nMiddle, double alpha0, double beta0, const string& fileSuffix );
 void sim3( int nMiddle, double alpha0, double beta0, const string& fileSuffix, const string& srcSuffix );
