@@ -517,6 +517,7 @@ double playSerial( strategytdbase& s1, strategy& s2, long n, long initSeed, long
         
         game g( &s1, &s2, (int)(i+initSeed) );
         g.setTurn( ((int) i)%2 );
+        g.setContextValue( "singleGame", 1 );
         g.stepToEnd();
         s = g.winnerScore();
         if( g.winner() == 0 ) 
@@ -2180,8 +2181,8 @@ bool bandvComp( const bandv& v1, const bandv& v2 ) { return v1.val > v2.val; }
 
 void testOrigGam()
 {
-    //strategytdmult s1( "benchmark", "mult_maxmult_80_0.02_0.02", true, false );
-    strategytdmult s1( "benchmark", "mult_stdmult_80_0.1_0.1" );
+    strategytdmult s1( "benchmark", "mult_maxmult_80_0.02_0.02", true, false );
+    //strategytdmult s1( "benchmark", "mult_stdmult_80_0.1_0.1" );
     //strategytdorigbg s1( "", "bg_maxbg_120_0.1_0.1" );
     //strategytdorigbg s2( "benchmark", "bg_stdbg_80_0.1_0.1" );
     //strategytdoriggam s2( "benchmark", "gam_maxgam_80_0.1_0.1" );
@@ -2208,7 +2209,7 @@ void testOrigGam()
     cout << "Average equity = " << avgVal << endl;
     */
     
-    playSerial( s1, s2, 1000, 1, 0, "nowrite" );
+    playSerial( s1, s2, 10000, 1, 0, "nowrite" );
     
     /*
     board b( referenceBoard( 4 ) );
