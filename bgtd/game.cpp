@@ -93,7 +93,7 @@ void game::step()
     
     // let the strategy choose the preferred move based on its internal evaluation function
     
-    brd = strat->preferredBoard( oldBoard, moves );
+    brd = strat->preferredBoard( oldBoard, moves, &gameContext );
     
     // if the strategy wants to update itself, do it. This eg trains neural networks.
     
@@ -177,4 +177,12 @@ int game::winnerScore()
     }
     else
         throw string("Game is not over");
+}
+
+int game::getContextValue( const string& elemName ) const
+{
+    hash_map<string,int>::const_iterator it = gameContext.find( elemName );
+    if( it == gameContext.end() )
+        throw "No such element in the game context";
+    return it->second;
 }

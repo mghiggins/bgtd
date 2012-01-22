@@ -9,7 +9,9 @@
 #ifndef bgtd_game_h
 #define bgtd_game_h
 
+#import <hash_map.h>
 #include "board.h"
+#include "common.h"
 #include "strategy.h"
 #include "randomc.h"
 
@@ -48,6 +50,13 @@ public:
     
     void setBoard( const board& newBrd ) { brd = newBrd; };   // sets the board for the game
     
+    // the game can pass context down to the strategies when evaluating board values.
+    // This can be anything that fits into a string->int hash. In practise it's used for
+    // things like 
+    
+    void setContextValue( const string& elemName, int elemVal ) { gameContext[elemName] = elemVal; };
+    int getContextValue( const string& elemName ) const;
+    
 private:
     board      brd;
     int        trn;
@@ -55,6 +64,8 @@ private:
     strategy * strat1;
     
     CRandomMersenne * rng;
+    
+    hash_map<string,int> gameContext;
 };
 
 #endif
