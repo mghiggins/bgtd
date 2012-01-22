@@ -125,6 +125,22 @@ double strategytdmult::boardValue( const board& brd, const hash_map<string,int>*
     board flippedBoard( brd );
     flippedBoard.setPerspective( 1 - brd.perspective() );
     
+    // figure out what we're optimizing: equity or any kind of win. We optimize for the latter in
+    // 1-game matches or eg in a 6-6 tie in a 7-game match. We determine this state using the
+    // supplied context. The context must have an element called "singleGame" and the value
+    // associated with it must be 1 for the machine to optimize on any win rather
+    // than full equity.
+    // NOTE that boardValue still returns an equity in this case, but one where all games are
+    // worth 1 (as opposed to normal equity where gammons are worth 2 and backgammons are worth 3).
+    
+    bool valIsAnyWin=false;
+    if( context != 0 )
+    {
+        hash_map<string,int>::const_iterator it=context->find( "singleGame" );
+        if( it != context->end() and it->second == 1 )
+            valIsAnyWin = true;
+    }
+    
     // from the board position figure out how we'll evaluate it. There are two hardcoded
     // possibilities: "done", where the game is over; and "bearoff", where we're in a bearoff
     // position. Otherwise the string refers to the name of a particular neural network, since
@@ -132,9 +148,9 @@ double strategytdmult::boardValue( const board& brd, const hash_map<string,int>*
     
     string eval = evaluator( flippedBoard );
     if( eval == "done" )
-        return -doneValue( flippedBoard );
+        return -doneValue( flippedBoard, valIsAnyWin );
     else if( eval == "bearoff" )
-        return -bearoffValue( flippedBoard );
+        return -bearoffValue( flippedBoard, valIsAnyWin );
     else
     {
         // evaluate the network probabilities: prob of any kind of win; prob of gammon win; prob
@@ -147,44 +163,54 @@ double strategytdmult::boardValue( const board& brd, const hash_map<string,int>*
         
         double pWin = getOutputProbValue( middles, eval );
         
-        // get the probability of gammon win and loss.
+        // if we're optimizing for any win (rather than full equity) this is all we need. 
         
-        double pGam, pGamLoss;
-        if( flippedBoard.otherBornIn() == 0 )
-            pGam = getOutputGammonValue( middles, eval );
+        double equity;
+        
+        if( valIsAnyWin )
+            equity = 2 * pWin - 1;
         else
-            pGam = 0;
-        if( flippedBoard.bornIn() == 0 )
-            pGamLoss = getOutputGammonLossValue( middles, eval );
-        else
-            pGamLoss = 0;
+        {
+            // Otherwise we're optimizing for full equity. Get the probability of gammon win and loss.
+            
+            double pGam, pGamLoss;
+            if( flippedBoard.otherBornIn() == 0 )
+                pGam = getOutputGammonValue( middles, eval );
+            else
+                pGam = 0;
+            if( flippedBoard.bornIn() == 0 )
+                pGamLoss = getOutputGammonLossValue( middles, eval );
+            else
+                pGamLoss = 0;
+            
+            // check that prob of gammon win <= prob of any win, and ditto for loss
+            
+            if( pGam > pWin ) pGam = pWin;
+            if( pGamLoss > 1 - pWin ) pGamLoss = 1 - pWin;
+            
+            // get the probability of backgammon win and loss
+            
+            double pBg, pBgLoss;
+            if( flippedBoard.otherNoBackgammon() )
+                pBg = 0;
+            else
+                pBg = getOutputBackgammonValue( middles, eval );
+            if( flippedBoard.noBackgammon() )
+                pBgLoss = 0;
+            else
+                pBgLoss = getOutputBackgammonLossValue( middles, eval );
+            
+            // check that prob of bg win <= prob of gammon win, same for loss
+            
+            if( pBg > pGam ) pBg = pGam;
+            if( pBgLoss > pGamLoss ) pBgLoss = pGamLoss;
+            
+            // use those to calculate the expected number of points - this is the board value. Remember that the gammon
+            // win and loss probabilities evaluated from the network are conditional probabilities.
+            
+            equity = ( pWin - pGam ) * 1 + ( pGam - pBg ) * 2 + pBg * 3 - ( 1 - pWin - pGamLoss ) * 1 - ( pGamLoss - pBgLoss ) * 2 - pBgLoss * 3; 
+        }
         
-        // check that prob of gammon win <= prob of any win, and ditto for loss
-        
-        if( pGam > pWin ) pGam = pWin;
-        if( pGamLoss > 1 - pWin ) pGamLoss = 1 - pWin;
-        
-        // get the probability of backgammon win and loss
-        
-        double pBg, pBgLoss;
-        if( flippedBoard.otherNoBackgammon() )
-            pBg = 0;
-        else
-            pBg = getOutputBackgammonValue( middles, eval );
-        if( flippedBoard.noBackgammon() )
-            pBgLoss = 0;
-        else
-            pBgLoss = getOutputBackgammonLossValue( middles, eval );
-        
-        // check that prob of bg win <= prob of gammon win, same for loss
-        
-        if( pBg > pGam ) pBg = pGam;
-        if( pBgLoss > pGamLoss ) pBgLoss = pGamLoss;
-        
-        // use those to calculate the expected number of points - this is the board value. Remember that the gammon
-        // win and loss probabilities evaluated from the network are conditional probabilities.
-        
-        double equity = ( pWin - pGam ) * 1 + ( pGam - pBg ) * 2 + pBg * 3 - ( 1 - pWin - pGamLoss ) * 1 - ( pGamLoss - pBgLoss ) * 2 - pBgLoss * 3; 
         return -equity; // -ve because we calculated equity on the flipped board so that it's done assuming the player doesn't hold the dice
     }
 }
@@ -333,13 +359,18 @@ double strategytdmult::getOutputBackgammonLossValue( const vector<double>& middl
     return 1. / ( 1 + exp( -arg ) );
 }
 
-double strategytdmult::doneValue( const board& brd ) const
+double strategytdmult::doneValue( const board& brd, bool valIsAnyWin ) const
 {
-    // value of the game assuming it's done
+    // value of the game assuming it's done. If valIsAnyWin==true it values
+    // all wins as 1 and all losses as -1; otherwise it includes proper gammon and
+    // backgammon values.
+    
+    // NOTE: this does not return anything sensible if the board represents a game
+    // that isn't actually over.
     
     if( brd.bornIn() == 15 )
     {
-        if( brd.otherBornIn() == 0 )
+        if( not valIsAnyWin and brd.otherBornIn() == 0 )
         {
             if( not brd.otherNoBackgammon() )
                 return 3; // backgammon
@@ -351,7 +382,7 @@ double strategytdmult::doneValue( const board& brd ) const
     }
     else
     {
-        if( brd.bornIn() == 0 )
+        if( not valIsAnyWin and brd.bornIn() == 0 )
         {
             if( not brd.noBackgammon() )
                 return -3; // backgammon loss
@@ -363,9 +394,12 @@ double strategytdmult::doneValue( const board& brd ) const
     }
 }
 
-double strategytdmult::bearoffValue( const board& brd ) const
+double strategytdmult::bearoffValue( const board& brd, bool valIsAnyWin ) const
 {
-    return getBoardPntOS( brd, bearoffNPnts );
+    if( valIsAnyWin )
+        return 2 * getProbabilityWin( brd, bearoffNPnts ) - 1;
+    else
+        return getBoardPntOS( brd, bearoffNPnts );
 }
 
 double strategytdmult::bearoffProbabilityWin( const board& brd ) const

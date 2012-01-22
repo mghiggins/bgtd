@@ -40,11 +40,11 @@ public:
     double getOutputBackgammonValue( const vector<double>& middles, const string& netName ) const;
     double getOutputBackgammonLossValue( const vector<double>& middles, const string& netName ) const;
     
-    double bearoffValue( const board& brd ) const;
+    double bearoffValue( const board& brd, bool valIsAnyWin ) const;
     double bearoffProbabilityWin( const board& brd ) const;
     double bearoffProbabilityGammon( const board& brd ) const;
     double bearoffProbabilityGammonLoss( const board& brd ) const;
-    double doneValue( const board& brd ) const;
+    double doneValue( const board& brd, bool valIsAnyWin ) const;
     
     // update takes the old and new boards (before and after what it guesses is the optimal move)
     // and updates the weights.
