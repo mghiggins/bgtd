@@ -1413,9 +1413,9 @@ void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
     
     // try out the TD strategy with multiple networks
     
-    strategytdmult s1( "benchmark", "mult_stdmult_80_0.1_0.1", true, true  );
+    strategytdmult s1( "benchmark", "mult_stdmult_80_0.02_0.02", true  );
     //strategytdmult s1( nMiddle );
-    strategytdorigbg s2( "benchmark", "bg_stdbg_80_0.1_0.1" );
+    strategytdmult s2( "benchmark", "mult_stdmult_80_0.02_0.02", false );
     s2.learning = false;
     //strategyPubEval s2;
     
@@ -2181,7 +2181,7 @@ bool bandvComp( const bandv& v1, const bandv& v2 ) { return v1.val > v2.val; }
 
 void testOrigGam()
 {
-    strategytdmult s1( "benchmark", "mult_maxmult_80_0.02_0.02", true, false );
+    strategytdmult s1( "benchmark", "mult_maxmult_80_0.02_0.02", true );
     //strategytdmult s1( "benchmark", "mult_stdmult_80_0.1_0.1" );
     //strategytdorigbg s1( "", "bg_maxbg_120_0.1_0.1" );
     //strategytdorigbg s2( "benchmark", "bg_stdbg_80_0.1_0.1" );
@@ -2209,7 +2209,7 @@ void testOrigGam()
     cout << "Average equity = " << avgVal << endl;
     */
     
-    playSerial( s1, s2, 10000, 1, 0, "nowrite" );
+    //playSerial( s1, s2, 10000, 1, 0, "nowrite" );
     
     /*
     board b( referenceBoard( 4 ) );

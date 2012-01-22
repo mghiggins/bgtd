@@ -29,18 +29,19 @@ strategytdmult::strategytdmult()
 {
     setupRandomWeights( 40 ); // default # of middle nodes is 40
     useShotProbInput = false;
+    usePrimesInput   = false;
 }
 
 strategytdmult::strategytdmult( int nMiddle )
 {
     setupRandomWeights( nMiddle );
     useShotProbInput = false;
+    usePrimesInput   = false;
 }
 
-strategytdmult::strategytdmult( const string& path, const string& filePrefix, bool useShotProbInput, bool randomShotInput )
+strategytdmult::strategytdmult( const string& path, const string& filePrefix, bool randomPrimesInput )
 {
-    this->useShotProbInput = useShotProbInput; // overwritten if the stored data include the flag for this input
-    loadWeights( path, filePrefix, randomShotInput );
+    loadWeights( path, filePrefix, randomPrimesInput );
     setup();
 }
 
@@ -50,7 +51,10 @@ int strategytdmult::nInputs( const string& netName ) const
         return 198;
     else
     {
-        if( useShotProbInput )
+        if( usePrimesInput and not useShotProbInput ) throw "Must include shot prob input if include primes input";
+        if( usePrimesInput )
+            return 202;
+        else if( useShotProbInput )
             return 200;
         else
             return 198;
@@ -224,6 +228,11 @@ vector<double> strategytdmult::getInputValues( const board& brd, const string& n
         {
             inputs.push_back( hittingProb( brd, true ) );
             inputs.push_back( hittingProb( brd, false ) );
+        }
+        if( usePrimesInput )
+        {
+            inputs.push_back( primesCount( brd, true ) / 6. );
+            inputs.push_back( primesCount( brd, false ) / 6. );
         }
     }
     
@@ -779,7 +788,7 @@ void strategytdmult::writeWeights( const string& filePrefix ) const
     fn.close();
 }
 
-void strategytdmult::loadWeights( const string& subPath, const string& filePrefix, bool randomShotInput )
+void strategytdmult::loadWeights( const string& subPath, const string& filePrefix, bool randomPrimesInput )
 {
     // load the # of middle nodes and the network names from the names file
     
@@ -797,7 +806,18 @@ void strategytdmult::loadWeights( const string& subPath, const string& filePrefi
     getline( fn, line );
     nMiddle = atoi( line.c_str() );
     
-    // the file may also contain values for the optional parameters. If so, load them. If not, assign them defaults.
+    // the file will also contain values for the optional parameters
+    
+    getline( fn, line );
+    useShotProbInput = ( atoi( line.c_str() ) == 1 );
+    getline( fn, line );
+    usePrimesInput = ( atoi( line.c_str() ) == 1 );
+    if( randomPrimesInput )
+    {
+        if( usePrimesInput ) throw "Cannot assign random weights to primes input - the file already contains these weights";
+        usePrimesInput = true; // we now assume the file doesn't contain them
+    }
+    if( usePrimesInput and not useShotProbInput ) throw "Invalid file: if usePrimesInput, cannot be not useShotProbInput";
     
     CRandomMersenne rng(1); // used for random weights if we're loading weights from a file with no shot prob weight but the network needs one
     int i, j, nInput;
@@ -863,7 +883,7 @@ void strategytdmult::loadWeights( const string& subPath, const string& filePrefi
                 midWeights.at(i).resize(nInput+1);
                 for( j=0; j<nInput+1; j++ )
                 {
-                    if( j < 198 or not randomShotInput or netName == "race" )
+                    if( j < 198 or ( j < 200 and useShotProbInput ) or ( usePrimesInput and not randomPrimesInput ) or netName == "race" )
                     {
                         getline( fm, line );
                         midWeights.at(i).at(j) = atof( line.c_str() );
@@ -875,7 +895,7 @@ void strategytdmult::loadWeights( const string& subPath, const string& filePrefi
                     }
                     else
                     {
-                        // assign a random weight, since the weights file we're loading doesn't include a shot prob input weight
+                        // assign a random weight, since the weights file we're loading doesn't include a primes input weight
                         midWeights.at(i).at(j) = rng.IRandom(-100,100)/1000.;
                     }
                 }

@@ -14,7 +14,7 @@
 #include "tests.h"
 #include "randomc.h"
 
-/*
+
 int main( int argc, char * argv [] )
 {
     int nMiddle;
@@ -42,7 +42,7 @@ int main( int argc, char * argv [] )
     else
     {
         stringstream ss;
-        ss << "mult_" << nMiddle << "_" << alpha0 << "_" << beta0;
+        ss << "mult2_" << nMiddle << "_" << alpha0 << "_" << beta0;
         fileSuffix = ss.str();
     }
     if( argc > 5 )
@@ -65,7 +65,7 @@ int main( int argc, char * argv [] )
     return 0;
 }
 
-
+/*
 int main( int argc, char * argv [] )
 {
     // train strategytdoriggam
@@ -150,12 +150,12 @@ int main( int argc, char * argv [] )
 {
     rollTest();
 }
-*/
+
 int main( int argc, char * argv [] )
 {
     testOrigGam();
 }
-/*
+
 int main( int argc, char * argv [] )
 {
     testHittingShots();

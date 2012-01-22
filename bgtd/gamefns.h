@@ -61,4 +61,11 @@ set<roll> hittingShots( const board& brd, bool forOpponent );
 double hittingProb( const board& brd, bool forOpponent );
 double hittingProb( const set<roll>& shots );
 
+// primesCount counts the max number of points in a prime. forPlayer==true
+// means it does it for the player; false means for the opponent. Only
+// counts on the appropriate side of the board (ie for the player, it
+// ignores any primes on the opponent's half of the board).
+
+int primesCount( const board& brd, bool forPlayer );
+
 #endif

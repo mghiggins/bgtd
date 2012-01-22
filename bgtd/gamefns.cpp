@@ -502,3 +502,31 @@ double hittingProb( const set<roll>& shots )
     
     return count/36.;
 }
+
+int primesCount( const board& brd, bool forPlayer )
+{
+    vector<int> checkers;
+    if( forPlayer )
+        checkers = brd.checkers();
+    else
+    {
+        checkers = brd.otherCheckers();
+        reverse( checkers.begin(), checkers.end() );
+    }
+    
+    int maxPrimes=0;
+    int primes=0;
+    
+    for( int i=0; i<12; i++ )
+    {
+        if( checkers.at(i) > 1 )
+        {
+            primes += 1;
+            if( primes > maxPrimes ) maxPrimes = primes;
+        }
+        else
+            primes = 0;
+    }
+    
+    return maxPrimes;
+}
