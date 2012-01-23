@@ -302,6 +302,7 @@ vector<double> strategytdmult::getMiddleValues( const vector<double>& inputs, co
     double val;
     
     hash_map< string, vector< vector<double> > >::const_iterator it = middleWeights.find( netName );
+    if( it==middleWeights.end() ) throw "No element found";
     
     for( i=0; i<nMiddle; i++ )
     {
@@ -723,6 +724,10 @@ void strategytdmult::writeWeights( const string& filePrefix ) const
     ofstream fn( netName.c_str() );
     fn << nMiddle << endl;
     if( useShotProbInput )
+        fn << 1 << endl;
+    else
+        fn << 0 << endl;
+    if( usePrimesInput )
         fn << 1 << endl;
     else
         fn << 0 << endl;
