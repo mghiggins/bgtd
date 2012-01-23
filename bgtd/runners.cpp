@@ -1425,7 +1425,7 @@ void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
     double maxPpg = -100;
     long maxInd=-1;
     
-    //playSerial( s1, s2, 400, 1, 0, "mult_std" + fileSuffix, true );
+    //playSerial( s1, s2, 200, 1, 0, "mult_std" + fileSuffix, true );
     playParallel( s1, s2, 1000, 1, 0, "mult_std" + fileSuffix );
     dispBoards( s1 );
     
@@ -1490,7 +1490,7 @@ void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
         if( (i+1)%1000 == 0 )
         {
             cout << endl;
-            //double ppg = playSerial( s1, s2, 400, 1, i+1, "mult_std" + fileSuffix, true );
+            //double ppg = playSerial( s1, s2, 200, 1, i+1, "mult_std" + fileSuffix, true );
             double ppg = playParallel( s1, s2, 1000, 1, i+1, "mult_std" + fileSuffix );
 
             if( ppg > maxPpg )
@@ -2181,33 +2181,38 @@ bool bandvComp( const bandv& v1, const bandv& v2 ) { return v1.val > v2.val; }
 
 void testOrigGam()
 {
-    strategytdmult s1( "benchmark", "mult_maxmult_80_0.02_0.02", true );
+    strategytdmult s1( "", "mult_stdmult2_80_0.02_0.02", false );
+    strategytdmult s2( "benchmark", "mult_stdmult_80_0.02_0.02", false );
     //strategytdmult s1( "benchmark", "mult_stdmult_80_0.1_0.1" );
     //strategytdorigbg s1( "", "bg_maxbg_120_0.1_0.1" );
     //strategytdorigbg s2( "benchmark", "bg_stdbg_80_0.1_0.1" );
     //strategytdoriggam s2( "benchmark", "gam_maxgam_80_0.1_0.1" );
     //strategytdmult s1( "benchmark", "mult_maxmult_80_0.1_0.1" );
     s1.learning = false;
-    //s2.learning = false;
+    s2.learning = false;
     //strategyply s2( 2, 5, s1 );
     
     //strategyPubEval s1;
-    strategyPubEval s2;
+    // s2;
     
-    /*
-    int nTot=1000;
-    int nBkt=10;
+    
+    int nTot=30000;
+    int nBkt=30;
     int nStep=nTot/nBkt;
     
-    double avgVal=0;
+    double avgVal=0, avgValSq=0, ppg;
     for( int i=0; i<nBkt; i++ )
     {
         cout << "Bucket " << i << endl;
-        avgVal += playParallel( s1, s2, nStep, 1001 + i*nStep, 0, "nowrite" );
+        ppg = playParallel( s1, s2, nStep, 1001 + i*nStep, 0, "nowrite" );
+        avgVal += ppg;
+        avgValSq += ppg * ppg;
     }
     avgVal /= nBkt;
+    avgValSq /= nBkt;
     cout << "Average equity = " << avgVal << endl;
-    */
+    cout << "Std dev equity = " << sqrt( avgValSq - avgVal * avgVal ) << endl;
+    
     
     //playSerial( s1, s2, 10000, 1, 0, "nowrite" );
     

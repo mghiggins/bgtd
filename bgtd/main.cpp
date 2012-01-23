@@ -14,7 +14,7 @@
 #include "tests.h"
 #include "randomc.h"
 
-
+/*
 int main( int argc, char * argv [] )
 {
     int nMiddle;
@@ -24,7 +24,7 @@ int main( int argc, char * argv [] )
     // set default values for parameters
     
     nMiddle = 80;
-    alpha0  = 0.1;
+    alpha0  = 0.02;
     beta0   = 1 * alpha0;
     
     // override them if params are passed into the command line
@@ -65,7 +65,7 @@ int main( int argc, char * argv [] )
     return 0;
 }
 
-/*
+
 int main( int argc, char * argv [] )
 {
     // train strategytdoriggam
@@ -150,12 +150,12 @@ int main( int argc, char * argv [] )
 {
     rollTest();
 }
-
+*/
 int main( int argc, char * argv [] )
 {
     testOrigGam();
 }
-
+/*
 int main( int argc, char * argv [] )
 {
     testHittingShots();
