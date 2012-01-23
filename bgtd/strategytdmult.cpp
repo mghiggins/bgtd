@@ -53,7 +53,7 @@ int strategytdmult::nInputs( const string& netName ) const
     {
         if( usePrimesInput and not useShotProbInput ) throw "Must include shot prob input if include primes input";
         if( usePrimesInput )
-            return 202;
+            return 208;
         else if( useShotProbInput )
             return 200;
         else
@@ -231,8 +231,35 @@ vector<double> strategytdmult::getInputValues( const board& brd, const string& n
         }
         if( usePrimesInput )
         {
-            inputs.push_back( primesCount( brd, true ) / 6. );
-            inputs.push_back( primesCount( brd, false ) / 6. );
+            // we split the count across multiple inputs, for the same reason that we do it for regular checker
+            // count in the base inputs: it lets the network find more complex nonlinear dependencies on the
+            // count. This is important for primes, since a six-prime is a lot better than a five-prime.
+            
+            for( int i=0; i<2; i++ )
+            {
+                int maxPrime;
+                if( i == 0 ) 
+                    maxPrime = primesCount( brd, true ); // for the player
+                else
+                    maxPrime = primesCount( brd, false ); // for the opponent
+                
+                if( maxPrime < 3 )
+                    inputs.push_back( maxPrime / 3. );
+                else
+                    inputs.push_back( 1 );
+                if( maxPrime >= 4 )
+                    inputs.push_back( 1 );
+                else
+                    inputs.push_back( 0 );
+                if( maxPrime >= 5 )
+                    inputs.push_back( 1 );
+                else
+                    inputs.push_back( 0 );
+                if( maxPrime >= 6 )
+                    inputs.push_back( maxPrime - 5 );
+                else
+                    inputs.push_back( 0 );
+            }
         }
     }
     
