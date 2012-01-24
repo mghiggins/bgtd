@@ -22,7 +22,7 @@ struct boardAndVal
 bool boardAndValCompare( const boardAndVal& v1, const boardAndVal& v2 );
 bool boardAndValCompare( const boardAndVal& v1, const boardAndVal& v2 ) { return v1.zeroPlyVal > v2.zeroPlyVal; }
 
-strategyply::strategyply( int nPlies, int nMoveFilter, strategy& baseStrat ) : nPlies(nPlies), nMoveFilter(nMoveFilter), baseStrat( baseStrat )
+strategyply::strategyply( int nPlies, int nMoveFilter, strategy& baseStrat, strategy& filterStrat ) : nPlies(nPlies), nMoveFilter(nMoveFilter), baseStrat( baseStrat ), filterStrat( filterStrat )
 {
 }
 
@@ -85,47 +85,44 @@ double strategyply::boardValueRecurse( const board& brd, int stepNPlies, const h
             else
                 weight = 1/18.;
             
-            // first get a zero-ply evaluation of the possible moves; we'll use this
-            // to trim down the moves we calculate the more accurate board value for.
-            // Or, if we're doing 1-ply, this is the only calculation required.
+            // first get a coarse evaluation of the value of possible moves using the
+            // filterStrat strategy. Later on we'll calculate the value more accurately
+            // for the top nMoveFilter elements.
             
             set<board> moves( possibleMoves( stepBoard, die1, die2 ) );
-            maxVal=-1000;
             vector<boardAndVal> moveVals;
             for( set<board>::iterator it=moves.begin(); it!=moves.end(); it++ )
             {
-                val = baseStrat.boardValue( (*it), context );
-                if( val > maxVal )
-                    maxVal = val;
-                if( stepNPlies > 1 )
-                {
-                    boardAndVal elem;
-                    elem.brd = (*it);
-                    elem.zeroPlyVal = val;
-                    moveVals.push_back( elem );
-                }
+                val = filterStrat.boardValue( (*it), context );
+                boardAndVal elem;
+                elem.brd = (*it);
+                elem.zeroPlyVal = val;
+                moveVals.push_back( elem );
             }
             
-            if( stepNPlies > 1 )
-            {
-                maxVal = -1000; // reset the max value
+            maxVal = -1000; // reset the max value
+        
+            // sort the elements by board value, biggest board value first. Remember,
+            // these board values are a coarse approx; we then calculate a more accurate board
+            // value on the top nMoveFilter elements to make our choice of move.
             
-                // sort those elements by board value, biggest board value first. Remember,
-                // these board values are zero ply; we then calculate a more accurate board
-                // value on the top nMoveFilter elements to make our choice of move.
+            sort( moveVals.begin(), moveVals.end(), boardAndValCompare );
+            
+            // re-run the calculations using the deeper search for the top nMoveFilter moves
+            
+            nElems=moveVals.size();
+            if( nElems > nMoveFilter ) nElems = nMoveFilter;
+            for( int i=0; i<nElems; i++ )
+            {
+                // if we're at 1-ply and the filter strategy is the same as the regular strategy, just use the precalculated values.
+                // Otherwise calculate them using the base strategy.
                 
-                sort( moveVals.begin(), moveVals.end(), boardAndValCompare );
-                
-                // re-run the calculations using the deeper search for the top nMoveFilter moves
-                
-                nElems=moveVals.size();
-                if( nElems > nMoveFilter ) nElems = nMoveFilter;
-                for( int i=0; i<nElems; i++ )
-                {
+                if( stepNPlies == 1 and &filterStrat == &baseStrat )
+                    val = moveVals.at(i).zeroPlyVal;
+                else
                     val = boardValueRecurse( moveVals.at(i).brd, stepNPlies-1, context );
-                    if( val > maxVal )
-                        maxVal = val;
-                }
+                if( val > maxVal )
+                    maxVal = val;
             }
             
             // if it didn't find anything it's because the roll resulted in
