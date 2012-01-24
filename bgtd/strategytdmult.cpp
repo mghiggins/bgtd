@@ -27,16 +27,16 @@ vector<double> randomWeights( int nWeights, CRandomMersenne& rng )
 
 strategytdmult::strategytdmult()
 {
+    useShotProbInput = true;
+    usePrimesInput   = true;
     setupRandomWeights( 40 ); // default # of middle nodes is 40
-    useShotProbInput = false;
-    usePrimesInput   = false;
 }
 
 strategytdmult::strategytdmult( int nMiddle )
 {
+    useShotProbInput = true;
+    usePrimesInput   = true;
     setupRandomWeights( nMiddle );
-    useShotProbInput = false;
-    usePrimesInput   = false;
 }
 
 strategytdmult::strategytdmult( const string& path, const string& filePrefix, bool randomPrimesInput )
@@ -113,10 +113,13 @@ void strategytdmult::setup()
     bearoffNPnts     = 6;
     bearoffNCheckers = 15;
     
-    loadBearoffDbOneSided( "/Users/mghiggins/bgtdres/benchmark/bearoffOS_6_15.csv" );
-    loadGammonBearoffDbOneSided( "/Users/mghiggins/bgtdres/benchmark/bearoffOSGam_6_15.csv" );
-    cout << "One-sided db size = " << stepsProbs()->size() << endl;
-    cout << "Gammon db size    = " << gamStepsProbs()->size() << endl;
+    if( stepsProbs() == 0 )
+    {
+        loadBearoffDbOneSided( "/Users/mghiggins/bgtdres/benchmark/bearoffOS_6_15.csv" );
+        loadGammonBearoffDbOneSided( "/Users/mghiggins/bgtdres/benchmark/bearoffOSGam_6_15.csv" );
+        cout << "One-sided db size = " << stepsProbs()->size() << endl;
+        cout << "Gammon db size    = " << gamStepsProbs()->size() << endl;
+    }
 }
 
 double strategytdmult::boardValue( const board& brd, const hash_map<string,int>* context ) const
