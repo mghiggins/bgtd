@@ -406,7 +406,7 @@ vector<int> steps;
 class worker
 {
 public:
-    worker( long i, strategytdbase& s1, strategy& s2, long n, long initSeed ) : i(i), s1(s1), s2(s2), n(n), initSeed(initSeed) {};
+    worker( long i, strategy& s1, strategy& s2, long n, long initSeed ) : i(i), s1(s1), s2(s2), n(n), initSeed(initSeed) {};
     
     void operator()()
     {
@@ -423,7 +423,7 @@ public:
     
 private:
     long i;
-    strategytdbase& s1;
+    strategy& s1;
     strategy& s2;
     long n;
     long initSeed;
@@ -501,6 +501,57 @@ double playParallel( strategytdbase& s1, strategy& s2, long n, long initSeed, lo
     return ppg;
 }
 
+double playParallelGen( strategy& s1, strategy& s2, long n, long initSeed )
+{
+    using namespace boost;
+    
+    // run each game in its own thread
+    
+    if( points.size() < n ) 
+    {
+        points.resize(n);
+        steps.resize(n);
+    }
+    
+    thread_group ts;
+    for( long i=0; i<n; i++ ) ts.create_thread( worker( i, s1, s2, n, initSeed ) );
+    ts.join_all();
+    
+    double ppg=0, w0=0, q=0, avgSteps=0, ns=0, ng=0, nb=0;
+    int p, ap;
+    for( long i=0; i<n; i++ ) 
+    {
+        p  = points[i];
+        ap = abs( p );
+        
+        ppg += p;
+        q += ap;
+        if( p > 0 ) w0 += 1;
+        if( ap == 1 ) ns += 1;
+        if( ap == 2 ) ng += 1;
+        if( ap == 3 ) nb += 1;
+        avgSteps += steps[i];
+    }
+    ppg /= n;
+    w0  /= n;
+    q   /= n;
+    ns  /= n;
+    ng  /= n;
+    nb  /= n;
+    avgSteps /= n;
+    
+    cout << "Average ppg        = " << ppg << endl;
+    cout << "Prob of P1 winning = " << w0 * 100 << endl;
+    cout << "Average abs ppg    = " << q << endl;
+    cout << "Frac single        = " << ns << endl;
+    cout << "Frac gammon        = " << ng << endl;
+    cout << "Frac backgammon    = " << nb << endl;
+    cout << "Average steps/game = " << avgSteps << endl;
+    cout << endl;
+    
+    return ppg;
+}
+
 double playSerial( strategytdbase& s1, strategy& s2, long n, long initSeed, long displayIndex, const string& fileSuffix, bool returnPpg )
 {
     s1.learning = false;
@@ -517,7 +568,7 @@ double playSerial( strategytdbase& s1, strategy& s2, long n, long initSeed, long
         
         game g( &s1, &s2, (int)(i+initSeed) );
         g.setTurn( ((int) i)%2 );
-        g.setContextValue( "singleGame", 1 );
+        //g.setContextValue( "singleGame", 1 );
         g.stepToEnd();
         s = g.winnerScore();
         if( g.winner() == 0 ) 
@@ -2072,7 +2123,7 @@ void test4()
     strategytdmult s1( "benchmark", "mult_stdmult_80_0.1_0.1" );
     //strategytdoriggam s1( "", "gam_maxgam_80_0.1_0.1" );
     s1.learning = false;
-    strategyply s1a( 1, 8, s1 );
+    strategyply s1a( 1, 8, s1, s1 );
     
     //strategyPubEval s1;
     strategyhuman s2;
@@ -2181,40 +2232,44 @@ bool bandvComp( const bandv& v1, const bandv& v2 ) { return v1.val > v2.val; }
 
 void testOrigGam()
 {
-    strategytdmult s1( "", "mult_stdmult2_80_0.02_0.02", false );
-    strategytdmult s2( "benchmark", "mult_stdmult_80_0.02_0.02", false );
+    //strategytdmult s1( "", "mult_stdmult2_80_0.02_0.02", false );
+    strategytdmult s1( "benchmark", "mult_stdmult_80_0.02_0.02", false );
+    strategytdmult sf( "benchmark", "mult_stdmult_5_0.1_0.1", false );
     //strategytdmult s1( "benchmark", "mult_stdmult_80_0.1_0.1" );
     //strategytdorigbg s1( "", "bg_maxbg_120_0.1_0.1" );
     //strategytdorigbg s2( "benchmark", "bg_stdbg_80_0.1_0.1" );
     //strategytdoriggam s2( "benchmark", "gam_maxgam_80_0.1_0.1" );
     //strategytdmult s1( "benchmark", "mult_maxmult_80_0.1_0.1" );
     s1.learning = false;
-    s2.learning = false;
-    //strategyply s2( 2, 5, s1 );
+    sf.learning = false;
+    //s2.learning = false;
+    
+    strategyply s2( 1, 5, s1, sf );
     
     //strategyPubEval s1;
     // s2;
     
     
-    int nTot=30000;
-    int nBkt=30;
+    int nTot=100;
+    int nBkt=1;
     int nStep=nTot/nBkt;
     
     double avgVal=0, avgValSq=0, ppg;
     for( int i=0; i<nBkt; i++ )
     {
         cout << "Bucket " << i << endl;
-        ppg = playParallel( s1, s2, nStep, 1001 + i*nStep, 0, "nowrite" );
+        ppg = playParallelGen( s1, s2, nStep, 1001 + i*nStep );
+        //ppg = playSerialGen( s1, s2, nStep, 1001 + i*nStep );
         avgVal += ppg;
         avgValSq += ppg * ppg;
     }
     avgVal /= nBkt;
     avgValSq /= nBkt;
     cout << "Average equity = " << avgVal << endl;
-    cout << "Std dev equity = " << sqrt( avgValSq - avgVal * avgVal ) << endl;
+    cout << "Std dev equity = " << sqrt( fabs( avgValSq - avgVal * avgVal ) ) << endl;
     
     
-    //playSerial( s1, s2, 10000, 1, 0, "nowrite" );
+    //playSerialGen( s1, s2, 100, 1 );
     
     /*
     board b( referenceBoard( 4 ) );

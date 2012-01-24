@@ -30,6 +30,7 @@ void readExpWeightsFromFile( vector<double>& outputProbWeights, vector<double>& 
                              vector< vector<double> >& middleProbTraces, vector< vector<double> >& middleGammonTraces, 
                              const string& fileSuffix );
 double playParallel( strategytdbase& s1, strategy& s2, long n, long initSeed, long displayIndex, const string& fileSuffix );
+double playParallelGen( strategy& s1, strategy& s2, long n, long initSeed );
 double playSerial( strategytdbase& s1, strategy& s2, long n, long initSeed, long displayIndex, const string& fileSuffix, bool returnPpg=false );
 double playSerialGen( strategy& s1, strategy& s2, long n, long initSeed );
 void sim1( int nMiddle, double alpha0, double beta0, const string& fileSuffix );
