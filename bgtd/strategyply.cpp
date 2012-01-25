@@ -22,7 +22,8 @@ struct boardAndVal
 bool boardAndValCompare( const boardAndVal& v1, const boardAndVal& v2 );
 bool boardAndValCompare( const boardAndVal& v1, const boardAndVal& v2 ) { return v1.zeroPlyVal > v2.zeroPlyVal; }
 
-strategyply::strategyply( int nPlies, int nMoveFilter, strategy& baseStrat, strategy& filterStrat ) : nPlies(nPlies), nMoveFilter(nMoveFilter), baseStrat( baseStrat ), filterStrat( filterStrat )
+strategyply::strategyply( int nPlies, int nMoveFilter, double equityCutoff, strategy& baseStrat, strategy& filterStrat )
+ : nPlies(nPlies), nMoveFilter(nMoveFilter), equityCutoff( equityCutoff), baseStrat( baseStrat ), filterStrat( filterStrat )
 {
 }
 
@@ -112,6 +113,7 @@ double strategyply::boardValueRecurse( const board& brd, int stepNPlies, const h
             
             nElems=moveVals.size();
             if( nElems > nMoveFilter ) nElems = nMoveFilter;
+            double equityDiff;
             for( int i=0; i<nElems; i++ )
             {
                 // if we're at 1-ply and the filter strategy is the same as the regular strategy, just use the precalculated values.
@@ -120,7 +122,19 @@ double strategyply::boardValueRecurse( const board& brd, int stepNPlies, const h
                 if( stepNPlies == 1 and &filterStrat == &baseStrat )
                     val = moveVals.at(i).zeroPlyVal;
                 else
+                {
+                    // we further filter by ignoring moves whose (filter strategy) equity is more than
+                    // equityCutoff different from the best one. If equityCutoff is zero we assume
+                    // that means there is no cutoff.
+                    
+                    if( equityCutoff > 0 and i > 0 )
+                    {
+                        equityDiff = moveVals.at(0).zeroPlyVal - moveVals.at(i).zeroPlyVal;
+                        if( equityDiff > equityCutoff ) continue;
+                    }
+                    
                     val = boardValueRecurse( moveVals.at(i).brd, stepNPlies-1, context );
+                }
                 if( val > maxVal )
                     maxVal = val;
             }

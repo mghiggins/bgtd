@@ -18,16 +18,18 @@ class strategyply : public strategy
     
 public:
     // nPlies is the number of plies to search; nMoveFilter is the # of moves to include
-    // when doing deeper searches; baseStrat is the underlying strategy we 
+    // when doing deeper searches; equityCutoff is an equity cutoff based on the filter
+    // strategy equity that we also use to filter out unlikely moves; baseStrat is the underlying strategy we 
     // use to dig into the tree; filterStrat is the strategy we use to come up with 
     // nMoveFilter-element list that we calculate a more accurate board value for 
     // (filterStrat is usually a fairly coarse strategy that gets equity correct only
     // approximately).
     
-    strategyply( int nPlies, int nMoveFilter, strategy& baseStrat, strategy& filterStrat );
+    strategyply( int nPlies, int nMoveFilter, double equityCutoff, strategy& baseStrat, strategy& filterStrat );
     virtual ~strategyply() {};
     
     int nPlies, nMoveFilter;
+    double equityCutoff;
     
     virtual double boardValue( const board& brd, const hash_map<string,int>* context=0 ) const;
     double boardValueRecurse( const board& brd, int stepNPlies, const hash_map<string,int>* context ) const;
