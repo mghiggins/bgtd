@@ -2123,7 +2123,7 @@ void test4()
     strategytdmult s1( "benchmark", "mult_stdmult_80_0.1_0.1" );
     //strategytdoriggam s1( "", "gam_maxgam_80_0.1_0.1" );
     s1.learning = false;
-    strategyply s1a( 1, 8, s1, s1 );
+    strategyply s1a( 1, 8, 0.2, s1, s1 );
     
     //strategyPubEval s1;
     strategyhuman s2;
@@ -2233,24 +2233,23 @@ bool bandvComp( const bandv& v1, const bandv& v2 ) { return v1.val > v2.val; }
 void testOrigGam()
 {
     //strategytdmult s1( "", "mult_stdmult2_80_0.02_0.02", false );
-    strategytdmult s1( "benchmark", "mult_stdmult_80_0.02_0.02", false );
+    strategytdmult s0( "benchmark", "mult_stdmult_80_0.02_0.02", false );
     strategytdmult sf( "benchmark", "mult_stdmult_5_0.1_0.1", false );
     //strategytdmult s1( "benchmark", "mult_stdmult_80_0.1_0.1" );
     //strategytdorigbg s1( "", "bg_maxbg_120_0.1_0.1" );
     //strategytdorigbg s2( "benchmark", "bg_stdbg_80_0.1_0.1" );
     //strategytdoriggam s2( "benchmark", "gam_maxgam_80_0.1_0.1" );
     //strategytdmult s1( "benchmark", "mult_maxmult_80_0.1_0.1" );
-    s1.learning = false;
+    s0.learning = false;
     sf.learning = false;
     //s2.learning = false;
     
-    strategyply s2( 1, 5, s1, sf );
+    strategyply s1( 1, 5, 0.1, s0, sf );
     
     //strategyPubEval s1;
     // s2;
     
-    
-    int nTot=100;
+    int nTot=10;
     int nBkt=1;
     int nStep=nTot/nBkt;
     
@@ -2258,8 +2257,8 @@ void testOrigGam()
     for( int i=0; i<nBkt; i++ )
     {
         cout << "Bucket " << i << endl;
-        ppg = playParallelGen( s1, s2, nStep, 1001 + i*nStep );
-        //ppg = playSerialGen( s1, s2, nStep, 1001 + i*nStep );
+        //ppg = playParallelGen( s1, s0, nStep, 1001 + i*nStep );
+        ppg = playSerialGen( s1, s0, nStep, 1001 + i*nStep );
         avgVal += ppg;
         avgValSq += ppg * ppg;
     }
