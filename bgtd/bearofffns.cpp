@@ -17,6 +17,7 @@
 hash_map<string,double> * _boardPnts=0;
 hash_map<string,stepsDistribution> * _stepsProbs=0;
 hash_map<string,stepsDistribution> * _gamStepsProbs=0;
+hash_map<int,int> * _escapeRolls=0;
 
 string boardID( const board& b, int nPnts )
 {
@@ -1117,6 +1118,99 @@ long nElementsOS( int nPnts, int nCheckers )
     return e;
 }
 
+int blockadeID( const board& b, int startPoint )
+{
+    int ID=0;
+    for( int i=startPoint-1; i>=startPoint-12; i-- )
+    {
+        if( i == -1 ) break;
+        if( b.otherChecker(i) > 1 ) ID += 2^(startPoint-i);
+    }
+    return ID;
+}
 
+hash_map<int,int> * blockadeEscapeRolls() { return _escapeRolls; }
 
+bool canEscape( const board& b, int startPoint, int minPoint, const vector<int>& rolls );
+bool canEscape( const board& b, int startPoint, int minPoint, const vector<int>& rolls )
+{
+    // true if a checker started at startPoint can get past minPoint by moving the rolls
+    // in order.
+    
+    int pnt=startPoint;
+    for( int i=0; i<rolls.size(); i++ )
+    {
+        pnt -= rolls.at(i);
+        if( pnt < minPoint ) return true;
+        if( b.otherChecker(pnt) > 1 ) return false;
+    }
+    return false;
+}
 
+int getBlockadeEscapeCount( const board& b, int startPoint )
+{
+    // initialize the local map if it hasn't been already
+    
+    if( _escapeRolls == 0 )
+        _escapeRolls = new hash_map<int,int>;
+    
+    // get the board ID
+    
+    int ID = blockadeID( b, startPoint );
+    
+    // if there's already an entry for this one, use it
+    
+    hash_map<int,int>::iterator it=_escapeRolls->find( ID );
+    if( it != _escapeRolls->end() ) return it->second;
+    
+    // get the index of the last covered point out to the 12 points further than startPoint
+    
+    int minPoint=startPoint;
+    int i, j;
+    for( i=startPoint-1; i>=startPoint-12; i-- )
+    {
+        if( i == -1 ) break;
+        if( b.otherChecker(i) > 1 ) minPoint = i;
+    }
+    
+    // if there are no opponent covered points ahead, then return 36 - all rolls "escape"
+    
+    if( minPoint == startPoint ) return 36;
+    
+    // otherwise calculate it - totally brute force!
+    
+    int nRolls=0;
+    
+    for( i=1; i<=6; i++ )
+        for( j=1; j<=i; j++ )
+        {
+            vector<int> rolls;
+            rolls.push_back(i);
+            rolls.push_back(j);
+            if( i == j )
+            {
+                rolls.push_back(i);
+                rolls.push_back(j);
+                if( canEscape( b, startPoint, minPoint, rolls ) )
+                    nRolls += 1;
+            }
+            else
+            {
+                bool esp = canEscape( b, startPoint, minPoint, rolls );
+                if( !esp )
+                {
+                    reverse( rolls.begin(), rolls.end() );
+                    esp = canEscape( b, startPoint, minPoint, rolls );
+                }
+                if( esp ) nRolls += 2;
+            }
+        }
+    
+    // cache the value in the map for use next time
+    
+    (*_escapeRolls)[ ID ] = nRolls;
+    
+    // return the # of rolls
+    
+    return nRolls;
+}

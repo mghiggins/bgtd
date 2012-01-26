@@ -194,4 +194,35 @@ long nElementsTS( int nPnts, int nCheckers );
 
 long nElementsOS( int nPnts, int nCheckers );
 
+// Next database: this one is used for counting escaping rolls against a blockade.
+// The blockade is distributed across twelve points in front of the checker, with
+// one to seven points of the twelve covered.
+
+// blockadeID returns an integer that defines the blockage - between 1 and 
+// 2^12=4096. Returns from the player's perspective, starting at point i (0-based).
+
+int blockadeID( const board& b, int startPoint );
+
+// blockadeEscapeRolls() returns a pointer to the database
+
+hash_map<int,int> * blockadeEscapeRolls();
+
+// getBlockadeEscapeCount returns an integer representing the number of
+// escaping rolls for the player starting at point startPoint against an opponent
+// blockade.
+
+int getBlockadeEscapeCount( const board& b, int startPoint );
+
+// constructBlockadeEscapeDb constructs the blockade db and stores it in memory
+
+void constructBlockadeEscapeDb();
+
+// writeBlockadeEscapeDb writes the contents of the local hash into a file
+
+void writeBlockadeEscapeDb( const string& fileName );
+
+// loadBlockadeEscapeDb loads the contents of a serialized escape db into the local hash
+
+void loadBlockadeEscapeDb( const string& fileName );
+
 #endif
