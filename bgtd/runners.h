@@ -55,4 +55,7 @@ void playBearoff();
 void playBearoffOneSided();
 void compareBearoff();
 
+void playEscapes();
+
+
 #endif

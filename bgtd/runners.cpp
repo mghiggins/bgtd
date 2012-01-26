@@ -412,6 +412,7 @@ public:
     {
         game g( &s1, &s2, (int)(i+initSeed) );
         g.setTurn( ((int) i)%2 );
+        g.setContextValue( "singleGame", 1 );
         g.stepToEnd();
         double s = g.winnerScore();
         if( g.winner() == 0 )
@@ -2244,12 +2245,12 @@ void testOrigGam()
     sf.learning = false;
     //s2.learning = false;
     
-    strategyply s1( 1, 5, 0.1, s0, sf );
+    strategyply s1( 1, 8, 0.2, s0, sf );
     
-    //strategyPubEval s1;
+    strategyPubEval s2;
     // s2;
     
-    int nTot=10;
+    int nTot=1000;
     int nBkt=1;
     int nStep=nTot/nBkt;
     
@@ -2257,8 +2258,8 @@ void testOrigGam()
     for( int i=0; i<nBkt; i++ )
     {
         cout << "Bucket " << i << endl;
-        //ppg = playParallelGen( s1, s0, nStep, 1001 + i*nStep );
-        ppg = playSerialGen( s1, s0, nStep, 1001 + i*nStep );
+        ppg = playParallelGen( s0, s2, nStep, 1001 + i*nStep );
+        //ppg = playSerialGen( s1, s0, nStep, 1001 + i*nStep );
         avgVal += ppg;
         avgValSq += ppg * ppg;
     }
@@ -2676,4 +2677,12 @@ void testHittingShots()
     for( set<roll>::iterator it=hittingRolls.begin(); it!=hittingRolls.end(); it++ )
         cout << "( " << it->die1 << ", " << it->die2 << " )\n";
     
+}
+
+void playEscapes()
+{
+    board b( referenceBoard(6) );
+    b.print();
+    cout << getBlockadeEscapeCount( b, 23 ) << endl;
+    return;
 }
