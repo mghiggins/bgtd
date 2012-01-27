@@ -2233,7 +2233,7 @@ bool bandvComp( const bandv& v1, const bandv& v2 ) { return v1.val > v2.val; }
 
 void testOrigGam()
 {
-    strategytdmult s1( "", "mult_maxmult24_80_0.02_0.02", false );
+    strategytdmult s1( "", "mult_stdmult24_80_0.02_0.02", false );
     strategytdmult s2( "benchmark", "mult_stdmult_80_0.02_0.02", false );
     //strategytdmult sf( "benchmark", "mult_stdmult_5_0.1_0.1", false );
     //strategytdmult s1( "benchmark", "mult_stdmult_80_0.1_0.1" );
