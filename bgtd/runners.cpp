@@ -1485,7 +1485,7 @@ void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
     
     for( long i=0; i<20000000; i++ )
     {
-        if( i==200000 or i==1000000 or i==10000000 )
+        if( i==100000 or i==500000 or i==1000000 )
         {
             s1.alpha *= 1/5.;
             s1.beta  *= 1/5.;
@@ -2233,40 +2233,41 @@ bool bandvComp( const bandv& v1, const bandv& v2 ) { return v1.val > v2.val; }
 
 void testOrigGam()
 {
-    //strategytdmult s1( "", "mult_stdmult2_80_0.02_0.02", false );
-    strategytdmult s0( "benchmark", "mult_stdmult_80_0.02_0.02", false );
-    strategytdmult sf( "benchmark", "mult_stdmult_5_0.1_0.1", false );
+    strategytdmult s1( "", "mult_maxmult24_80_0.02_0.02", false );
+    strategytdmult s2( "benchmark", "mult_stdmult_80_0.02_0.02", false );
+    //strategytdmult sf( "benchmark", "mult_stdmult_5_0.1_0.1", false );
     //strategytdmult s1( "benchmark", "mult_stdmult_80_0.1_0.1" );
     //strategytdorigbg s1( "", "bg_maxbg_120_0.1_0.1" );
     //strategytdorigbg s2( "benchmark", "bg_stdbg_80_0.1_0.1" );
     //strategytdoriggam s2( "benchmark", "gam_maxgam_80_0.1_0.1" );
     //strategytdmult s1( "benchmark", "mult_maxmult_80_0.1_0.1" );
-    s0.learning = false;
-    sf.learning = false;
-    //s2.learning = false;
+    s1.learning = false;
+    //sf.learning = false;
+    s2.learning = false;
     
-    strategyply s1( 1, 8, 0.2, s0, sf );
+    //strategyply s1( 1, 8, 0.2, s0, sf );
     
-    strategyPubEval s2;
+    //strategyPubEval s2;
     // s2;
     
-    int nTot=1000;
-    int nBkt=1;
+    int nTot=30000;
+    int nBkt=30;
     int nStep=nTot/nBkt;
     
     double avgVal=0, avgValSq=0, ppg;
     for( int i=0; i<nBkt; i++ )
     {
         cout << "Bucket " << i << endl;
-        ppg = playParallelGen( s0, s2, nStep, 1001 + i*nStep );
+        ppg = playParallelGen( s1, s2, nStep, 1001 + i*nStep );
         //ppg = playSerialGen( s1, s0, nStep, 1001 + i*nStep );
         avgVal += ppg;
         avgValSq += ppg * ppg;
+        
+        cout << "Average equity = " << avgVal/(i+1) << endl;
+        cout << "Std dev equity = " << sqrt( fabs( avgValSq/(i+1) - avgVal * avgVal/(i+1)/(i+1) ) ) << endl;
+        cout << "Std error      = " << sqrt( fabs( avgValSq/(i+1) - avgVal * avgVal/(i+1)/(i+1) ) / (i+1) ) << endl;
+        cout << endl;
     }
-    avgVal /= nBkt;
-    avgValSq /= nBkt;
-    cout << "Average equity = " << avgVal << endl;
-    cout << "Std dev equity = " << sqrt( fabs( avgValSq - avgVal * avgVal ) ) << endl;
     
     
     //playSerialGen( s1, s2, 100, 1 );
@@ -2681,8 +2682,10 @@ void testHittingShots()
 
 void playEscapes()
 {
-    board b( referenceBoard(6) );
-    b.print();
-    cout << getBlockadeEscapeCount( b, 23 ) << endl;
-    return;
+    constructBlockadeEscapeDb();
+    
+    board bl( referenceBoard(4) );
+    bl.print();
+    cout << getBlockadeEscapeCount( bl, 6 ) << endl;
+    
 }

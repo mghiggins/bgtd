@@ -42,7 +42,7 @@ int main( int argc, char * argv [] )
     else
     {
         stringstream ss;
-        ss << "mult2_" << nMiddle << "_" << alpha0 << "_" << beta0;
+        ss << "mult24_" << nMiddle << "_" << alpha0 << "_" << beta0;
         fileSuffix = ss.str();
     }
     if( argc > 5 )
@@ -153,8 +153,8 @@ int main( int argc, char * argv [] )
 */
 int main( int argc, char * argv [] )
 {
-    //testOrigGam();
-    playEscapes();
+    testOrigGam();
+    //playEscapes();
 }
 /*
 int main( int argc, char * argv [] )
