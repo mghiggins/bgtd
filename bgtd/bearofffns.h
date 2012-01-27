@@ -213,16 +213,9 @@ hash_map<int,int> * blockadeEscapeRolls();
 
 int getBlockadeEscapeCount( const board& b, int startPoint );
 
-// constructBlockadeEscapeDb constructs the blockade db and stores it in memory
+// constructBlockadeEscapeDb constructs the blockade db and stores it in memory.
+// This is very fast to run, so you should do it on session startup.
 
 void constructBlockadeEscapeDb();
-
-// writeBlockadeEscapeDb writes the contents of the local hash into a file
-
-void writeBlockadeEscapeDb( const string& fileName );
-
-// loadBlockadeEscapeDb loads the contents of a serialized escape db into the local hash
-
-void loadBlockadeEscapeDb( const string& fileName );
 
 #endif

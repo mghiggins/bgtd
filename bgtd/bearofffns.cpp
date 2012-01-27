@@ -1118,13 +1118,21 @@ long nElementsOS( int nPnts, int nCheckers )
     return e;
 }
 
+int intPow(int a,int b);
+int intPow(int a,int b)
+{
+    int res=1;
+    for( int i=0; i<b; i++ ) res *= a;
+    return res;
+}
+
 int blockadeID( const board& b, int startPoint )
 {
     int ID=0;
     for( int i=startPoint-1; i>=startPoint-12; i-- )
     {
         if( i == -1 ) break;
-        if( b.otherChecker(i) > 1 ) ID += 2^(startPoint-i);
+        if( b.otherChecker(i) > 1 ) ID += intPow(2,startPoint-i-1);
     }
     return ID;
 }
@@ -1149,14 +1157,14 @@ bool canEscape( const board& b, int startPoint, int minPoint, const vector<int>&
 
 int getBlockadeEscapeCount( const board& b, int startPoint )
 {
-    // initialize the local map if it hasn't been already
+    // if the db hasn't been initialized, throw
     
-    if( _escapeRolls == 0 )
-        _escapeRolls = new hash_map<int,int>;
+    if( _escapeRolls == 0 ) throw "Escape database has not been constructed - call constructBlockadeEscapeDb";
     
     // get the board ID
     
     int ID = blockadeID( b, startPoint );
+    if( ID == 0 ) return 36; // no blockade
     
     // if there's already an entry for this one, use it
     
@@ -1213,4 +1221,73 @@ int getBlockadeEscapeCount( const board& b, int startPoint )
     // return the # of rolls
     
     return nRolls;
+}
+
+vector< vector<bool> > getLayouts( int nCovered, int nPnts );
+vector< vector<bool> > getLayouts( int nCovered, int nPnts )
+{
+    if( nCovered > nPnts ) throw "nCovered cannot be larger than nPnts";
+    
+    vector< vector<bool> > layouts;
+    if( nCovered == 1 )
+    {
+        for( int i=0; i<nPnts; i++ )
+        {
+            vector<bool> layout(nPnts,false);
+            layout.at(i) = true;
+            layouts.push_back(layout);
+        }
+    }
+    else
+    {
+        for( int i=0; i<nPnts-nCovered+1; i++ )
+        {
+            vector< vector<bool> > subLayouts( getLayouts( nCovered-1, nPnts-i-1 ) );
+            for( vector< vector<bool> >::iterator it=subLayouts.begin(); it!=subLayouts.end(); it++ )
+            {
+                vector<bool> layout(i+1,false);
+                layout.at(i) = true;
+                layout.insert( layout.end(), it->begin(), it->end() );
+                layouts.push_back( layout );
+            }
+        }
+    }
+    return layouts;
+}
+
+void constructBlockadeEscapeDb()
+{
+    // initialize the local map if it hasn't been already
+    
+    if( _escapeRolls == 0 )
+        _escapeRolls = new hash_map<int,int>;
+    
+    // run through all possible ways to arrange up to seven covered points on twelve points
+    // and calculate for each
+    
+    int i, nRolls;
+    
+    for( int nCovered=1; nCovered<8; nCovered++ )
+    {
+        vector< vector<bool> > layouts( getLayouts( nCovered, 12 ) );
+        for( vector< vector<bool> >::iterator it=layouts.begin(); it!=layouts.end(); it++ )
+        {
+            // set up a board with opponent checkers in the appropriate places
+            
+            board b;
+            for( i=0; i<24; i++ )
+            {
+                b.setChecker( i, 0 );
+                b.setOtherChecker( i, 0 );
+            }
+            for( i=0; i<12; i++ )
+                if( it->at(i) == true )
+                    b.setOtherChecker( 22-i, 2 );
+            
+            // calculate the number of escaping rolls. No need to do anything with this; the
+            // result gets cached in the local hash automatically.
+            
+            nRolls = getBlockadeEscapeCount( b, 23 );
+        }
+    }
 }

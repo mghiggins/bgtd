@@ -53,7 +53,7 @@ int strategytdmult::nInputs( const string& netName ) const
     {
         if( usePrimesInput and not useShotProbInput ) throw "Must include shot prob input if include primes input";
         if( usePrimesInput )
-            return 208;
+            return 204;
         else if( useShotProbInput )
             return 200;
         else
@@ -120,6 +120,10 @@ void strategytdmult::setup()
         cout << "One-sided db size = " << stepsProbs()->size() << endl;
         cout << "Gammon db size    = " << gamStepsProbs()->size() << endl;
     }
+    
+    // initialize the escape db. We don't bother serializing this one since it's quick to calculate
+    
+    if( blockadeEscapeRolls() == 0 ) constructBlockadeEscapeDb();
 }
 
 double strategytdmult::boardValue( const board& brd, const hash_map<string,int>* context ) const
@@ -234,34 +238,29 @@ vector<double> strategytdmult::getInputValues( const board& brd, const string& n
         }
         if( usePrimesInput )
         {
-            // we split the count across multiple inputs, for the same reason that we do it for regular checker
-            // count in the base inputs: it lets the network find more complex nonlinear dependencies on the
-            // count. This is important for primes, since a six-prime is a lot better than a five-prime.
+            // for primes we follow Berliner - for the player, one input that's the minimum number of escape rolls from 24->16, and
+            // another that's from 16->2. The mirror image for the opponent.
             
-            for( int i=0; i<2; i++ )
+            for( int persp=0; persp<2; persp++ )
             {
-                int maxPrime;
-                if( i == 0 ) 
-                    maxPrime = primesCount( brd, true ); // for the player
-                else
-                    maxPrime = primesCount( brd, false ); // for the opponent
+                board useBrd( brd );
+                if( persp==1 ) useBrd.setPerspective( 1 - brd.perspective() ); // we're doing the opponent
                 
-                if( maxPrime < 3 )
-                    inputs.push_back( maxPrime / 3. );
-                else
-                    inputs.push_back( 1 );
-                if( maxPrime >= 4 )
-                    inputs.push_back( 1 );
-                else
-                    inputs.push_back( 0 );
-                if( maxPrime >= 5 )
-                    inputs.push_back( 1 );
-                else
-                    inputs.push_back( 0 );
-                if( maxPrime >= 6 )
-                    inputs.push_back( maxPrime - 5 );
-                else
-                    inputs.push_back( 0 );
+                int i;
+                int rolls, rollsMin=36; // we use this if there are no blockades
+                for( i=23; i>=15; i-- )
+                {
+                    rolls = getBlockadeEscapeCount( useBrd, i );
+                    if( rolls < rollsMin ) rollsMin = rolls;
+                }
+                inputs.push_back( rollsMin / 36. );
+                rollsMin = 36;
+                for( i=15; i>=1; i-- )
+                {
+                    rolls = getBlockadeEscapeCount( useBrd, i );
+                    if( rolls < rollsMin ) rollsMin = rolls;
+                }
+                inputs.push_back( rollsMin / 36. );
             }
         }
     }
