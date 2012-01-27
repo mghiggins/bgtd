@@ -250,6 +250,7 @@ vector<double> strategytdmult::getInputValues( const board& brd, const string& n
                 int rolls, rollsMin=36; // we use this if there are no blockades
                 for( i=23; i>=15; i-- )
                 {
+                    if( useBrd.checker(i) == 0 ) continue;
                     rolls = getBlockadeEscapeCount( useBrd, i );
                     if( rolls < rollsMin ) rollsMin = rolls;
                 }
@@ -257,6 +258,7 @@ vector<double> strategytdmult::getInputValues( const board& brd, const string& n
                 rollsMin = 36;
                 for( i=15; i>=1; i-- )
                 {
+                    if( useBrd.checker(i) == 0 ) continue;
                     rolls = getBlockadeEscapeCount( useBrd, i );
                     if( rolls < rollsMin ) rollsMin = rolls;
                 }
