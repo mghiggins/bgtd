@@ -123,7 +123,11 @@ void strategytdmult::setup()
     
     // initialize the escape db. We don't bother serializing this one since it's quick to calculate
     
-    if( blockadeEscapeRolls() == 0 ) constructBlockadeEscapeDb();
+    if( blockadeEscapeRolls() == 0 ) 
+    {
+        constructBlockadeEscapeDb();
+        cout << "Escape db size    = " << blockadeEscapeRolls()->size() << endl;
+    }
 }
 
 double strategytdmult::boardValue( const board& brd, const hash_map<string,int>* context ) const
@@ -836,7 +840,8 @@ void strategytdmult::loadWeights( const string& subPath, const string& filePrefi
     
     string netFileName = path + "/netNames_" + filePrefix + ".txt";
     
-    ifstream fn( netFileName.c_str() );
+    ifstream fn( netFileName.c_str(), ios::in );
+    if( !fn ) throw "No netNames file with the supplied prefix";
     
     string line;
     getline( fn, line );
