@@ -1,10 +1,20 @@
-//
-//  main.cpp
-//  bgtd
-//
-//  Created by Mark Higgins on 7/22/11.
-//  Copyright 2011 __MyCompanyName__. All rights reserved.
-//
+/*****************
+ Copyright 2011, 2012 Mark Higgins
+ 
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ 
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ 
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ 
+ *****************/
 
 #include <string>
 #include <iostream>
@@ -14,7 +24,7 @@
 #include "tests.h"
 #include "randomc.h"
 
-
+/*
 int main( int argc, char * argv [] )
 {
     int nMiddle;
@@ -42,7 +52,7 @@ int main( int argc, char * argv [] )
     else
     {
         stringstream ss;
-        ss << "mult24_" << nMiddle << "_" << alpha0 << "_" << beta0;
+        ss << "mult26_" << nMiddle << "_" << alpha0 << "_" << beta0;
         fileSuffix = ss.str();
     }
     if( argc > 5 )
@@ -65,7 +75,7 @@ int main( int argc, char * argv [] )
     return 0;
 }
 
-/*
+
 int main( int argc, char * argv [] )
 {
     // train strategytdoriggam
@@ -150,13 +160,13 @@ int main( int argc, char * argv [] )
 {
     rollTest();
 }
-
+*/
 int main( int argc, char * argv [] )
 {
     testOrigGam();
     //playEscapes();
 }
-
+/*
 int main( int argc, char * argv [] )
 {
     testHittingShots();

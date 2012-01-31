@@ -1,10 +1,20 @@
-//
-//  runners.cpp
-//  bgtd
-//
-//  Created by Mark Higgins on 7/30/11.
-//  Copyright 2011 __MyCompanyName__. All rights reserved.
-//
+/*****************
+ Copyright 2011, 2012 Mark Higgins
+ 
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ 
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ 
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ 
+ *****************/
 
 
 #include <algorithm>
@@ -412,7 +422,7 @@ public:
     {
         game g( &s1, &s2, (int)(i+initSeed) );
         g.setTurn( ((int) i)%2 );
-        g.setContextValue( "singleGame", 1 );
+        //g.setContextValue( "singleGame", 1 );
         g.stepToEnd();
         double s = g.winnerScore();
         if( g.winner() == 0 )
@@ -502,7 +512,7 @@ double playParallel( strategytdbase& s1, strategy& s2, long n, long initSeed, lo
     return ppg;
 }
 
-double playParallelGen( strategy& s1, strategy& s2, long n, long initSeed )
+runStats playParallelGen( strategy& s1, strategy& s2, long n, long initSeed )
 {
     using namespace boost;
     
@@ -550,7 +560,15 @@ double playParallelGen( strategy& s1, strategy& s2, long n, long initSeed )
     cout << "Average steps/game = " << avgSteps << endl;
     cout << endl;
     
-    return ppg;
+    runStats stats;
+    stats.ppg = ppg;
+    stats.fracWin = w0;
+    stats.avgSteps = avgSteps;
+    stats.fracSingle = ns;
+    stats.fracGammon = ng;
+    stats.fracBg     = nb;
+    
+    return stats;
 }
 
 double playSerial( strategytdbase& s1, strategy& s2, long n, long initSeed, long displayIndex, const string& fileSuffix, bool returnPpg )
@@ -1465,11 +1483,11 @@ void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
     
     // try out the TD strategy with multiple networks
     
-    strategytdmult s1( "benchmark", "mult_stdmult_80_0.02_0.02", true  );
-    //strategytdmult s1( nMiddle );
-    strategytdmult s2( "benchmark", "mult_stdmult_80_0.02_0.02", false );
-    s2.learning = false;
-    //strategyPubEval s2;
+    //strategytdmult s1( "benchmark", "mult_stdmult_80_0.02_0.02", false );
+    strategytdmult s1( nMiddle );
+    //strategytdmult s2( "benchmark", "mult_stdmult_80_0.02_0.02", false );
+    //s2.learning = false;
+    strategyPubEval s2;
     
     s1.alpha = alpha0;
     s1.beta  = beta0;
@@ -2233,39 +2251,46 @@ bool bandvComp( const bandv& v1, const bandv& v2 ) { return v1.val > v2.val; }
 
 void testOrigGam()
 {
-    strategytdmult s1( "", "mult_stdmult24_80_0.02_0.02", false );
-    strategytdmult s2( "benchmark", "mult_stdmult_80_0.02_0.02", false );
-    //strategytdmult sf( "benchmark", "mult_stdmult_5_0.1_0.1", false );
+    strategytdmult s0( "benchmark", "player24", false );
+    //strategytdmult s1( "", "mult_stdmult26_80_0.02_0.02", false );
+    //strategytdmult s2( "benchmark", "player24", false );
+    strategytdmult sf( "benchmark", "player24q", false );
     //strategytdmult s1( "benchmark", "mult_stdmult_80_0.1_0.1" );
     //strategytdorigbg s1( "", "bg_maxbg_120_0.1_0.1" );
     //strategytdorigbg s2( "benchmark", "bg_stdbg_80_0.1_0.1" );
     //strategytdoriggam s2( "benchmark", "gam_maxgam_80_0.1_0.1" );
     //strategytdmult s1( "benchmark", "mult_maxmult_80_0.1_0.1" );
-    s1.learning = false;
-    //sf.learning = false;
-    s2.learning = false;
+    s0.learning = false;
+    sf.learning = false;
+    //s2.learning = false;
     
-    //strategyply s1( 1, 8, 0.2, s0, sf );
+    strategyply s1( 2, 8, 0.2, s0, sf );
     
-    //strategyPubEval s2;
+    strategyPubEval s2;
     // s2;
     
-    int nTot=30000;
-    int nBkt=30;
+    int nTot=1000;
+    int nBkt=100;
     int nStep=nTot/nBkt;
     
-    double avgVal=0, avgValSq=0, ppg;
+    double avgVal=0, avgValSq=0, fracWin=0, fracWinSq=0;
     for( int i=0; i<nBkt; i++ )
     {
         cout << "Bucket " << i << endl;
-        ppg = playParallelGen( s1, s2, nStep, 1001 + i*nStep );
+        runStats stats = playParallelGen( s1, s2, nStep, 1001 + i*nStep );
         //ppg = playSerialGen( s1, s0, nStep, 1001 + i*nStep );
-        avgVal += ppg;
-        avgValSq += ppg * ppg;
+        avgVal    += stats.ppg;
+        avgValSq  += stats.ppg * stats.ppg;
+        fracWin   += stats.fracWin;
+        fracWinSq += stats.fracWin * stats.fracWin;
         
         cout << "Average equity = " << avgVal/(i+1) << endl;
         cout << "Std dev equity = " << sqrt( fabs( avgValSq/(i+1) - avgVal * avgVal/(i+1)/(i+1) ) ) << endl;
         cout << "Std error      = " << sqrt( fabs( avgValSq/(i+1) - avgVal * avgVal/(i+1)/(i+1) ) / (i+1) ) << endl;
+        cout << endl;
+        cout << "Frac win       = " << fracWin/(i+1)*100 << endl;
+        cout << "Std dev win    = " << sqrt( fabs( fracWinSq/(i+1) - fracWin * fracWin/(i+1)/(i+1) ) )*100 << endl;
+        cout << "Std error      = " << sqrt( fabs( fracWinSq/(i+1) - fracWin * fracWin/(i+1)/(i+1) ) / (i+1) )*100 << endl;
         cout << endl;
     }
     

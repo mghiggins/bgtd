@@ -47,6 +47,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C004BC1E14D864E100F2C012 /* COPYING */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = COPYING; sourceTree = "<group>"; };
 		C00B7D9E13D9E80100B3F10D /* board.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = board.cpp; sourceTree = "<group>"; };
 		C00B7DA113D9F0DD00B3F10D /* game.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = game.h; sourceTree = "<group>"; };
 		C00B7DA313D9F0FE00B3F10D /* game.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = game.cpp; sourceTree = "<group>"; };
@@ -96,7 +97,6 @@
 		C0E87BD113ECD2770006CC15 /* strategyhuman.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strategyhuman.cpp; sourceTree = "<group>"; };
 		C0F201DC13E4BB070050D98F /* runners.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = runners.h; sourceTree = "<group>"; };
 		C0F201DE13E4BB100050D98F /* runners.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = runners.cpp; sourceTree = "<group>"; };
-		C0FA32DF142F78D60012FED9 /* tdexp3 notes.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "tdexp3 notes.txt"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -129,12 +129,12 @@
 		C0E5DB5513D9BF8B009FC15A /* bgtd */ = {
 			isa = PBXGroup;
 			children = (
-				C0FA32DF142F78D60012FED9 /* tdexp3 notes.txt */,
 				C05308A7141D96E70069D85F /* mersenne.cpp */,
 				C05308A8141D96E70069D85F /* randomc.h */,
 				C0E5DB5613D9BF8B009FC15A /* main.cpp */,
 				C0F201DC13E4BB070050D98F /* runners.h */,
 				C0F201DE13E4BB100050D98F /* runners.cpp */,
+				C004BC1E14D864E100F2C012 /* COPYING */,
 				C0202DDE13E3361600F00B48 /* tests.h */,
 				C0202DE013E3362000F00B48 /* tests.cpp */,
 				C0E5DB5813D9BF8B009FC15A /* bgtd.1 */,
