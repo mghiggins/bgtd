@@ -91,11 +91,19 @@ public:
     void setBornIn( int n );
     void setOtherBornIn( int n );
     
+    // repr is a string representation of the board
+    
+    string repr() const;
+    
+    // comparison operators
+    
     bool operator==( const board& otherBoard ) const;
     bool operator>( const board& otherBoard ) const;
     bool operator<( const board& otherBoard ) const;
     bool operator<=( const board& otherBoard ) const;
     bool operator>=( const board& otherBoard ) const;
+    
+    // assignment operator
     
     board& operator=( const board& otherBoard );
     

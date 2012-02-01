@@ -391,6 +391,23 @@ void board::setOtherBornIn( int n )
         bornIn0 = n;
 }
 
+string board::repr() const
+{
+    vector<int> checks( checkers() );
+    vector<int> otherChecks( otherCheckers() );
+    
+    string r;
+    r += static_cast<char>( bornIn()+65 );
+    r += static_cast<char>( otherBornIn()+65 );
+    r += static_cast<char>( hit() + 65 );
+    r += static_cast<char>( otherHit() + 65 );
+    
+    for( int i=0; i<24; i++ )
+        r += static_cast<char>( checks[i] - otherChecks[i] + 65 );
+    
+    return r;
+}
+
 bool board::operator==( const board& otherBoard ) const
 {
     if( persp != otherBoard.persp ) return false;
@@ -416,35 +433,53 @@ bool board::operator<( const board& otherBoard ) const
     // order boards in sets and the like. We use a fairly arbitrary definition based
     // on the layout.
     
-    if( this->operator==( otherBoard ) ) return false;
+    //if( this->operator==( otherBoard ) ) return false;
     
     if( persp < otherBoard.persp ) return true;
     if( persp > otherBoard.persp ) return false;
     
-    if( bornIn() < otherBoard.bornIn() ) return true;
-    if( bornIn() > otherBoard.bornIn() ) return false;
-    if( otherBornIn() > otherBoard.otherBornIn() ) return false;
-    if( otherBornIn() < otherBoard.otherBornIn() ) return true;
-    if( hit() > otherBoard.hit() ) return true;
-    if( hit() < otherBoard.hit() ) return false;
-    if( otherHit() < otherBoard.otherHit() ) return false;
-    if( otherHit() > otherBoard.otherHit() ) return true;
+    int tb = bornIn();
+    int ob = otherBoard.bornIn();
+    
+    if( tb < ob ) return true;
+    if( tb > ob ) return false;
+    
+    int tob = otherBornIn();
+    int oob = otherBoard.otherBornIn();
+    
+    if( tob > oob ) return false;
+    if( tob < oob ) return true;
+    
+    int th = hit();
+    int oh = otherBoard.hit();
+    
+    if( th > oh ) return true;
+    if( th < oh ) return false;
+    
+    int toh = otherHit();
+    int ooh = otherBoard.otherHit();
+    
+    if( toh < ooh ) return false;
+    if( toh > ooh ) return true;
     
     int i;
     
+    const vector<int>& tcs( checkers() );
+    const vector<int>& ocs( otherBoard.checkers() );
+    
     for( i=0; i<24; i++ )
     {
-        if( checker(i) < otherBoard.checker(i) )
-            return true;
-        else if( checker(i) > otherBoard.checker(i) )
-            return false;
+        if( tcs[i] < ocs[i] ) return true;
+        if( tcs[i] > ocs[i] ) return false;
     }
+    
+    const vector<int>& tocs( otherCheckers() );
+    const vector<int>& oocs( otherBoard.otherCheckers() );
+    
     for( i=0; i<24; i++ )
     {
-        if( otherChecker(i) > otherBoard.otherChecker(i) )
-            return true;
-        else if( otherChecker(i) < otherBoard.otherChecker(i) )
-            return false;
+        if( tocs[i] > oocs[i] ) return true;
+        if( tocs[i] < oocs[i] ) return false;
     }
     
     return false;
