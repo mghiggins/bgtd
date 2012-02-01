@@ -329,11 +329,11 @@ vector<double> strategytdmult::getBaseInputValues( const board& brd ) const
         
         for( j=0; j<3; j++ )
         {
-            if( checks.at(i) > j )      inputs.at(4*i+j)    = 1;
-            if( otherChecks.at(i) > j ) inputs.at(4*i+j+99) = 1;
+            if( checks[i] > j )      inputs[4*i+j]    = 1;
+            if( otherChecks[i] > j ) inputs[4*i+j+99] = 1;
         }
-        if( checks.at(i) > 3 )      inputs.at(4*i+3)    = ( checks[i]-3 ) / 2.;
-        if( otherChecks.at(i) > 3 ) inputs.at(4*i+3+99) = ( otherChecks[i]-3 ) / 2.;
+        if( checks[i] > 3 )      inputs[4*i+3]    = ( checks[i]-3 ) / 2.;
+        if( otherChecks[i] > 3 ) inputs[4*i+3+99] = ( otherChecks[i]-3 ) / 2.;
     }
     
     // one spot for each player records the number on the bar
@@ -370,10 +370,10 @@ vector<double> strategytdmult::getMiddleValues( const vector<double>& inputs, co
         const vector<double>& weights = it->second.at(i);
         
         val = 0;
-               
+        
         for( j=0; j<nInput; j++ )
-            val += weights.at(j) * inputs.at(j);
-        val += weights.at(nInput); // bias weight
+            val += weights[j] * inputs[j];
+        val += weights[nInput]; // bias weight
         vals.at(i) = 1. / ( 1 + exp( -val ) );
     }
     
@@ -385,8 +385,8 @@ double strategytdmult::getOutputProbValue( const vector<double>& middles, const 
     hash_map< string, vector<double> >::const_iterator weights = outputProbWeights.find( netName );
     double arg=0;
     for( int i=0; i<nMiddle; i++ )
-        arg += (*weights).second.at(i) * middles.at(i);
-    arg += (*weights).second.at(nMiddle); // bias weight
+        arg += (*weights).second[i] * middles[i];
+    arg += (*weights).second[nMiddle]; // bias weight
     return 1. / ( 1 + exp( -arg ) );
 }
 
@@ -395,8 +395,8 @@ double strategytdmult::getOutputGammonValue( const vector<double>& middles, cons
     hash_map< string, vector<double> >::const_iterator weights = outputGammonWeights.find( netName );
     double arg=0;
     for( int i=0; i<nMiddle; i++ )
-        arg += (*weights).second.at(i) * middles.at(i);
-    arg += (*weights).second.at(nMiddle); // bias weight
+        arg += (*weights).second[i] * middles[i];
+    arg += (*weights).second[nMiddle]; // bias weight
     return 1. / ( 1 + exp( -arg ) );
 }
 
@@ -405,8 +405,8 @@ double strategytdmult::getOutputGammonLossValue( const vector<double>& middles, 
     hash_map< string, vector<double> >::const_iterator weights = outputGammonLossWeights.find( netName );
     double arg=0;
     for( int i=0; i<nMiddle; i++ )
-        arg += (*weights).second.at(i) * middles.at(i);
-    arg += (*weights).second.at(nMiddle); // bias weight
+        arg += (*weights).second[i] * middles[i];
+    arg += (*weights).second[nMiddle]; // bias weight
     return 1. / ( 1 + exp( -arg ) );
 }
 
@@ -415,8 +415,8 @@ double strategytdmult::getOutputBackgammonValue( const vector<double>& middles, 
     hash_map< string, vector<double> >::const_iterator weights = outputBgWeights.find( netName );
     double arg=0;
     for( int i=0; i<nMiddle; i++ )
-        arg += (*weights).second.at(i) * middles.at(i);
-    arg += (*weights).second.at(nMiddle); // bias weight
+        arg += (*weights).second[i] * middles[i];
+    arg += (*weights).second[nMiddle]; // bias weight
     return 1. / ( 1 + exp( -arg ) );
 }
 
@@ -425,8 +425,8 @@ double strategytdmult::getOutputBackgammonLossValue( const vector<double>& middl
     hash_map< string, vector<double> >::const_iterator weights = outputBgLossWeights.find( netName );
     double arg=0;
     for( int i=0; i<nMiddle; i++ )
-        arg += (*weights).second.at(i) * middles.at(i);
-    arg += (*weights).second.at(nMiddle); // bias weight
+        arg += (*weights).second[i] * middles[i];
+    arg += (*weights).second[nMiddle]; // bias weight
     return 1. / ( 1 + exp( -arg ) );
 }
 

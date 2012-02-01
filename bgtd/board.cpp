@@ -170,7 +170,7 @@ int board::pips() const
     if( checks.size() != 24 ) throw string( "Pips: Number of checker spots in vector is not 24" );
     
     for( int i=0; i<24; i++ )
-        pipCount += checks.at(i) * (i+1);
+        pipCount += checks[i] * (i+1);
     pipCount += 25 * hit();
     
     return pipCount;
@@ -183,7 +183,7 @@ int board::otherPips() const
     if( checks.size() != 24 ) throw string( "Pips: Number of other checker spots in vector is not 24" );
     
     for( int i=0; i<24; i++ )
-        pipCount += checks.at(i) * (24-i);
+        pipCount += checks[i] * (24-i);
     pipCount += 25 * otherHit();
     
     return pipCount;
@@ -196,7 +196,7 @@ long board::pipsq() const
     if( checks.size() != 24 ) throw string( "Pipsq: Number of checker spots in vector is not 24" );
     
     for( int i=0; i<24; i++ )
-        pipCount += checks.at(i) * (i+1) * (i+1);
+        pipCount += checks[i] * (i+1) * (i+1);
     pipCount += 25 * 25 * hit();
     
     return pipCount;
@@ -209,7 +209,7 @@ long board::otherPipsq() const
     if( checks.size() != 24 ) throw string( "Pipsq: Number of other checker spots in vector is not 24" );
     
     for( int i=0; i<24; i++ )
-        pipCount += checks.at(i) * (24-i) * (24-i);
+        pipCount += checks[i] * (24-i) * (24-i);
     pipCount += 25 * 25 * otherHit();
     
     return pipCount;
@@ -221,9 +221,9 @@ int board::checker( int pos ) const
         throw string("Invalid position");
     
     if( persp == 0 )
-        return checkers0.at(pos);
+        return checkers0[pos];
     else
-        return checkers1.at(23-pos);
+        return checkers1[23-pos];
 }
 
 int board::otherChecker( int pos ) const
@@ -232,9 +232,9 @@ int board::otherChecker( int pos ) const
         throw string("Invalid position");
     
     if( persp == 0 )
-        return checkers1.at(pos);
+        return checkers1[pos];
     else
-        return checkers0.at(23-pos);
+        return checkers0[23-pos];
 }
 
 bool board::noBackgammon() const
@@ -303,9 +303,9 @@ void board::setChecker( int pos, int num )
         throw string("Invalid position");
     
     if( persp == 0 )
-        checkers0.at(pos) = num;
+        checkers0[pos] = num;
     else
-        checkers1.at(23-pos) = num;
+        checkers1[23-pos] = num;
 }
 
 void board::setOtherChecker( int pos, int num )
@@ -314,9 +314,9 @@ void board::setOtherChecker( int pos, int num )
         throw string("Invalid position");
     
     if( persp == 0 )
-        checkers1.at(pos) = num;
+        checkers1[pos] = num;
     else
-        checkers0.at(23-pos) = num;
+        checkers0[23-pos] = num;
 }
 
 void board::incrementHit()
