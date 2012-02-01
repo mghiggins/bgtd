@@ -1178,16 +1178,23 @@ void testOrigGam()
     
     for( int i=0; i<3; i++ )
     {
-        cout << i << endl;
-        game g( &s1, &s1, i+1 );
-        g.stepToEnd();
-        g.getBoard().print();
-        cout << g.nSteps << endl;
-        cout << endl;
+        if( i % 1 == 0 ) cout << i << endl;
+        game g( &s0, &s0, i+1 );
+        try
+        {
+            g.stepToEnd();
+        }
+        catch( string e )
+        {
+            cout << "Exception: " << e << endl;
+        }
+        //g.getBoard().print();
+        //cout << g.nSteps << endl;
+        //cout << endl;
     }
     
     return;
-    
+    /*
     strategyPubEval s2;
     // s2;
     
@@ -1215,6 +1222,7 @@ void testOrigGam()
         cout << "Std error      = " << sqrt( fabs( fracWinSq/(i+1) - fracWin * fracWin/(i+1)/(i+1) ) / (i+1) )*100 << endl;
         cout << endl;
     }
+    */
 }
 
 void playBearoff()
