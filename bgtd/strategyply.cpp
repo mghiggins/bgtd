@@ -146,7 +146,7 @@ gameProbabilities strategyply::boardProbsRecurse( const board& brd, int stepNPli
                     if( equityCutoff > 0 and i > 0 )
                     {
                         equityDiff = moveVals.at(0).zeroPlyVal - moveVals.at(i).zeroPlyVal;
-                        if( equityDiff > equityCutoff ) continue;
+                        if( equityDiff > equityCutoff ) break;
                     }
                     
                     moveProbs = boardProbsRecurse( moveVals.at(i).brd, stepNPlies-1, context );
