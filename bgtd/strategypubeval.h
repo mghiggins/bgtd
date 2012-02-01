@@ -28,7 +28,7 @@ public:
     strategyPubEval();
     virtual ~strategyPubEval();
     
-    virtual double boardValue( const board& brd, const hash_map<string,int>* context=0 ) const;
+    virtual double boardValue( const board& brd, const hash_map<string,int>* context=0 );
     virtual hash_map<string,int> boardContext( const board& brd ) const;
     
 private:

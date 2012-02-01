@@ -140,8 +140,13 @@ void strategytdmult::setup()
     }
 }
 
-gameProbabilities strategytdmult::boardProbabilities( const board& brd, const hash_map<string,int>* context ) const
+gameProbabilities strategytdmult::boardProbabilities( const board& brd, const hash_map<string,int>* context )
 {
+    string brdRepr( brd.repr() );
+    
+    hash_map<string,gameProbabilities>::iterator it=probCache.find( brdRepr );
+    if( it!=probCache.end() ) return it->second;
+        
     // Used to evaluate possible moves, and so needs to represent the value of the game assuming the player isn't
     // holding the dice. We do this by flipping the board perspective and returning probabilities flipped back
     // appropriately.
@@ -181,6 +186,7 @@ gameProbabilities strategytdmult::boardProbabilities( const board& brd, const ha
         if( val > 2 ) probs.probBgWin  = 1;
         if( val < -1 ) probs.probGammonLoss = 1;
         if( val < -2 ) probs.probBgLoss = 1;
+        probCache[brdRepr] = probs;
         return probs;
     }
     else if( eval == "bearoff" )
@@ -193,6 +199,7 @@ gameProbabilities strategytdmult::boardProbabilities( const board& brd, const ha
             probGammonLoss = bearoffProbabilityGammon( flippedBoard );
         }
         gameProbabilities probs( probWin, probGammonWin, probGammonLoss, 0, 0 );
+        probCache[brdRepr] = probs;
         return probs;
     }
     else
@@ -212,6 +219,7 @@ gameProbabilities strategytdmult::boardProbabilities( const board& brd, const ha
         if( valIsAnyWin )
         {
             gameProbabilities probs( 1-pWin, 0, 0, 0, 0 );
+            probCache[brdRepr] = probs;
             return probs;
         }
         else
@@ -251,6 +259,7 @@ gameProbabilities strategytdmult::boardProbabilities( const board& brd, const ha
             if( pBgLoss > pGamLoss ) pBgLoss = pGamLoss;
             
             gameProbabilities probs( 1-pWin, pGamLoss, pGam, pBgLoss, pBg );
+            probCache[brdRepr] = probs;
             return probs;
         }
     }

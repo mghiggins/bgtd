@@ -318,7 +318,7 @@ vector<double> pubEvalInputs( const board& brd )
     return inputs;
 }
 
-double strategyPubEval::boardValue( const board& brd, const hash_map<string,int>* context ) const
+double strategyPubEval::boardValue( const board& brd, const hash_map<string,int>* context )
 {
     // if all the pieces are in, return the highest score
     

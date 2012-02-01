@@ -36,7 +36,7 @@ public:
     strategytdorigsym( int nMiddle );
     virtual ~strategytdorigsym();
     
-    virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ) const; 
+    virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ); 
     
     vector<double> getInputValues( const board& brd, bool holdDice ) const;
     vector<double> getMiddleValues( const vector<double>& inputs ) const;

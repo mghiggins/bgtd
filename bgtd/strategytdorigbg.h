@@ -33,7 +33,7 @@ public:
     strategytdorigbg( const string& subPath, const string& filePrefix );
     virtual ~strategytdorigbg() {};
     
-    virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ) const; 
+    virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ); 
 
     double getOutputBackgammon( const vector<double>& middles ) const;
     double getOutputBackgammonLoss( const vector<double>& middles ) const;

@@ -41,8 +41,8 @@ public:
     int nPlies, nMoveFilter;
     double equityCutoff;
     
-    virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ) const; 
-    gameProbabilities boardProbsRecurse( const board& brd, int stepNPlies, const hash_map<string,int>* context ) const;
+    virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ); 
+    gameProbabilities boardProbsRecurse( const board& brd, int stepNPlies, const hash_map<string,int>* context );
     
 private:
     strategyprob& baseStrat;

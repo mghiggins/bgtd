@@ -37,7 +37,7 @@ double strategyprob::boardValueFromProbs( const gameProbabilities& probs ) const
          - ( 1 - probs.probWin - probs.probGammonLoss ) - 2 * ( probs.probGammonLoss - probs.probBgLoss ) - 3 * probs.probBgLoss;
 };
 
-double strategyprob::boardValue( const board& brd, const hash_map<string,int>* context ) const 
+double strategyprob::boardValue( const board& brd, const hash_map<string,int>* context ) 
 { 
     return boardValueFromProbs( boardProbabilities( brd, context ) ); 
 }

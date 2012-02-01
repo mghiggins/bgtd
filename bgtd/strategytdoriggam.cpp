@@ -71,7 +71,7 @@ void strategytdoriggam::setup()
     lambda = 0;
 }
 
-gameProbabilities strategytdoriggam::boardProbabilities( const board& brd, const hash_map<string,int>* context ) const
+gameProbabilities strategytdoriggam::boardProbabilities( const board& brd, const hash_map<string,int>* context )
 {
     // need to flip the board perspective to reflect the fact that the opponent holds the dice
     

@@ -36,7 +36,7 @@ public:
     strategytdmult( const string& path, const string& filePrefix, bool randomPrimesInput=false );
     virtual ~strategytdmult() {};
     
-    virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ) const; 
+    virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ); 
     
     string evaluator( const board& brd) const;
     
@@ -89,6 +89,10 @@ private:
     
     int bearoffNPnts;
     int bearoffNCheckers;
+    
+    // cache for board values
+    
+    hash_map<string,gameProbabilities> probCache;
 };
 
 #endif

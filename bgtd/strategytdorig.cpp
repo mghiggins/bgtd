@@ -62,7 +62,7 @@ void strategytdorig::setup()
     lambda = 0;
 }
 
-gameProbabilities strategytdorig::boardProbabilities( const board& brd, const hash_map<string,int>* context ) const
+gameProbabilities strategytdorig::boardProbabilities( const board& brd, const hash_map<string,int>* context )
 {
     // need to flip the board perspective to reflect the fact that the opponent holds the dice
     

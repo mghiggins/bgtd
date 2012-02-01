@@ -48,7 +48,7 @@ public:
     
     // any derived class must implement boardProbabilities
     
-    virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ) const = 0;
+    virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ) = 0;
     
     // boardValueFromProbs calculates the equity using pre-calculated probabilities
     
@@ -56,7 +56,7 @@ public:
     
     // overide boardValue so it returns the value from probs
     
-    virtual double boardValue( const board& brd, const hash_map<string,int>* context=0 ) const;
+    virtual double boardValue( const board& brd, const hash_map<string,int>* context=0 );
 };
 
 #endif

@@ -30,7 +30,7 @@ void strategy::update( const board& oldBoard, const board& newBoard )
     // want this to update something.
 }
 
-board strategy::preferredBoard( const board& oldBoard, const set<board>& possibleMoves, const hash_map<string,int>* context ) const
+board strategy::preferredBoard( const board& oldBoard, const set<board>& possibleMoves, const hash_map<string,int>* context )
 {
     if( possibleMoves.size() == 0 ) return oldBoard;
     if( possibleMoves.size() == 1 ) return *(possibleMoves.begin()); // only one move - choose it - no calcs req'd

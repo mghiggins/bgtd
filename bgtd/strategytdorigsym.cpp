@@ -61,7 +61,7 @@ void strategytdorigsym::setup()
     lambda = 0;
 }
 
-gameProbabilities strategytdorigsym::boardProbabilities( const board& brd, const hash_map<string,int>* context ) const
+gameProbabilities strategytdorigsym::boardProbabilities( const board& brd, const hash_map<string,int>* context )
 {
     // get the prob of win assuming the opponent holds the dice
     

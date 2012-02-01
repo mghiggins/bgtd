@@ -38,12 +38,12 @@ strategyply::strategyply( int nPlies, int nMoveFilter, double equityCutoff, stra
 {
 }
 
-gameProbabilities strategyply::boardProbabilities( const board& brd, const hash_map<string,int>* context ) const
+gameProbabilities strategyply::boardProbabilities( const board& brd, const hash_map<string,int>* context )
 {
     return boardProbsRecurse( brd, nPlies, context );
 }
 
-gameProbabilities strategyply::boardProbsRecurse( const board& brd, int stepNPlies, const hash_map<string,int>* context ) const
+gameProbabilities strategyply::boardProbsRecurse( const board& brd, int stepNPlies, const hash_map<string,int>* context )
 {
     // if the game is over, return the appropriate points
     

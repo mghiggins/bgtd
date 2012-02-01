@@ -20,7 +20,7 @@
 #include <sstream>
 #include "strategyhuman.h"
 
-board strategyhuman::preferredBoard( const board& oldBoard, const set<board>& possibleMoves, const hash_map<string,int>* context ) const
+board strategyhuman::preferredBoard( const board& oldBoard, const set<board>& possibleMoves, const hash_map<string,int>* context )
 {
     // if there are no moves or just one move, apply them, but put an input break in
     // so the user sees the move happening.
