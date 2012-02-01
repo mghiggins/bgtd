@@ -1179,7 +1179,7 @@ void testOrigGam()
     for( int i=0; i<3; i++ )
     {
         if( i % 1 == 0 ) cout << i << endl;
-        game g( &s0, &s0, i+1 );
+        game g( &s1, &s1, i+1 );
         try
         {
             g.stepToEnd();
