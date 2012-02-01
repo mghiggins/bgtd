@@ -433,53 +433,27 @@ bool board::operator<( const board& otherBoard ) const
     // order boards in sets and the like. We use a fairly arbitrary definition based
     // on the layout.
     
-    //if( this->operator==( otherBoard ) ) return false;
-    
     if( persp < otherBoard.persp ) return true;
     if( persp > otherBoard.persp ) return false;
     
-    int tb = bornIn();
-    int ob = otherBoard.bornIn();
+    if( bornIn0 < otherBoard.bornIn0 ) return true;
+    if( bornIn0 > otherBoard.bornIn0 ) return false;
+
+    if( bornIn1 > otherBoard.bornIn1 ) return false;
+    if( bornIn1 < otherBoard.bornIn1 ) return true;
     
-    if( tb < ob ) return true;
-    if( tb > ob ) return false;
+    if( hit0 > otherBoard.hit0 ) return true;
+    if( hit0 < otherBoard.hit0 ) return false;
     
-    int tob = otherBornIn();
-    int oob = otherBoard.otherBornIn();
+    if( hit1 < otherBoard.hit1 ) return false;
+    if( hit1 > otherBoard.hit1 ) return true;
     
-    if( tob > oob ) return false;
-    if( tob < oob ) return true;
-    
-    int th = hit();
-    int oh = otherBoard.hit();
-    
-    if( th > oh ) return true;
-    if( th < oh ) return false;
-    
-    int toh = otherHit();
-    int ooh = otherBoard.otherHit();
-    
-    if( toh < ooh ) return false;
-    if( toh > ooh ) return true;
-    
-    int i;
-    
-    const vector<int>& tcs( checkers() );
-    const vector<int>& ocs( otherBoard.checkers() );
-    
-    for( i=0; i<24; i++ )
+    for( int i=0; i<24; i++ )
     {
-        if( tcs[i] < ocs[i] ) return true;
-        if( tcs[i] > ocs[i] ) return false;
-    }
-    
-    const vector<int>& tocs( otherCheckers() );
-    const vector<int>& oocs( otherBoard.otherCheckers() );
-    
-    for( i=0; i<24; i++ )
-    {
-        if( tocs[i] > oocs[i] ) return true;
-        if( tocs[i] < oocs[i] ) return false;
+        if( checkers0[i] < otherBoard.checkers0[i] ) return true;
+        if( checkers0[i] > otherBoard.checkers0[i] ) return false;
+        if( checkers1[i] > otherBoard.checkers1[i] ) return true;
+        if( checkers1[i] < otherBoard.checkers1[i] ) return false;
     }
     
     return false;
