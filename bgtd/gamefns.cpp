@@ -432,7 +432,7 @@ set<roll> hittingShots( const board& brd, bool forOpponent )
         
         // otherwise check for a blot
            
-        if( checkers.at(i) == 1 )
+        if( checkers[i] == 1 )
         {
             // found a blot - see whether anything can hit it. Start at
             // position "-1" which means a hit checker.
@@ -480,7 +480,7 @@ set<roll> hittingShots( const board& brd, bool forOpponent )
                         // if both intermediate slots are covered by the player, the opponent can't
                         // use the roll
                         
-                        if( checkers.at(i-it->die1) > 1 and checkers.at(i-it->die2) > 1 ) continue;
+                        if( checkers[i-it->die1] > 1 and checkers[i-it->die2] > 1 ) continue;
                         
                         // otherwise it's a possibility
                         
