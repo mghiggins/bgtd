@@ -1166,22 +1166,26 @@ bool bandvComp( const bandv& v1, const bandv& v2 ) { return v1.val > v2.val; }
 
 void testOrigGam()
 {
-    //strategytdmult s0( "benchmark", "player24", false );
-    strategytdmult s1( "benchmark", "player24", false );
-    //strategytdmult sf( "benchmark", "player24q", false );
+    strategytdmult s0( "benchmark", "player24", false );
+    //strategytdmult s1( "benchmark", "player24", false );
+    strategytdmult sf( "benchmark", "player24q", false );
     //strategytdorigbg s1( "benchmark", "benchmark2" );
-    s1.learning = false;
-    //sf.learning = false;
+    s0.learning = false;
+    sf.learning = false;
     //s2.learning = false;
     
-    board b( referenceBoard(7) );
-    b.print();
-    gameProbabilities probs( s1.boardProbabilities( b ) );
-    cout << probs << endl;
+    strategyply s1( 1, 8, 0.2, s0, sf );
+    
+    for( int i=0; i<3; i++ )
+    {
+        cout << i << endl;
+        game g( &s1, &s1, i+1 );
+        g.stepToEnd();
+        g.getBoard().print();
+        cout << endl;
+    }
     
     return;
-    
-    //strategyply s1( 1, 8, 0.2, s0, sf );
     
     strategyPubEval s2;
     // s2;
