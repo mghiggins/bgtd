@@ -78,4 +78,8 @@ double hittingProb( const set<roll>& shots );
 
 int primesCount( const board& brd, bool forPlayer );
 
+// sigmoid returns the sigmoid fn 1/(1+exp(-x)), using a fast approximation
+
+double sigmoid( double x );
+
 #endif

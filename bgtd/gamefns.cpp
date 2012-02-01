@@ -540,3 +540,20 @@ int primesCount( const board& brd, bool forPlayer )
     
     return maxPrimes;
 }
+
+double sigmoid( double x )
+{
+    //return 1./(1+exp(-x));
+    
+    if( x > 10 ) return 1;
+    if( x < -10 ) return 0;
+    
+    double arg=1-x/64.;
+    arg *= arg;
+    arg *= arg;
+    arg *= arg;
+    arg *= arg;
+    arg *= arg;
+    arg *= arg;
+    return 1./(1+arg);
+}
