@@ -36,7 +36,7 @@ public:
     strategytdorig( int nMiddle );
     virtual ~strategytdorig();
     
-    virtual double boardValue( const board& br, const hash_map<string,int>* context=0 ) const;
+    virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ) const; 
     
     vector<double> getInputValues( const board& brd ) const;
     vector<double> getMiddleValues( const vector<double>& inputs ) const;

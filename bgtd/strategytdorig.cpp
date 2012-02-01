@@ -62,25 +62,18 @@ void strategytdorig::setup()
     lambda = 0;
 }
 
-double strategytdorig::boardValue( const board& brd, const hash_map<string,int>* context ) const
+gameProbabilities strategytdorig::boardProbabilities( const board& brd, const hash_map<string,int>* context ) const
 {
-    // need the value in the state where the opponent holds the dice, so
-    // flip the board perspective around
+    // need to flip the board perspective to reflect the fact that the opponent holds the dice
     
     board flippedBoard( brd );
     flippedBoard.setPerspective( 1 - brd.perspective() );
     
     // get the prob of win from the perspective of the opponent
     
-    double prob = getOutput( getMiddleValues( getInputValues( flippedBoard ) ) );
-    
-    // get the equity from the perspective of the opponent
-    
-    double equity = 2 * prob - 1; 
-    
-    // return -1 * that to get the equity of the player
-    
-    return -equity;
+    double probWin = getOutput( getMiddleValues( getInputValues( flippedBoard ) ) );
+    gameProbabilities probs( 1-probWin, 0, 0, 0, 0 );
+    return probs;
 }
 
 vector<double> strategytdorig::getInputValues( const board& brd ) const

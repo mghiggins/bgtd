@@ -27,54 +27,53 @@ struct boardAndVal
 {
     board brd;
     double zeroPlyVal;
+    gameProbabilities zeroPlyProbs;
 };
 
 bool boardAndValCompare( const boardAndVal& v1, const boardAndVal& v2 );
 bool boardAndValCompare( const boardAndVal& v1, const boardAndVal& v2 ) { return v1.zeroPlyVal > v2.zeroPlyVal; }
 
-strategyply::strategyply( int nPlies, int nMoveFilter, double equityCutoff, strategy& baseStrat, strategy& filterStrat )
+strategyply::strategyply( int nPlies, int nMoveFilter, double equityCutoff, strategyprob& baseStrat, strategyprob& filterStrat )
  : nPlies(nPlies), nMoveFilter(nMoveFilter), equityCutoff( equityCutoff), baseStrat( baseStrat ), filterStrat( filterStrat )
 {
 }
 
-double strategyply::boardValue( const board& brd, const hash_map<string,int>* context ) const
+gameProbabilities strategyply::boardProbabilities( const board& brd, const hash_map<string,int>* context ) const
 {
-    return boardValueRecurse( brd, nPlies, context );
+    return boardProbsRecurse( brd, nPlies, context );
 }
 
-double strategyply::boardValueRecurse( const board& brd, int stepNPlies, const hash_map<string,int>* context ) const
+gameProbabilities strategyply::boardProbsRecurse( const board& brd, int stepNPlies, const hash_map<string,int>* context ) const
 {
     // if the game is over, return the appropriate points
     
     if( brd.bornIn() == 15 )
     {
+        gameProbabilities probs( 1, 0, 0, 0, 0 );
         if( brd.otherBornIn() == 0 )
         {
-            if( brd.otherNoBackgammon() )
-                return 2;
-            else
-                return 3;
+            probs.probGammonWin = 1;
+            if( !brd.otherNoBackgammon() )
+                probs.probBgWin = 1;
         }
-        else
-            return 1;
+        return probs;
     }
     if( brd.otherBornIn() == 15 )
     {
+        gameProbabilities probs( 0, 0, 0, 0, 0 );
         if( brd.bornIn() == 0 )
         {
-            if( brd.noBackgammon() )
-                return -2;
-            else
-                return -3;
+            probs.probGammonLoss = 1;
+            if( !brd.noBackgammon() )
+                probs.probBgLoss = 1;
         }
-        else
-            return -1;
+        return probs;
     }
     
     // if there are zero plies, call the underlying strategy
     
     if( stepNPlies == 0 )
-        return baseStrat.boardValue( brd, context );
+        return baseStrat.boardProbabilities( brd, context );
     
     // otherwise recurse down through the next level of moves; flip to
     // the opponent's perspective and run through their moves.
@@ -83,9 +82,10 @@ double strategyply::boardValueRecurse( const board& brd, int stepNPlies, const h
     stepBoard.setPerspective( 1 - brd.perspective() );
     
     double weight, maxVal, val;
+    gameProbabilities maxProbs(0,0,0,0,0);
     int die1, die2;
     long nElems;
-    double avgVal=0;
+    gameProbabilities avgVal(0,0,0,0,0);
     
     for( die1=1; die1<7; die1++ )
     {
@@ -104,10 +104,12 @@ double strategyply::boardValueRecurse( const board& brd, int stepNPlies, const h
             vector<boardAndVal> moveVals;
             for( set<board>::iterator it=moves.begin(); it!=moves.end(); it++ )
             {
-                val = filterStrat.boardValue( (*it), context );
+                gameProbabilities probs( filterStrat.boardProbabilities( (*it), context ) );
+                val = filterStrat.boardValueFromProbs( probs );
                 boardAndVal elem;
                 elem.brd = (*it);
                 elem.zeroPlyVal = val;
+                elem.zeroPlyProbs = probs;
                 moveVals.push_back( elem );
             }
             
@@ -124,13 +126,17 @@ double strategyply::boardValueRecurse( const board& brd, int stepNPlies, const h
             nElems=moveVals.size();
             if( nElems > nMoveFilter ) nElems = nMoveFilter;
             double equityDiff;
+            gameProbabilities moveProbs;
             for( int i=0; i<nElems; i++ )
             {
                 // if we're at 1-ply and the filter strategy is the same as the regular strategy, just use the precalculated values.
                 // Otherwise calculate them using the base strategy.
                 
                 if( stepNPlies == 1 and &filterStrat == &baseStrat )
+                {
                     val = moveVals.at(i).zeroPlyVal;
+                    moveProbs = moveVals.at(i).zeroPlyProbs;
+                }
                 else
                 {
                     // we further filter by ignoring moves whose (filter strategy) equity is more than
@@ -143,10 +149,14 @@ double strategyply::boardValueRecurse( const board& brd, int stepNPlies, const h
                         if( equityDiff > equityCutoff ) continue;
                     }
                     
-                    val = boardValueRecurse( moveVals.at(i).brd, stepNPlies-1, context );
+                    moveProbs = boardProbsRecurse( moveVals.at(i).brd, stepNPlies-1, context );
+                    val = boardValueFromProbs( moveProbs );
                 }
                 if( val > maxVal )
+                {
                     maxVal = val;
+                    maxProbs = moveProbs;
+                }
             }
             
             // if it didn't find anything it's because the roll resulted in
@@ -155,15 +165,18 @@ double strategyply::boardValueRecurse( const board& brd, int stepNPlies, const h
             // left with the original board.
             
             if( maxVal == -1000 )
-                maxVal = boardValueRecurse( stepBoard, stepNPlies - 1, context );
+                maxProbs = boardProbsRecurse( stepBoard, stepNPlies - 1, context );
             
-            // add the optimal board value to the weighted average
+            // add the optimal board value to the weighted average - flip everything back to
+            // the correct perspective while we're at it.
             
-            avgVal += maxVal * weight;
+            avgVal.probWin        += ( 1 - maxProbs.probWin ) * weight;
+            avgVal.probGammonWin  += maxProbs.probGammonLoss * weight;
+            avgVal.probGammonLoss += maxProbs.probGammonWin * weight;
+            avgVal.probBgWin      += maxProbs.probBgLoss * weight;
+            avgVal.probBgLoss     += maxProbs.probBgWin * weight;
         }
     }
-    
-    avgVal *= -1; // to flip the perspective back
     
     return avgVal;
 }

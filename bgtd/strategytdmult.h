@@ -36,7 +36,7 @@ public:
     strategytdmult( const string& path, const string& filePrefix, bool randomPrimesInput=false );
     virtual ~strategytdmult() {};
     
-    virtual double boardValue( const board& brd, const hash_map<string,int>* context=0 ) const;
+    virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ) const; 
     
     string evaluator( const board& brd) const;
     

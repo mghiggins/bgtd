@@ -60,16 +60,14 @@ void strategytdorigbg::setup()
     setupBgWeights();
 }
 
-double strategytdorigbg::boardValue( const board& brd, const hash_map<string,int>* context ) const
+gameProbabilities strategytdorigbg::boardProbabilities( const board& brd, const hash_map<string,int>* context ) const
 {
-    // need the value in the state where the opponent holds the dice, so
-    // flip the board perspective around
+    // need to flip the board perspective to reflect the fact that the opponent holds the dice
     
     board flippedBoard( brd );
     flippedBoard.setPerspective( 1 - brd.perspective() );
     
-    // get the prob of win from the perspective of the opponent. Do usual
-    // sanity checks around probs.
+    // get the probs from the perspective of the opponent
     
     double pw, pg, pb, pgl, pbl;
     
@@ -97,13 +95,8 @@ double strategytdorigbg::boardValue( const board& brd, const hash_map<string,int
     if( pgl > 1 - pw ) pgl = 1 - pw;
     if( pbl > pgl ) pbl = pgl;
     
-    // get the equity from the perspective of the opponent
-    
-    double equity = 1 * ( pw - pg ) + 2 * ( pg - pb ) + 3 * pb - 1 * ( 1 - pw - pgl ) - 2 * ( pgl - pbl ) - 3 * pbl; 
-    
-    // return -1 * that to get the equity of the player
-    
-    return -equity;
+    gameProbabilities probs( 1 - pw, pgl, pg, pbl, pb );
+    return probs;
 }
 
 double strategytdorigbg::getOutputBackgammon( const vector<double>& middles ) const

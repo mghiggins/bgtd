@@ -61,16 +61,13 @@ void strategytdorigsym::setup()
     lambda = 0;
 }
 
-double strategytdorigsym::boardValue( const board& brd, const hash_map<string,int>* context ) const
+gameProbabilities strategytdorigsym::boardProbabilities( const board& brd, const hash_map<string,int>* context ) const
 {
-    // evaluation function for a board - highest boardValue is the chosen move.
-    // It returns the expected number of points in the game, which it estimates
-    // from the single prob-of-win node (ignoring any value from gammons etc).
-    // Calculated in the case where the player does not hold the dice, since it's
-    // post their move.
+    // get the prob of win assuming the opponent holds the dice
     
-    double prob = getOutput( getMiddleValues( getInputValues( brd, false ) ) );
-    return 2 * prob - 1; // expected points
+    double probWin = getOutput( getMiddleValues( getInputValues( brd, false ) ) );
+    gameProbabilities probs( probWin, 0, 0, 0, 0 );
+    return probs;
 }
 
 vector<double> strategytdorigsym::getInputValues( const board& brd, bool holdDice ) const

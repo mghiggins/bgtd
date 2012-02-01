@@ -188,21 +188,28 @@ double strategytd::getOutput( const vector<double>& middles ) const
     return 1. / ( 1 + exp( -val ) );
 }
 
-double strategytd::boardValue( const board& brd, const hash_map<string,int>* context ) const
+gameProbabilities strategytd::boardProbabilities( const board& brd, const hash_map<string,int>* context ) const
 {
+    // flip the perspective of the board
+    
+    board flippedBoard(brd);
+    flippedBoard.setPerspective( 1 - brd.perspective() );
+    
     // get the inputs from the board
     
-    vector<double> inputs = getInputValues( brd );
+    vector<double> inputs = getInputValues( flippedBoard );
     
     // calculate the middle layer node values
     
     vector<double> middles = getMiddleValues( inputs );
     
-    // calculate the output node value from the middles
+    // calculate the output node value from the middles - this is prob of win
+    // for the opponent
     
-    double output = getOutput( middles );
+    double probWin = getOutput( middles );
     
-    return output;
+    gameProbabilities probs( 1-probWin, 0, 0, 0, 0 );
+    return probs;
 }
 
 vector<double> strategytd::getOutputWeights() const { return outputWeights; }

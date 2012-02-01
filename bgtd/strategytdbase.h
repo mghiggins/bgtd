@@ -19,9 +19,9 @@
 #ifndef bgtd_strategytdbase_h
 #define bgtd_strategytdbase_h
 
-#include "strategy.h"
+#include "strategyprob.h"
 
-class strategytdbase : public strategy
+class strategytdbase : public strategyprob
 {
 public:
     strategytdbase() {};

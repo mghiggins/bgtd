@@ -140,12 +140,11 @@ void strategytdmult::setup()
     }
 }
 
-double strategytdmult::boardValue( const board& brd, const hash_map<string,int>* context ) const
+gameProbabilities strategytdmult::boardProbabilities( const board& brd, const hash_map<string,int>* context ) const
 {
-    // represents the expected points in the game. (Cubeless.) Used to evaluate possible
-    // moves, and so needs to represent the value of the game assuming the player isn't
-    // holding the dice. We do this by flipping the board perspective and returning
-    // the -ve of the calculated equity.
+    // Used to evaluate possible moves, and so needs to represent the value of the game assuming the player isn't
+    // holding the dice. We do this by flipping the board perspective and returning probabilities flipped back
+    // appropriately.
     
     board flippedBoard( brd );
     flippedBoard.setPerspective( 1 - brd.perspective() );
@@ -157,6 +156,7 @@ double strategytdmult::boardValue( const board& brd, const hash_map<string,int>*
     // than full equity.
     // NOTE that boardValue still returns an equity in this case, but one where all games are
     // worth 1 (as opposed to normal equity where gammons are worth 2 and backgammons are worth 3).
+    // The game probabilities for backgammon and gammon return zero in that case.
     
     bool valIsAnyWin=false;
     if( context != 0 )
@@ -173,9 +173,28 @@ double strategytdmult::boardValue( const board& brd, const hash_map<string,int>*
     
     string eval = evaluator( flippedBoard );
     if( eval == "done" )
-        return -doneValue( flippedBoard, valIsAnyWin );
+    {
+        double val = -doneValue( flippedBoard, valIsAnyWin );
+        gameProbabilities probs(0,0,0,0,0);
+        if( val > 0 ) probs.probWin = 1;
+        if( val > 1 ) probs.probGammonWin = 1;
+        if( val > 2 ) probs.probBgWin  = 1;
+        if( val < -1 ) probs.probGammonLoss = 1;
+        if( val < -2 ) probs.probBgLoss = 1;
+        return probs;
+    }
     else if( eval == "bearoff" )
-        return -bearoffValue( flippedBoard, valIsAnyWin );
+    {
+        double probWin = 1 - bearoffProbabilityWin( flippedBoard );
+        double probGammonWin=0, probGammonLoss=0;
+        if( !valIsAnyWin )
+        {
+            probGammonWin  = bearoffProbabilityGammonLoss( flippedBoard );
+            probGammonLoss = bearoffProbabilityGammon( flippedBoard );
+        }
+        gameProbabilities probs( probWin, probGammonWin, probGammonLoss, 0, 0 );
+        return probs;
+    }
     else
     {
         // evaluate the network probabilities: prob of any kind of win; prob of gammon win; prob
@@ -190,10 +209,11 @@ double strategytdmult::boardValue( const board& brd, const hash_map<string,int>*
         
         // if we're optimizing for any win (rather than full equity) this is all we need. 
         
-        double equity;
-        
         if( valIsAnyWin )
-            equity = 2 * pWin - 1;
+        {
+            gameProbabilities probs( 1-pWin, 0, 0, 0, 0 );
+            return probs;
+        }
         else
         {
             // Otherwise we're optimizing for full equity. Get the probability of gammon win and loss.
@@ -230,13 +250,9 @@ double strategytdmult::boardValue( const board& brd, const hash_map<string,int>*
             if( pBg > pGam ) pBg = pGam;
             if( pBgLoss > pGamLoss ) pBgLoss = pGamLoss;
             
-            // use those to calculate the expected number of points - this is the board value. Remember that the gammon
-            // win and loss probabilities evaluated from the network are conditional probabilities.
-            
-            equity = ( pWin - pGam ) * 1 + ( pGam - pBg ) * 2 + pBg * 3 - ( 1 - pWin - pGamLoss ) * 1 - ( pGamLoss - pBgLoss ) * 2 - pBgLoss * 3; 
+            gameProbabilities probs( 1-pWin, pGamLoss, pGam, pBgLoss, pBg );
+            return probs;
         }
-        
-        return -equity; // -ve because we calculated equity on the flipped board so that it's done assuming the player doesn't hold the dice
     }
 }
 

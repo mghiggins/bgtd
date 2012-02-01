@@ -19,9 +19,9 @@
 #ifndef bgtd_strategyply_h
 #define bgtd_strategyply_h
 
-#include "strategy.h"
+#include "strategyprob.h"
 
-class strategyply : public strategy
+class strategyply : public strategyprob
 {
     // strategy that holds another strategy internally, and uses it to look ahead
     // a certain number of "plies". One ply is one turn by one player.
@@ -35,18 +35,18 @@ public:
     // (filterStrat is usually a fairly coarse strategy that gets equity correct only
     // approximately).
     
-    strategyply( int nPlies, int nMoveFilter, double equityCutoff, strategy& baseStrat, strategy& filterStrat );
+    strategyply( int nPlies, int nMoveFilter, double equityCutoff, strategyprob& baseStrat, strategyprob& filterStrat );
     virtual ~strategyply() {};
     
     int nPlies, nMoveFilter;
     double equityCutoff;
     
-    virtual double boardValue( const board& brd, const hash_map<string,int>* context=0 ) const;
-    double boardValueRecurse( const board& brd, int stepNPlies, const hash_map<string,int>* context ) const;
+    virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ) const; 
+    gameProbabilities boardProbsRecurse( const board& brd, int stepNPlies, const hash_map<string,int>* context ) const;
     
 private:
-    strategy& baseStrat;
-    strategy& filterStrat;
+    strategyprob& baseStrat;
+    strategyprob& filterStrat;
 };
 
 #endif
