@@ -1182,6 +1182,7 @@ void testOrigGam()
         game g( &s1, &s1, i+1 );
         g.stepToEnd();
         g.getBoard().print();
+        cout << g.nSteps << endl;
         cout << endl;
     }
     
