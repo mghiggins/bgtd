@@ -365,16 +365,19 @@ vector<double> strategytdmult::getMiddleValues( const vector<double>& inputs, co
     hash_map< string, vector< vector<double> > >::const_iterator it = middleWeights.find( netName );
     if( it==middleWeights.end() ) throw "No element found";
     
+    const double * inputsRaw = &inputs[0];
+    
     for( i=0; i<nMiddle; i++ )
     {
-        const vector<double>& weights = it->second.at(i);
+        //const vector<double>& weights = it->second.at(i);
+        const double * weightsRaw = &(it->second.at(i)[0]);
         
         val = 0;
         
         for( j=0; j<nInput; j++ )
-            val += weights[j] * inputs[j];
-        val += weights[nInput]; // bias weight
-        vals.at(i) = 1. / ( 1 + exp( -val ) );
+            val += weightsRaw[j] * inputsRaw[j];
+        val += weightsRaw[nInput]; // bias weight
+        vals.at(i) = sigmoid(val);
     }
     
     return vals;
@@ -384,50 +387,60 @@ double strategytdmult::getOutputProbValue( const vector<double>& middles, const 
 {
     hash_map< string, vector<double> >::const_iterator weights = outputProbWeights.find( netName );
     double arg=0;
+    const double * weightsRaw = &(weights->second[0]);
+    const double * middlesRaw = &middles[0];
     for( int i=0; i<nMiddle; i++ )
-        arg += (*weights).second[i] * middles[i];
-    arg += (*weights).second[nMiddle]; // bias weight
-    return 1. / ( 1 + exp( -arg ) );
+        arg += weightsRaw[i] * middlesRaw[i];
+    arg += weightsRaw[nMiddle]; // bias weight
+    return sigmoid(arg);
 }
 
 double strategytdmult::getOutputGammonValue( const vector<double>& middles, const string& netName ) const
 {
     hash_map< string, vector<double> >::const_iterator weights = outputGammonWeights.find( netName );
     double arg=0;
+    const double * weightsRaw = &(weights->second[0]);
+    const double * middlesRaw = &middles[0];
     for( int i=0; i<nMiddle; i++ )
-        arg += (*weights).second[i] * middles[i];
-    arg += (*weights).second[nMiddle]; // bias weight
-    return 1. / ( 1 + exp( -arg ) );
+        arg += weightsRaw[i] * middlesRaw[i];
+    arg += weightsRaw[nMiddle]; // bias weight
+    return sigmoid(arg);
 }
 
 double strategytdmult::getOutputGammonLossValue( const vector<double>& middles, const string& netName ) const
 {
     hash_map< string, vector<double> >::const_iterator weights = outputGammonLossWeights.find( netName );
     double arg=0;
+    const double * weightsRaw = &(weights->second[0]);
+    const double * middlesRaw = &middles[0];
     for( int i=0; i<nMiddle; i++ )
-        arg += (*weights).second[i] * middles[i];
-    arg += (*weights).second[nMiddle]; // bias weight
-    return 1. / ( 1 + exp( -arg ) );
+        arg += weightsRaw[i] * middlesRaw[i];
+    arg += weightsRaw[nMiddle]; // bias weight
+    return sigmoid(arg);
 }
 
 double strategytdmult::getOutputBackgammonValue( const vector<double>& middles, const string& netName ) const
 {
     hash_map< string, vector<double> >::const_iterator weights = outputBgWeights.find( netName );
     double arg=0;
+    const double * weightsRaw = &(weights->second[0]);
+    const double * middlesRaw = &middles[0];
     for( int i=0; i<nMiddle; i++ )
-        arg += (*weights).second[i] * middles[i];
-    arg += (*weights).second[nMiddle]; // bias weight
-    return 1. / ( 1 + exp( -arg ) );
+        arg += weightsRaw[i] * middlesRaw[i];
+    arg += weightsRaw[nMiddle]; // bias weight
+    return sigmoid(arg);
 }
 
 double strategytdmult::getOutputBackgammonLossValue( const vector<double>& middles, const string& netName ) const
 {
     hash_map< string, vector<double> >::const_iterator weights = outputBgLossWeights.find( netName );
     double arg=0;
+    const double * weightsRaw = &(weights->second[0]);
+    const double * middlesRaw = &middles[0];
     for( int i=0; i<nMiddle; i++ )
-        arg += (*weights).second[i] * middles[i];
-    arg += (*weights).second[nMiddle]; // bias weight
-    return 1. / ( 1 + exp( -arg ) );
+        arg += weightsRaw[i] * middlesRaw[i];
+    arg += weightsRaw[nMiddle]; // bias weight
+    return sigmoid(arg);
 }
 
 double strategytdmult::doneValue( const board& brd, bool valIsAnyWin ) const
