@@ -377,7 +377,7 @@ vector<double> strategytdmult::getMiddleValues( const vector<double>& inputs, co
         for( j=0; j<nInput; j++ )
             val += weightsRaw[j] * inputsRaw[j];
         val += weightsRaw[nInput]; // bias weight
-        vals.at(i) = sigmoid(val);
+        vals[i] = 1./(1+exp(-val));
     }
     
     return vals;
@@ -392,7 +392,7 @@ double strategytdmult::getOutputProbValue( const vector<double>& middles, const 
     for( int i=0; i<nMiddle; i++ )
         arg += weightsRaw[i] * middlesRaw[i];
     arg += weightsRaw[nMiddle]; // bias weight
-    return sigmoid(arg);
+    return 1./(1+exp(-arg));
 }
 
 double strategytdmult::getOutputGammonValue( const vector<double>& middles, const string& netName ) const
@@ -404,7 +404,7 @@ double strategytdmult::getOutputGammonValue( const vector<double>& middles, cons
     for( int i=0; i<nMiddle; i++ )
         arg += weightsRaw[i] * middlesRaw[i];
     arg += weightsRaw[nMiddle]; // bias weight
-    return sigmoid(arg);
+    return 1./(1+exp(-arg));
 }
 
 double strategytdmult::getOutputGammonLossValue( const vector<double>& middles, const string& netName ) const
@@ -416,7 +416,7 @@ double strategytdmult::getOutputGammonLossValue( const vector<double>& middles, 
     for( int i=0; i<nMiddle; i++ )
         arg += weightsRaw[i] * middlesRaw[i];
     arg += weightsRaw[nMiddle]; // bias weight
-    return sigmoid(arg);
+    return 1./(1+exp(-arg));
 }
 
 double strategytdmult::getOutputBackgammonValue( const vector<double>& middles, const string& netName ) const
@@ -428,7 +428,7 @@ double strategytdmult::getOutputBackgammonValue( const vector<double>& middles, 
     for( int i=0; i<nMiddle; i++ )
         arg += weightsRaw[i] * middlesRaw[i];
     arg += weightsRaw[nMiddle]; // bias weight
-    return sigmoid(arg);
+    return 1./(1+exp(-arg));
 }
 
 double strategytdmult::getOutputBackgammonLossValue( const vector<double>& middles, const string& netName ) const
@@ -440,7 +440,7 @@ double strategytdmult::getOutputBackgammonLossValue( const vector<double>& middl
     for( int i=0; i<nMiddle; i++ )
         arg += weightsRaw[i] * middlesRaw[i];
     arg += weightsRaw[nMiddle]; // bias weight
-    return sigmoid(arg);
+    return 1./(1+exp(-arg));
 }
 
 double strategytdmult::doneValue( const board& brd, bool valIsAnyWin ) const
