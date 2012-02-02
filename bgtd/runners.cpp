@@ -283,7 +283,7 @@ double playSerial( strategytdbase& s1, strategy& s2, long n, long initSeed, long
         return w0;
 }
 
-double playSerialGen( strategy& s1, strategy& s2, long n, long initSeed )
+runStats playSerialGen( strategy& s1, strategy& s2, long n, long initSeed )
 {
     float w0=0;
     float p=0, q=0;
@@ -334,7 +334,15 @@ double playSerialGen( strategy& s1, strategy& s2, long n, long initSeed )
     cout << "Average steps/game = " << avgSteps << endl;
     cout << endl;
     
-    return p;
+    runStats stats;
+    stats.ppg = p;
+    stats.fracWin = w0;
+    stats.avgSteps = avgSteps;
+    stats.fracSingle = ns;
+    stats.fracGammon = ng;
+    stats.fracBg     = nb;
+    
+    return stats;
 }
 
 board referenceBoard( int index );
@@ -1174,12 +1182,10 @@ void testOrigGam()
     sf.learning = false;
     //s2.learning = false;
     
-    strategyply s1( 1, 8, 0.2, s0, sf );
-    
-    for( int i=0; i<3; i++ )
+    for( int i=0; i<200; i++ )
     {
-        if( i % 1 == 0 ) cout << i << endl;
-        game g( &s1, &s1, i+1 );
+        if( i % 10 == 0 ) cout << i << endl;
+        game g( &s0, &s0, i+1 );
         try
         {
             g.stepToEnd();
@@ -1194,11 +1200,8 @@ void testOrigGam()
     }
     
     return;
-    /*
-    strategyPubEval s2;
-    // s2;
     
-    int nTot=10000;
+    int nTot=1000;
     int nBkt=100;
     int nStep=nTot/nBkt;
     
@@ -1206,8 +1209,9 @@ void testOrigGam()
     for( int i=0; i<nBkt; i++ )
     {
         cout << "Bucket " << i << endl;
-        runStats stats = playParallelGen( s1, s2, nStep, 1001 + i*nStep );
-        //ppg = playSerialGen( s1, s0, nStep, 1001 + i*nStep );
+        runStats stats = playParallelGen( s0, s0, nStep, 1001 + i*nStep );
+        //runStats stats = playSerialGen( s1, s2, nStep, 1001 + i*nStep );
+        
         avgVal    += stats.ppg;
         avgValSq  += stats.ppg * stats.ppg;
         fracWin   += stats.fracWin;
@@ -1222,7 +1226,7 @@ void testOrigGam()
         cout << "Std error      = " << sqrt( fabs( fracWinSq/(i+1) - fracWin * fracWin/(i+1)/(i+1) ) / (i+1) )*100 << endl;
         cout << endl;
     }
-    */
+    
 }
 
 void playBearoff()

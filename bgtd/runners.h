@@ -33,7 +33,7 @@ struct runStats
 double playParallel( strategytdbase& s1, strategy& s2, long n, long initSeed, long displayIndex, const string& fileSuffix );
 runStats playParallelGen( strategy& s1, strategy& s2, long n, long initSeed );
 double playSerial( strategytdbase& s1, strategy& s2, long n, long initSeed, long displayIndex, const string& fileSuffix, bool returnPpg=false );
-double playSerialGen( strategy& s1, strategy& s2, long n, long initSeed );
+runStats playSerialGen( strategy& s1, strategy& s2, long n, long initSeed );
 void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, const string& srcSuffix );
 void sim7( int nMiddle, double alpha0, double beta0 );
 void sim8( int nMiddle, double alpha0, double beta0, const string& fileSuffix, const string& srcSuffix );
