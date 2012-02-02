@@ -36,7 +36,7 @@ bool boardAndValCompare( const boardAndVal& v1, const boardAndVal& v2 ) { return
 strategyply::strategyply( int nPlies, int nMoveFilter, double equityCutoff, strategyprob& baseStrat, strategyprob& filterStrat )
  : nPlies(nPlies), nMoveFilter(nMoveFilter), equityCutoff( equityCutoff), baseStrat( baseStrat ), filterStrat( filterStrat )
 {
-    maxCacheSize = 30000;
+    maxCacheSize = 10000;
 }
 
 gameProbabilities getProbs( const board& brd, strategyprob& strat, const hash_map<string,int>* context, hash_map<string,gameProbabilities>& cache, long& calcCount, long& cacheCount );
@@ -74,8 +74,11 @@ void strategyply::addToCache( const string& key, const gameProbabilities& probs 
     
     // update the cache
     
-    probCache[ key ] = probs;
-    keys.push_back( key );
+    if( probCache.find(key) == probCache.end() )
+    {
+        probCache[ key ] = probs;
+        keys.push_back( key );
+    }
     
     // if the cache is too big, drop the oldest element
     

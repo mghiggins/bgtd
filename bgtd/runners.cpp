@@ -1186,7 +1186,7 @@ void testOrigGam()
     strategyPubEval s2;
     
     int nTot=1000;
-    int nBkt=100;
+    int nBkt=10;
     int nStep=nTot/nBkt;
     
     double avgVal=0, avgValSq=0, fracWin=0, fracWinSq=0;
@@ -1208,6 +1208,8 @@ void testOrigGam()
         cout << "Frac win       = " << fracWin/(i+1)*100 << endl;
         cout << "Std dev win    = " << sqrt( fabs( fracWinSq/(i+1) - fracWin * fracWin/(i+1)/(i+1) ) )*100 << endl;
         cout << "Std error      = " << sqrt( fabs( fracWinSq/(i+1) - fracWin * fracWin/(i+1)/(i+1) ) / (i+1) )*100 << endl;
+        cout << endl;
+        cout << "ply cache size = " << s1.cacheSize() << endl;
         cout << endl;
     }
     
