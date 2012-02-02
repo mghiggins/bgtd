@@ -32,7 +32,7 @@ class strategytdmult : public strategytdbase
     
 public:
     strategytdmult();
-    strategytdmult( int nMiddle );
+    strategytdmult( int nMiddle, bool useShotProbInput=true, bool usePrimesInput=true );
     strategytdmult( const string& path, const string& filePrefix, bool randomPrimesInput=false );
     virtual ~strategytdmult() {};
     
@@ -71,9 +71,6 @@ public:
     
     bool useShotProbInput;
     bool usePrimesInput;
-    bool useProbsCache;
-    
-    long probCalcCount, cacheCount;
     
 private:
     void setup();

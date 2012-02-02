@@ -42,10 +42,8 @@ strategytdmult::strategytdmult()
     setupRandomWeights( 40 ); // default # of middle nodes is 40
 }
 
-strategytdmult::strategytdmult( int nMiddle )
+strategytdmult::strategytdmult( int nMiddle, bool useShotProbInput, bool usePrimesInput ) : useShotProbInput(useShotProbInput), usePrimesInput(usePrimesInput)
 {
-    useShotProbInput = true;
-    usePrimesInput   = true;
     setupRandomWeights( nMiddle );
 }
 
@@ -142,8 +140,6 @@ void strategytdmult::setup()
 
 gameProbabilities strategytdmult::boardProbabilities( const board& brd, const hash_map<string,int>* context )
 {
-    probCalcCount++;
-    
     // Used to evaluate possible moves, and so needs to represent the value of the game assuming the player isn't
     // holding the dice. We do this by flipping the board perspective and returning probabilities flipped back
     // appropriately.
@@ -265,8 +261,8 @@ vector<double> strategytdmult::getInputValues( const board& brd, const string& n
     {
         if( useShotProbInput )
         {
-            inputs.push_back( hittingProb( brd, true ) );
-            inputs.push_back( hittingProb( brd, false ) );
+            inputs.push_back( hittingProb2( brd, true ) );
+            inputs.push_back( hittingProb2( brd, false ) );
         }
         if( usePrimesInput )
         {
