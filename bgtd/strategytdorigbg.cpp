@@ -102,18 +102,22 @@ gameProbabilities strategytdorigbg::boardProbabilities( const board& brd, const 
 double strategytdorigbg::getOutputBackgammon( const vector<double>& middles ) const
 {
     double sum=0;
+    const double * weightsRaw = &outputBgWeights[0];
+    const double * middlesRaw = &middles[0];
     for( int i=0; i<nMiddle; i++ )
-        sum += outputBgWeights.at(i) * middles.at(i);
-    sum += outputBgWeights.at(nMiddle); // output node does contain a bias weight
+        sum += weightsRaw[i] * middlesRaw[i];
+    sum += weightsRaw[nMiddle]; // output node does contain a bias weight
     return 1 / ( 1 + exp( -sum ) );
 }
 
 double strategytdorigbg::getOutputBackgammonLoss( const vector<double>& middles ) const
 {
     double sum=0;
+    const double * weightsRaw = &outputBgLossWeights[0];
+    const double * middlesRaw = &middles[0];
     for( int i=0; i<nMiddle; i++ )
-        sum += outputBgLossWeights.at(i) * middles.at(i);
-    sum += outputBgLossWeights.at(nMiddle); // output node does contain a bias weight
+        sum += weightsRaw[i] * middlesRaw[i];
+    sum += weightsRaw[nMiddle]; // output node does contain a bias weight
     return 1 / ( 1 + exp( -sum ) );
 }
 

@@ -110,22 +110,22 @@ vector<double> strategytdoriggam::getInputValues( const board& brd ) const
         
         for( j=0; j<3; j++ )
         {
-            if( checks.at(i) > j )      inputs.at(4*i+j)    = 1;
-            if( otherChecks.at(i) > j ) inputs.at(4*i+j+98) = 1;
+            if( checks[i] > j )      inputs[4*i+j]    = 1;
+            if( otherChecks[i] > j ) inputs[4*i+j+98] = 1;
         }
-        if( checks.at(i) > 3 )      inputs.at(4*i+3)    = ( checks[i]-3 ) / 2.;
-        if( otherChecks.at(i) > 3 ) inputs.at(4*i+3+98) = ( otherChecks[i]-3 ) / 2.;
+        if( checks[i] > 3 )      inputs[4*i+3]    = ( checks[i]-3 ) / 2.;
+        if( otherChecks[i] > 3 ) inputs[4*i+3+98] = ( otherChecks[i]-3 ) / 2.;
     }
     
     // one spot for each player records the number on the bar
     
-    inputs.at(96)  = brd.hit() / 2.;
-    inputs.at(194) = brd.otherHit() / 2.;
+    inputs[96]  = brd.hit() / 2.;
+    inputs[194] = brd.otherHit() / 2.;
     
     // one spot for each player records the number born in
     
-    inputs.at(97)  = brd.bornIn() / 15.;
-    inputs.at(195) = brd.otherBornIn() / 15.;
+    inputs[97]  = brd.bornIn() / 15.;
+    inputs[195] = brd.otherBornIn() / 15.;
     
     return inputs;
 }
@@ -134,13 +134,17 @@ vector<double> strategytdoriggam::getMiddleValues( const vector<double>& inputs 
 {
     vector<double> mids(nMiddle);
     
+    const double * inputsRaw = &inputs[0];
+    
     int i, j;
     for( i=0; i<nMiddle; i++ )
     {
+        const double * weightsRaw = &middleWeights[i][0];
+        
         // each middle value is 1/(1+exp(-sum(weight(j)*input(j)))) - no bias weights for middle nodes
         double sum=0;
         for( j=0; j<196; j++ )
-            sum += middleWeights.at(i).at(j) * inputs.at(j);
+            sum += weightsRaw[j] * inputsRaw[j];
         mids.at(i) = 1 / ( 1 + exp( -sum ) );
     }
     
@@ -150,27 +154,33 @@ vector<double> strategytdoriggam::getMiddleValues( const vector<double>& inputs 
 double strategytdoriggam::getOutputWin( const vector<double>& middles ) const
 {
     double sum=0;
+    const double * weightsRaw = &outputWinWeights[0];
+    const double * middlesRaw = &middles[0];
     for( int i=0; i<nMiddle; i++ )
-        sum += outputWinWeights.at(i) * middles.at(i);
-    sum += outputWinWeights.at(nMiddle); // output node does contain a bias weight
+        sum += weightsRaw[i] * middlesRaw[i];
+    sum += weightsRaw[nMiddle]; // output node does contain a bias weight
     return 1 / ( 1 + exp( -sum ) );
 }
 
 double strategytdoriggam::getOutputGammon( const vector<double>& middles ) const
 {
     double sum=0;
+    const double * weightsRaw = &outputGammonWeights[0];
+    const double * middlesRaw = &middles[0];
     for( int i=0; i<nMiddle; i++ )
-        sum += outputGammonWeights.at(i) * middles.at(i);
-    sum += outputGammonWeights.at(nMiddle); // output node does contain a bias weight
+        sum += weightsRaw[i] * middlesRaw[i];
+    sum += weightsRaw[nMiddle]; // output node does contain a bias weight
     return 1 / ( 1 + exp( -sum ) );
 }
 
 double strategytdoriggam::getOutputGammonLoss( const vector<double>& middles ) const
 {
     double sum=0;
+    const double * weightsRaw = &outputGammonLossWeights[0];
+    const double * middlesRaw = &middles[0];
     for( int i=0; i<nMiddle; i++ )
-        sum += outputGammonLossWeights.at(i) * middles.at(i);
-    sum += outputGammonLossWeights.at(nMiddle); // output node does contain a bias weight
+        sum += weightsRaw[i] * middlesRaw[i];
+    sum += weightsRaw[nMiddle]; // output node does contain a bias weight
     return 1 / ( 1 + exp( -sum ) );
 }
 
