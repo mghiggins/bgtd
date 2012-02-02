@@ -138,15 +138,55 @@ void strategytdmult::setup()
         constructBlockadeEscapeDb();
         cout << "Escape db size    = " << blockadeEscapeRolls()->size() << endl;
     }
+    
+    // prob cache stuff
+    
+    useProbsCache = false; 
+    maxCacheSize  = 100000; // max size of probs cache, if it does get used
+    
+    probCalcCount = 0;
+    cacheCount    = 0;
+}
+
+void strategytdmult::addProbsToCache( const string& key, const gameProbabilities& probs )
+{
+    // add the pair to the hash
+    
+    probCache[key] = probs;
+    
+    // add the key to the end of the deque
+    
+    keys.push_back( key );
+    
+    // if the deque is too big, drop the oldest element
+    
+    if( probCache.size() > maxCacheSize )
+    {
+        probCache.erase( keys.front() );
+        keys.pop_front();
+    }
 }
 
 gameProbabilities strategytdmult::boardProbabilities( const board& brd, const hash_map<string,int>* context )
 {
+    probCalcCount++;
+    
+    // get the string representation of the board; we'll use this as a key in the cache
+    
     string brdRepr( brd.repr() );
     
-    hash_map<string,gameProbabilities>::iterator it=probCache.find( brdRepr );
-    if( it!=probCache.end() ) return it->second;
-        
+    // if we're using the cache, check for a cached prob
+    
+    if( useProbsCache )
+    {
+        hash_map<string,gameProbabilities>::const_iterator it = probCache.find(brdRepr);
+        if( it!=probCache.end() ) 
+        {
+            cacheCount++;
+            return it->second;
+        }
+    }
+    
     // Used to evaluate possible moves, and so needs to represent the value of the game assuming the player isn't
     // holding the dice. We do this by flipping the board perspective and returning probabilities flipped back
     // appropriately.
@@ -186,7 +226,7 @@ gameProbabilities strategytdmult::boardProbabilities( const board& brd, const ha
         if( val > 2 ) probs.probBgWin  = 1;
         if( val < -1 ) probs.probGammonLoss = 1;
         if( val < -2 ) probs.probBgLoss = 1;
-        probCache[brdRepr] = probs;
+        if( useProbsCache ) addProbsToCache( brdRepr, probs );
         return probs;
     }
     else if( eval == "bearoff" )
@@ -199,7 +239,7 @@ gameProbabilities strategytdmult::boardProbabilities( const board& brd, const ha
             probGammonLoss = bearoffProbabilityGammon( flippedBoard );
         }
         gameProbabilities probs( probWin, probGammonWin, probGammonLoss, 0, 0 );
-        probCache[brdRepr] = probs;
+        if( useProbsCache ) addProbsToCache( brdRepr, probs );
         return probs;
     }
     else
@@ -219,7 +259,7 @@ gameProbabilities strategytdmult::boardProbabilities( const board& brd, const ha
         if( valIsAnyWin )
         {
             gameProbabilities probs( 1-pWin, 0, 0, 0, 0 );
-            probCache[brdRepr] = probs;
+            if( useProbsCache ) addProbsToCache( brdRepr, probs );
             return probs;
         }
         else
@@ -259,7 +299,7 @@ gameProbabilities strategytdmult::boardProbabilities( const board& brd, const ha
             if( pBgLoss > pGamLoss ) pBgLoss = pGamLoss;
             
             gameProbabilities probs( 1-pWin, pGamLoss, pGam, pBgLoss, pBg );
-            probCache[brdRepr] = probs;
+            if( useProbsCache ) addProbsToCache( brdRepr, probs );
             return probs;
         }
     }

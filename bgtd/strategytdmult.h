@@ -20,6 +20,7 @@
 #define bgtd_strategytdmult_h
 
 #include <vector>
+#include <deque>
 #include <string>
 #include <hash_map.h>
 #include "strategytdbase.h"
@@ -71,6 +72,9 @@ public:
     
     bool useShotProbInput;
     bool usePrimesInput;
+    bool useProbsCache;
+    
+    long probCalcCount, cacheCount;
     
 private:
     void setup();
@@ -92,7 +96,11 @@ private:
     
     // cache for board values
     
+    int maxCacheSize;
     hash_map<string,gameProbabilities> probCache;
+    deque<string> keys;
+    
+    void addProbsToCache( const string& key, const gameProbabilities& probs );
 };
 
 #endif
