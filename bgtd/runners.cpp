@@ -1176,13 +1176,23 @@ void testOrigGam()
 {
     strategytdmult s0( "benchmark", "player24", false );
     //strategytdmult s1( "benchmark", "player24", false );
-    strategytdmult sf( "benchmark", "player24q", false );
-    //strategytdorigbg s1( "benchmark", "benchmark2" );
+    //strategytdmult sf( "benchmark", "player24q", false );
+    //strategytdorigbg s0( "benchmark", "benchmark2" );
+    //strategytdorigbg sf(5);
+    strategytdmult sf(5,false,false);
     s0.learning = false;
     sf.learning = false;
     //s2.learning = false;
     
-    strategyply s1( 1, 8, 0.2, s0, sf );
+    cout << "a\n";
+    board b( referenceBoard(7) );
+    for( int i=0; i<1000000; i++ )
+        sf.boardValue(b);
+    cout << "b\n";
+    
+    return;
+    
+    strategyply s1( 2, 8, 0.2, s0, sf );
     strategyPubEval s2;
     
     int nTot=1000;
@@ -1193,8 +1203,8 @@ void testOrigGam()
     for( int i=0; i<nBkt; i++ )
     {
         cout << "Bucket " << i << endl;
-        runStats stats = playParallelGen( s1, s2, nStep, 1001 + i*nStep );
-        //runStats stats = playSerialGen( s1, s2, nStep, 1001 + i*nStep );
+        //runStats stats = playParallelGen( s1, s2, nStep, 1001 + i*nStep );
+        runStats stats = playSerialGen( s1, s2, nStep, 1001 + i*nStep );
         
         avgVal    += stats.ppg;
         avgValSq  += stats.ppg * stats.ppg;
@@ -1405,8 +1415,9 @@ void compareBearoff()
 
 void testHittingShots()
 {
-    board b( referenceBoard(7) );
-    /*
+    //board b( referenceBoard(7) );
+    board b;
+    
     for( int i=0; i<24; i++ )
     {
         b.setChecker( i, 0 );
@@ -1417,13 +1428,14 @@ void testHittingShots()
     b.setOtherBornIn(13);
     b.incrementOtherHit();
     b.setOtherChecker( 2, 1 );
-    */
+    
     b.validate();
     b.print();
     
     set<roll> hittingRolls( hittingShots( b, true ) );
     cout << hittingRolls.size() << " hitting rolls\n";
-    cout << "Prob of a hit = " << hittingProb( hittingRolls ) << endl;
+    cout << "Prob of a hit  = " << hittingProb( hittingRolls ) << endl;
+    cout << "Prob of a hit2 = " << hittingProb2( b, true ) << endl;
     cout << endl;
     
     for( set<roll>::iterator it=hittingRolls.begin(); it!=hittingRolls.end(); it++ )
