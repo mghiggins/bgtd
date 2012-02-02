@@ -338,6 +338,7 @@ double rolloutBoardValueParallel( const board& brd, strategy& strat, int nRuns, 
 }
 
 vector< set<roll> > * hittingRolls=0;
+vector< vector<int> > * shotIndexes=0;
 
 void setupHittingRolls();
 void setupHittingRolls()
@@ -389,6 +390,21 @@ void setupHittingRolls()
     hittingRolls->at(17).insert( roll(6,6) ); // 18: (6,6)
     hittingRolls->at(19).insert( roll(5,5) ); // 20: (5,5)
     hittingRolls->at(23).insert( roll(6,6) ); // 24: (6,6)
+    
+    // set up the table for (i,j) roll (with i<=j) to index in a 21-element list.
+    // First index is first die - 1 (0-based), and second index is second die - first die
+    // (assumes first die <= second die).
+    
+    shotIndexes = new vector< vector<int> >;
+    
+    for( int i=1; i<=6; i++ )
+    {
+        int indexLow = (-i*i+15*i-14)/2;
+        vector<int> subIndexes;
+        for( int j=i; j<=6; j++ )
+            subIndexes.push_back( indexLow + j-i );
+        shotIndexes->push_back(subIndexes);
+    }
 }
 
 set<roll> hittingShots( const board& brd, bool forOpponent )
@@ -511,6 +527,124 @@ double hittingProb( const set<roll>& shots )
     }
     
     return count/36.;
+}
+
+double hittingProb2( const board& brd, bool forOpponent )
+{
+    // if we haven't initialized the hitting rolls list yet, do so now
+    
+    if( hittingRolls == 0 ) setupHittingRolls();
+    
+    // find all the player's blots and note which opponent rolls would hit them
+    
+    vector<bool> shots(21,false);
+    
+    vector<int> checkers, otherCheckers;
+    int otherHit;
+    
+    if( forOpponent )
+    {
+        checkers = brd.checkers();
+        otherCheckers = brd.otherCheckers();
+        otherHit = brd.otherHit();
+    }
+    else
+    {
+        checkers = brd.otherCheckers();
+        otherCheckers = brd.checkers();
+        reverse( checkers.begin(), checkers.end() );
+        reverse( otherCheckers.begin(), otherCheckers.end() );
+        
+        otherHit = brd.hit();
+    }
+    int i, j, k, diff, nOtherChecker;
+    bool checkIndirect;
+    set<roll>::iterator it;
+    
+    for( i=0; i<24; i++ )
+    {
+        // if there's more than one checker on the bar, a checker outside the home board can't be
+        // hit
+        
+        if( otherHit > 1 and i > 5 ) break;
+        
+        // otherwise check for a blot
+        
+        if( checkers[i] == 1 )
+        {
+            // found a blot - see whether anything can hit it. Start at
+            // position "-1" which means a hit checker.
+            
+            for( j=-1; j<i; j++ )
+            {
+                diff = i-j;
+                
+                // some # of steps have no way to hit - skip them
+                
+                if( diff == 13 || diff == 14 || diff == 19 || diff == 21 || diff == 22 || diff == 23 ) continue;
+                
+                // if we're looking at a checker on the bar and there's two there, or if we're looking
+                // at a checker away from the bar and there's a checker on it, we can only use direct hits
+                // (doubles treated a bit separately).
+                
+                if( ( j == -1 and otherHit > 1 ) or ( j > -1 and otherHit > 0 ) )
+                    checkIndirect = false;
+                else
+                    checkIndirect = true;
+                
+                if( j == -1 )
+                    nOtherChecker = otherHit;
+                else
+                    nOtherChecker = otherCheckers.at(j);
+                
+                if( nOtherChecker > 0 )
+                {
+                    // if the diff is 1-6, we add all rolls that include that die. For comparison
+                    // purposes we always put the smaller die first in the roll object.
+                    
+                    if( diff < 7 )
+                    {
+                        for( k=1; k<=diff; k++ ) shots[ (*shotIndexes)[k-1][diff-k] ] = true;
+                        for( k=diff+1; k<7; k++ ) shots[ (*shotIndexes)[diff-1][k-diff] ] = true;
+                    }
+                    
+                    // for each possible roll that could hit it indirectly, check whether it's valid
+                    
+                    for( it=hittingRolls->at(diff-1).begin(); it!=hittingRolls->at(diff-1).end(); it++ )
+                    {
+                        if( not checkIndirect and it->die1 != it->die2 ) continue;
+                        if( otherHit == 1 and it->die1 == it->die2 and diff == 4 * it->die1 ) continue;
+                        
+                        // if both intermediate slots are covered by the player, the opponent can't
+                        // use the roll
+                        
+                        if( checkers[i-it->die1] > 1 and checkers[i-it->die2] > 1 ) continue;
+                        
+                        // otherwise it's a possibility
+                        
+                        shots[ (*shotIndexes)[it->die1-1][it->die2-it->die1] ] = true;
+                    }
+                }
+            }
+        }
+    }
+    
+    // sum up all the hitting shots and weight appropriately
+    
+    double prob=0;
+    
+    for( i=0; i<21; i++ )
+    {
+        if( shots[i] )
+        {
+            if( i == 0 or i == 6 or i == 11 or i == 15 or i == 18 or i == 20 )
+                prob += 1; // double
+            else
+                prob += 2; // mixed roll
+        }
+    }
+    
+    return prob/36.;
 }
 
 int primesCount( const board& brd, bool forPlayer )
