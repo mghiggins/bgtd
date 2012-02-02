@@ -1182,17 +1182,8 @@ void testOrigGam()
     sf.learning = false;
     //s2.learning = false;
     
-    strategyply s1( 2, 8, 0.2, s0, sf );
-    
-    game g(&s1,&s0,1);
-    g.getBoard().print();
-    g.verbose = true;
-    for( int i=0; i<3; i++ )
-    {
-        g.step();
-    }
-    
-    return;
+    strategyply s1( 1, 8, 0.2, s0, sf );
+    strategyPubEval s2;
     
     int nTot=1000;
     int nBkt=100;
@@ -1202,7 +1193,7 @@ void testOrigGam()
     for( int i=0; i<nBkt; i++ )
     {
         cout << "Bucket " << i << endl;
-        runStats stats = playParallelGen( s0, s0, nStep, 1001 + i*nStep );
+        runStats stats = playParallelGen( s1, s2, nStep, 1001 + i*nStep );
         //runStats stats = playSerialGen( s1, s2, nStep, 1001 + i*nStep );
         
         avgVal    += stats.ppg;
