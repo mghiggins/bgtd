@@ -20,6 +20,7 @@
 #define bgtd_strategyply_h
 
 #include <boost/thread.hpp>
+#include <deque>
 #include "strategyprob.h"
 
 class strategyply : public strategyprob
@@ -46,6 +47,8 @@ public:
     virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ); 
     gameProbabilities boardProbsRecurse( const board& brd, int stepNPlies, const hash_map<string,int>* context, hash_map<string,gameProbabilities>& filterMap, hash_map<string,gameProbabilities>& baseMap );
     
+    unsigned long cacheSize() const { return probCache.size(); };
+    
 private:
     strategyprob& baseStrat;
     strategyprob& filterStrat;
@@ -58,10 +61,15 @@ private:
     // prob cache stuff. We wrap reads and writes in thread-safe code so that we can run
     // the same strategy in different threads. Realistically though the odds of a collision
     // on the prob cache are tiny, since multiple-ply calcs are slow and don't all finish
-    // at the same time (normally).
+    // at the same time (normally). We also track the string names in the cache in a FIFO
+    // deque, so that we can avoid having the cache get too large.
     
+    int maxCacheSize;
     hash_map<string,gameProbabilities> probCache;
+    deque<string> keys;
     boost::shared_mutex probCacheMutex;
+    
+    void addToCache( const string& key, const gameProbabilities& probs );
 };
 
 #endif

@@ -36,6 +36,7 @@ bool boardAndValCompare( const boardAndVal& v1, const boardAndVal& v2 ) { return
 strategyply::strategyply( int nPlies, int nMoveFilter, double equityCutoff, strategyprob& baseStrat, strategyprob& filterStrat )
  : nPlies(nPlies), nMoveFilter(nMoveFilter), equityCutoff( equityCutoff), baseStrat( baseStrat ), filterStrat( filterStrat )
 {
+    maxCacheSize = 30000;
 }
 
 gameProbabilities getProbs( const board& brd, strategyprob& strat, const hash_map<string,int>* context, hash_map<string,gameProbabilities>& cache, long& calcCount, long& cacheCount );
@@ -59,6 +60,30 @@ gameProbabilities getProbs( const board& brd, strategyprob& strat, const hash_ma
     gameProbabilities probs = strat.boardProbabilities( brd, context );
     cache[ brdRepr ] = probs;
     return probs;
+}
+
+void strategyply::addToCache( const string& key, const gameProbabilities& probs )
+{
+    // adds to the cache of strategyply-level board->prob map. Makes sure the cache
+    // doesn't get too big.
+    
+    // get a unique lock on the prob cache so we're safe writing to it - drops the
+    // lock when we leave this method and the object goes out of scope.
+    
+    boost::unique_lock<boost::shared_mutex> lock(probCacheMutex);
+    
+    // update the cache
+    
+    probCache[ key ] = probs;
+    keys.push_back( key );
+    
+    // if the cache is too big, drop the oldest element
+    
+    if( probCache.size() > maxCacheSize )
+    {
+        probCache.erase( keys.front() );
+        keys.pop_front();
+    }
 }
 
 board strategyply::preferredBoard( const board& oldBoard, const set<board>& possibleMoves, const hash_map<string,int>* context )
@@ -108,12 +133,7 @@ board strategyply::preferredBoard( const board& oldBoard, const set<board>& poss
         if( calcProbs )
         {
             probs = boardProbsRecurse( (*i), nPlies, &mergedContext, filterMap, baseMap );
-            {
-                // get a unique lock on the prob cache so we're safe writing to it
-                
-                boost::unique_lock<boost::shared_mutex> lock(probCacheMutex);
-                probCache[ brdRepr ] = probs;
-            }
+            addToCache( brdRepr, probs );
         }
         val = boardValueFromProbs( probs );
         if( val > maxVal )
@@ -154,12 +174,7 @@ gameProbabilities strategyply::boardProbabilities( const board& brd, const hash_
     baseCacheCount   = 0;
     
     gameProbabilities probs = boardProbsRecurse( brd, nPlies, context, filterMap, baseMap );
-    {
-        // get a unique lock on the prob cache so we can safely write to it
-        
-        boost::unique_lock<boost::shared_mutex> lock(probCacheMutex);
-        probCache[brdRepr] = probs;
-    }
+    addToCache( brdRepr, probs );
     return probs;
 }
 
