@@ -20,7 +20,6 @@
 #define bgtd_strategytdmult_h
 
 #include <vector>
-#include <deque>
 #include <string>
 #include <hash_map.h>
 #include "strategytdbase.h"
@@ -93,14 +92,6 @@ private:
     
     int bearoffNPnts;
     int bearoffNCheckers;
-    
-    // cache for board values
-    
-    int maxCacheSize;
-    hash_map<string,gameProbabilities> probCache;
-    deque<string> keys;
-    
-    void addProbsToCache( const string& key, const gameProbabilities& probs );
 };
 
 #endif

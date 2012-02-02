@@ -1182,21 +1182,14 @@ void testOrigGam()
     sf.learning = false;
     //s2.learning = false;
     
-    for( int i=0; i<200; i++ )
+    strategyply s1( 2, 8, 0.2, s0, sf );
+    
+    game g(&s1,&s0,1);
+    g.getBoard().print();
+    g.verbose = true;
+    for( int i=0; i<3; i++ )
     {
-        if( i % 10 == 0 ) cout << i << endl;
-        game g( &s0, &s0, i+1 );
-        try
-        {
-            g.stepToEnd();
-        }
-        catch( string e )
-        {
-            cout << "Exception: " << e << endl;
-        }
-        //g.getBoard().print();
-        //cout << g.nSteps << endl;
-        //cout << endl;
+        g.step();
     }
     
     return;

@@ -38,12 +38,132 @@ strategyply::strategyply( int nPlies, int nMoveFilter, double equityCutoff, stra
 {
 }
 
-gameProbabilities strategyply::boardProbabilities( const board& brd, const hash_map<string,int>* context )
+gameProbabilities getProbs( const board& brd, strategyprob& strat, const hash_map<string,int>* context, hash_map<string,gameProbabilities>& cache, long& calcCount, long& cacheCount );
+
+gameProbabilities getProbs( const board& brd, strategyprob& strat, const hash_map<string,int>* context, hash_map<string,gameProbabilities>& cache, long& calcCount, long& cacheCount )
 {
-    return boardProbsRecurse( brd, nPlies, context );
+    calcCount++;
+    
+    // see if the probabilities have been cached already for this one
+    
+    string brdRepr( brd.repr() );
+    hash_map<string,gameProbabilities>::iterator it=cache.find( brdRepr );
+    if( it!=cache.end() ) 
+    {
+        cacheCount++;
+        return it->second;
+    }
+    
+    // calculate the probs, cache them, and return them
+    
+    gameProbabilities probs = strat.boardProbabilities( brd, context );
+    cache[ brdRepr ] = probs;
+    return probs;
 }
 
-gameProbabilities strategyply::boardProbsRecurse( const board& brd, int stepNPlies, const hash_map<string,int>* context )
+board strategyply::preferredBoard( const board& oldBoard, const set<board>& possibleMoves, const hash_map<string,int>* context )
+{
+    if( possibleMoves.size() == 0 ) return oldBoard;
+    if( possibleMoves.size() == 1 ) return *(possibleMoves.begin()); // only one move - choose it - no calcs req'd
+    
+    // create a context that merges the context based on the old board and whatever is passed in. The context
+    // pass in externally overrides any values with the same key from the board context.
+    
+    hash_map<string,int> mergedContext( boardContext( oldBoard ) );
+    if( context != 0 )
+        for( hash_map<string,int>::const_iterator it=context->begin(); it!=context->end(); it++ )
+            mergedContext[ it->first ] = it->second;
+    
+    // set up caches for board key->game probabilities map that will be shared through the levels of the calculation.
+    // Also initialize the counts (for debugging purposes).
+    
+    hash_map<string,gameProbabilities> filterMap;
+    hash_map<string,gameProbabilities> baseMap;
+    
+    filterCalcCount  = 0;
+    filterCacheCount = 0;
+    baseCalcCount    = 0;
+    baseCacheCount   = 0;
+    
+    // return the board with the highest board value
+    
+    board maxBoard;
+    double maxVal=-1e99, val;
+    
+    for( set<board>::iterator i=possibleMoves.begin(); i!=possibleMoves.end(); i++ )
+    {
+        string brdRepr( i->repr() );
+        gameProbabilities probs;
+        bool calcProbs=false;
+        {
+            // get a shared lock on the prob cache so we're safe reading from it
+            
+            boost::shared_lock<boost::shared_mutex> lock(probCacheMutex);
+            hash_map<string,gameProbabilities>::iterator it=probCache.find(brdRepr);
+            if( it!=probCache.end() )
+                probs = it->second;
+            else
+                calcProbs = true;
+        }
+        if( calcProbs )
+        {
+            probs = boardProbsRecurse( (*i), nPlies, &mergedContext, filterMap, baseMap );
+            {
+                // get a unique lock on the prob cache so we're safe writing to it
+                
+                boost::unique_lock<boost::shared_mutex> lock(probCacheMutex);
+                probCache[ brdRepr ] = probs;
+            }
+        }
+        val = boardValueFromProbs( probs );
+        if( val > maxVal )
+        {
+            maxVal = val;
+            maxBoard = (*i);
+        }
+    }
+    
+    // Debugging info: print out the number of calcs done and the number of times we
+    // read from the cache - used to figure out whether caching is working correctly etc.
+    //cout << "Filter: cache " << filterCacheCount << " of " << filterCalcCount << endl;
+    //cout << "Base:   cache " << baseCacheCount   << " of " << baseCalcCount << endl;
+    
+    return maxBoard;
+}
+
+gameProbabilities strategyply::boardProbabilities( const board& brd, const hash_map<string,int>* context )
+{
+    string brdRepr( brd.repr() );
+    {
+        // get a shared lock on the prob cache so that we're safe reading from it
+        
+        boost::shared_lock<boost::shared_mutex> lock(probCacheMutex);
+        hash_map<string,gameProbabilities>::iterator it=probCache.find(brdRepr);
+        if( it!=probCache.end() )
+            return it->second;
+    }
+    
+    // set up caches for board key->game probabilities map that will be shared through the levels of the calculation
+    
+    hash_map<string,gameProbabilities> filterMap;
+    hash_map<string,gameProbabilities> baseMap;
+    
+    filterCalcCount  = 0;
+    filterCacheCount = 0;
+    baseCalcCount    = 0;
+    baseCacheCount   = 0;
+    
+    gameProbabilities probs = boardProbsRecurse( brd, nPlies, context, filterMap, baseMap );
+    {
+        // get a unique lock on the prob cache so we can safely write to it
+        
+        boost::unique_lock<boost::shared_mutex> lock(probCacheMutex);
+        probCache[brdRepr] = probs;
+    }
+    return probs;
+}
+
+gameProbabilities strategyply::boardProbsRecurse( const board& brd, int stepNPlies, const hash_map<string,int>* context, hash_map<string,gameProbabilities>& filterMap, hash_map<string,gameProbabilities>& baseMap )
 {
     // if the game is over, return the appropriate points
     
@@ -73,7 +193,8 @@ gameProbabilities strategyply::boardProbsRecurse( const board& brd, int stepNPli
     // if there are zero plies, call the underlying strategy
     
     if( stepNPlies == 0 )
-        return baseStrat.boardProbabilities( brd, context );
+        //return baseStrat.boardProbabilities( brd, context );
+        return getProbs( brd, baseStrat, context, baseMap, baseCalcCount, baseCacheCount );
     
     // otherwise recurse down through the next level of moves; flip to
     // the opponent's perspective and run through their moves.
@@ -104,7 +225,8 @@ gameProbabilities strategyply::boardProbsRecurse( const board& brd, int stepNPli
             vector<boardAndVal> moveVals;
             for( set<board>::iterator it=moves.begin(); it!=moves.end(); it++ )
             {
-                gameProbabilities probs( filterStrat.boardProbabilities( (*it), context ) );
+                //gameProbabilities probs( filterStrat.boardProbabilities( (*it), context ) );
+                gameProbabilities probs( getProbs( (*it), filterStrat, context, filterMap, filterCalcCount, filterCacheCount ) );
                 val = filterStrat.boardValueFromProbs( probs );
                 boardAndVal elem;
                 elem.brd = (*it);
@@ -149,7 +271,7 @@ gameProbabilities strategyply::boardProbsRecurse( const board& brd, int stepNPli
                         if( equityDiff > equityCutoff ) break;
                     }
                     
-                    moveProbs = boardProbsRecurse( moveVals.at(i).brd, stepNPlies-1, context );
+                    moveProbs = boardProbsRecurse( moveVals.at(i).brd, stepNPlies-1, context, filterMap, baseMap );
                     val = boardValueFromProbs( moveProbs );
                 }
                 if( val > maxVal )
@@ -165,7 +287,7 @@ gameProbabilities strategyply::boardProbsRecurse( const board& brd, int stepNPli
             // left with the original board.
             
             if( maxVal == -1000 )
-                maxProbs = boardProbsRecurse( stepBoard, stepNPlies - 1, context );
+                maxProbs = boardProbsRecurse( stepBoard, stepNPlies - 1, context, filterMap, baseMap );
             
             // add the optimal board value to the weighted average - flip everything back to
             // the correct perspective while we're at it.

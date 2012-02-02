@@ -19,6 +19,7 @@
 #ifndef bgtd_strategyply_h
 #define bgtd_strategyply_h
 
+#include <boost/thread.hpp>
 #include "strategyprob.h"
 
 class strategyply : public strategyprob
@@ -41,12 +42,26 @@ public:
     int nPlies, nMoveFilter;
     double equityCutoff;
     
+    virtual board preferredBoard( const board& oldBoard, const set<board>& possibleMoves, const hash_map<string,int>* context=0 );
     virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ); 
-    gameProbabilities boardProbsRecurse( const board& brd, int stepNPlies, const hash_map<string,int>* context );
+    gameProbabilities boardProbsRecurse( const board& brd, int stepNPlies, const hash_map<string,int>* context, hash_map<string,gameProbabilities>& filterMap, hash_map<string,gameProbabilities>& baseMap );
     
 private:
     strategyprob& baseStrat;
     strategyprob& filterStrat;
+    
+    long filterCalcCount;
+    long filterCacheCount;
+    long baseCalcCount;
+    long baseCacheCount;
+    
+    // prob cache stuff. We wrap reads and writes in thread-safe code so that we can run
+    // the same strategy in different threads. Realistically though the odds of a collision
+    // on the prob cache are tiny, since multiple-ply calcs are slow and don't all finish
+    // at the same time (normally).
+    
+    hash_map<string,gameProbabilities> probCache;
+    boost::shared_mutex probCacheMutex;
 };
 
 #endif
