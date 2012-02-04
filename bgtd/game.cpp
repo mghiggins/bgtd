@@ -29,6 +29,18 @@ game::game( strategy * strat0, strategy * strat1, int seed )
     this->strat0 = strat0;
     this->strat1 = strat1;
     rng = new CRandomMersenne(seed);
+    myRng = true;
+    verbose = false;
+    nSteps = 0;
+    trn = 0;
+}
+
+game::game( strategy * strat0, strategy * strat1, CRandomMersenne * rng )
+{
+    this->strat0 = strat0;
+    this->strat1 = strat1;
+    this->rng = rng;
+    myRng = false;
     verbose = false;
     nSteps = 0;
     trn = 0;
@@ -46,7 +58,8 @@ game::game( const game& srcGame )
 
 game::~game()
 {
-    delete rng;
+    if( myRng )
+        delete rng;
 }
 
 board game::getBoard()
@@ -72,6 +85,13 @@ void game::step()
     int d1 = rng->IRandom(1,6);
     int d2 = rng->IRandom(1,6);
     
+    // step with them
+    
+    stepWithDice( d1, d2 );
+}
+
+void game::stepWithDice( const int& d1, const int& d2 )
+{
     if( verbose )
     {
         if( trn == 0 )

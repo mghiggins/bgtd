@@ -81,6 +81,9 @@ public:
     void setChecker( int pos, int num );
     void setOtherChecker( int pos, int num );
     
+    void setHit( int hit );
+    void setOtherHit( int hit );
+    
     void incrementHit();
     void decrementHit();
     void incrementOtherHit();

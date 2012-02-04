@@ -391,6 +391,22 @@ void board::setOtherBornIn( int n )
         bornIn0 = n;
 }
 
+void board::setHit( int hit )
+{
+    if( persp == 0 )
+        hit0 = hit;
+    else
+        hit1 = hit;
+}
+
+void board::setOtherHit( int hit )
+{
+    if( persp == 0 )
+        hit1 = hit;
+    else
+        hit0 = hit;
+}
+
 string board::repr() const
 {
     vector<int> checks( checkers() );

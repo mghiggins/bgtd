@@ -21,7 +21,6 @@
 #include <map>
 #include <iostream>
 #include "gamefns.h"
-#include "randomc.h"
 #include "game.h"
 
 set<board> subPossibleMoves( const board& brd, vector<int> rolls );
@@ -238,17 +237,66 @@ bool isRace( const board& brd )
     return brd.isRace();
 }
 
-double rolloutBoardValue( const board& brd, strategy& strat, int nRuns, int seed )
+gameProbabilities rolloutBoardProbabilitiesVarReduction( const board& brd, strategyprob& strat, int nRuns, int seed )
 {
     CRandomMersenne rng(seed);
     
-    double avgVal=0;
+    return rolloutBoardProbabilitiesVarReduction( brd, strat, nRuns, &rng );
+}
+
+gameProbabilities rolloutBoardProbabilitiesVarReduction( const board& brd, strategyprob& strat, int nRuns, CRandomMersenne * rng )
+{
+    // nRuns must be a multiple of 21
+    
+    if( nRuns % 21 != 0 ) throw "nRuns must be a multiple of 21";
+    
+    int d1, d2, count=0;
+    double weight;
+    gameProbabilities val;
+    
+    for( d1=1; d1<=6; d1++ )
+        for( d2=1; d2<=d1; d2++ )
+        {
+            if( d1 == d2 )
+                weight = 1/36.;
+            else
+                weight = 1/18.;
+            
+            game g(&strat,&strat,1); // seed doesn't matter here
+            g.setBoard(brd);
+            g.setTurn(1-brd.perspective()); // the oppponent's turn - we calculate board value after the player's move
+            g.stepWithDice( d1, d2 );
+            
+            board b( g.getBoard() );
+            b.setPerspective(1-brd.perspective());
+            
+            // rollout from this point, starting with the opponent's perspective
+            
+            gameProbabilities bv = rolloutBoardProbabilities( b, strat, nRuns/21, rng );
+            //cout << d1 << "; " << d2 << ": " << bv << endl;
+            
+            val = val - bv * weight;
+            count++;
+        }
+    
+    return val;
+}
+
+gameProbabilities rolloutBoardProbabilities( const board& brd, strategyprob& strat, int nRuns, int seed )
+{
+    CRandomMersenne rng(seed);
+    return rolloutBoardProbabilities( brd, strat, nRuns, &rng );
+}
+
+gameProbabilities rolloutBoardProbabilities( const board& brd, strategyprob& strat, int nRuns, CRandomMersenne * rng )
+{
+    gameProbabilities avgVal;
     
     for( int i=0; i<nRuns; i++ )
     {
         // start a new game and run it to completion
         
-        game g( &strat, &strat, seed+i );
+        game g( &strat, &strat, rng );
         g.setBoard( brd );
         g.setTurn( 1 - brd.perspective() ); // start with opponent on roll
         
@@ -257,38 +305,53 @@ double rolloutBoardValue( const board& brd, strategy& strat, int nRuns, int seed
         // get the value from the perspective of the board
         
         if( g.winner() == brd.perspective() )
-            avgVal += g.winnerScore();
+        {
+            avgVal.probWin += 1;
+            if( g.winnerScore() > 1 ) avgVal.probGammonWin += 1;
+            if( g.winnerScore() > 2 ) avgVal.probBgWin += 1;
+        }
         else
-            avgVal -= g.winnerScore();
+        {
+            if( g.winnerScore() > 1 ) avgVal.probGammonLoss += 1;
+            if( g.winnerScore() > 2 ) avgVal.probBgLoss += 1;
+        }
     }
     
-    avgVal /= nRuns;
+    avgVal = avgVal / nRuns;
     return avgVal;
 }
 
-vector<double> valsRollout;
+vector<gameProbabilities> valsRollout;
 
 class workerRollout
 {
 public:
-    workerRollout( const board& brd, strategy& strat, int nRuns, int seed, int index ) : brd(brd), strat(strat), nRuns(nRuns), seed(seed), index(index) {};
+    workerRollout( const board& brd, strategyprob& strat, int nRuns, int seed, int index, bool varReduc ) : brd(brd), strat(strat), nRuns(nRuns), seed(seed), index(index), varReduc(varReduc) {};
     
     void operator()()
     {
-        double val = rolloutBoardValue( brd, strat, nRuns, seed );
+        CRandomMersenne rng(seed);
+        gameProbabilities val;
+        if( varReduc )
+            val = rolloutBoardProbabilitiesVarReduction( brd, strat, nRuns, &rng );
+        else
+            val = rolloutBoardProbabilities( brd, strat, nRuns, &rng );
         valsRollout.at(index) = val;
     }
     
 private:
     const board& brd;
-    strategy& strat;
+    strategyprob& strat;
     int nRuns;
     int seed;
     int index;
+    bool varReduc;
 };
 
-double rolloutBoardValueParallel( const board& brd, strategy& strat, int nRuns, int seed, int nThreads )
+gameProbabilities rolloutBoardProbabilitiesParallel( const board& brd, strategyprob& strat, int nRuns, int seed, int nThreads, bool varReduc )
 {
+    if( varReduc and nRuns % ( 21 * nThreads ) != 0 ) throw "nRuns must be a multiple of 21*nThreads";
+    
     using namespace boost;
     
     // initialize the vector that'll hold the results
@@ -305,7 +368,7 @@ double rolloutBoardValueParallel( const board& brd, strategy& strat, int nRuns, 
     // the buckets from 0->nThreads-2 contain runsPerThread each
     
     for( int i=0; i<nThreads-1; i++ )
-        ts.create_thread( workerRollout( brd, strat, runsPerThread, seed+i*runsPerThread, i ) );
+        ts.create_thread( workerRollout( brd, strat, runsPerThread, seed+i*runsPerThread, i, varReduc ) );
     
     // the last bucket contains the rest
     
@@ -313,7 +376,7 @@ double rolloutBoardValueParallel( const board& brd, strategy& strat, int nRuns, 
     bool useLast=false;
     if( lastNRuns > 0 )
     {
-        ts.create_thread( workerRollout( brd, strat, nRuns - runsPerThread * ( nThreads - 1 ), seed+(nThreads-1)*runsPerThread, nThreads-1 ) );
+        ts.create_thread( workerRollout( brd, strat, nRuns - runsPerThread * ( nThreads - 1 ), seed+(nThreads-1)*runsPerThread, nThreads-1, varReduc ) );
         useLast = true;
     }
     
@@ -324,16 +387,16 @@ double rolloutBoardValueParallel( const board& brd, strategy& strat, int nRuns, 
     // calculate the average of the averages
     
     int count=nThreads-1;
-    double val=0;
+    gameProbabilities val;
     for( int i=0; i<nThreads-1; i++ )
-        val += valsRollout.at(i);
+        val = val + valsRollout.at(i);
     if( useLast )
     {
         count ++;
-        val += valsRollout.at(nThreads-1);
+        val = val + valsRollout.at(nThreads-1);
     }
     
-    val /= count;
+    val = val / count;
     return val;
 }
 

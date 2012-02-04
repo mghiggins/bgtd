@@ -539,7 +539,7 @@ void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
     // try out the TD strategy with multiple networks
     
     //strategytdmult s1( "benchmark", "mult_stdmult_80_0.02_0.02", false );
-    strategytdmult s1( nMiddle );
+    strategytdmult s1( nMiddle, false, false );
     //strategytdmult s2( "benchmark", "mult_stdmult_80_0.02_0.02", false );
     //s2.learning = false;
     strategyPubEval s2;
@@ -551,18 +551,18 @@ void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
     long maxInd=-1;
     
     //playSerial( s1, s2, 200, 1, 0, "mult_std" + fileSuffix, true );
-    playParallel( s1, s2, 1000, 1, 0, "mult_std" + fileSuffix );
+    playParallel( s1, s2, 1000, 1, 0, "std" + fileSuffix );
     dispBoards( s1 );
     
     int nw=0, ng=0, nb=0, ns=0;
     
     for( long i=0; i<20000000; i++ )
     {
-        if( i==100000 or i==500000 or i==1000000 )
+        if( i==75000 or i==150000 or i==300000 )
         {
-            s1.alpha *= 1/5.;
-            s1.beta  *= 1/5.;
-            cout << "\n\n***** Dropped alpha and beta by a factor of 5*****\n";
+            s1.alpha *= 1./sqrt(10);
+            s1.beta  *= 1./sqrt(10);
+            cout << "\n\n***** Dropped alpha and beta by a factor of sqrt(10)*****\n";
             cout << "alpha = " << s1.alpha << endl;
             cout << "beta  = " << s1.beta  << endl;
             cout << endl;
@@ -609,21 +609,21 @@ void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
             
             cout << (i+1) << "   " << fw << "   " << fg << "   " << fb << "   " << as << endl;
             
-            s1.writeWeights( "mult_std" + fileSuffix );
+            s1.writeWeights( "std" + fileSuffix );
         }
         
         if( (i+1)%1000 == 0 )
         {
             cout << endl;
             //double ppg = playSerial( s1, s2, 200, 1, i+1, "mult_std" + fileSuffix, true );
-            double ppg = playParallel( s1, s2, 1000, 1, i+1, "mult_std" + fileSuffix );
+            double ppg = playParallel( s1, s2, 1000, 1, i+1, "std" + fileSuffix );
 
             if( ppg > maxPpg )
             {
                 cout << "***** Rolling best ppg = " << ppg << " vs previous max " << maxPpg << "*****\n";
                 maxPpg = ppg;
                 maxInd = i;
-                s1.writeWeights( "mult_max" + fileSuffix );
+                s1.writeWeights( "max" + fileSuffix );
             }
             else
                 cout << "Prev best " << maxPpg << " at index " << maxInd+1 << endl;
@@ -1176,35 +1176,69 @@ void testOrigGam()
 {
     strategytdmult s0( "benchmark", "player24", false );
     //strategytdmult s1( "benchmark", "player24", false );
-    //strategytdmult sf( "benchmark", "player24q", false );
+    strategytdmult sf( "benchmark", "player24q" );
     //strategytdorigbg s0( "benchmark", "benchmark2" );
     //strategytdorigbg sf(5);
-    strategytdmult sf(5,false,false);
+    //strategytdmult sf(5,false,false);
     s0.learning = false;
     sf.learning = false;
     //s2.learning = false;
     
-    cout << "a\n";
+    strategyply s1( 1, 3, 0.1, s0, sf );
+    strategyply s2( 2, 3, 0.1, s0, sf );
+    
     board b( referenceBoard(7) );
-    for( int i=0; i<1000000; i++ )
-        sf.boardValue(b);
-    cout << "b\n";
+    b.print();
+    cout << "0-ply:\n" << s0.boardProbabilities(b) << endl;
+    cout << "1-ply:\n" << s1.boardProbabilities(b) << endl;
+    cout << "2-ply:\n" << s2.boardProbabilities(b) << endl;
+    
+    //cout << "rollout " << rolloutBoardValueVarReduction( b, s0, 21*100, 1 ) << endl;
+    
+    int nThreads=20;
+    int nRuns=21*nThreads*100;
+    int seed=1;
+    
+    cout << "Total number of paths = " << nRuns << endl << endl;
+    
+    gameProbabilities val;
+    double v1=0, v2=0, bv;
+    
+    int nTrials=100;
+    
+    for( int i=0; i<nTrials; i++ )
+    {
+        cout << "trial " << i+1 << endl;
+        val = rolloutBoardProbabilitiesParallel( b, s0, nRuns, seed+i*nRuns, nThreads, false );
+        //val = rolloutBoardProbabilities(b, s0, nRuns, &rng1 );
+        bv = s0.boardValueFromProbs(val);
+        cout << "rollout:\n" << val << endl;
+        
+        v1 = v1 + bv;
+        v2 = v2 + bv * bv;
+        
+        cout << "Avg = " << v1/(i+1) << endl;
+        cout << "SD  = " << sqrt( v2/(i+1) - v1 * v1/(i+1)/(i+1) ) << endl;
+        cout << endl;
+    }
     
     return;
     
-    strategyply s1( 2, 8, 0.2, s0, sf );
-    strategyPubEval s2;
+    /*
+    //strategyPubEval s2;
+    strategytdmult s2( "benchmark", "player24" );
+    s2.learning = false;
     
-    int nTot=1000;
-    int nBkt=10;
+    int nTot=100000;
+    int nBkt=100;
     int nStep=nTot/nBkt;
     
     double avgVal=0, avgValSq=0, fracWin=0, fracWinSq=0;
     for( int i=0; i<nBkt; i++ )
     {
         cout << "Bucket " << i << endl;
-        //runStats stats = playParallelGen( s1, s2, nStep, 1001 + i*nStep );
-        runStats stats = playSerialGen( s1, s2, nStep, 1001 + i*nStep );
+        runStats stats = playParallelGen( s1, s2, nStep, 1001 + i*nStep );
+        //runStats stats = playSerialGen( s1, s2, nStep, 1001 + i*nStep );
         
         avgVal    += stats.ppg;
         avgValSq  += stats.ppg * stats.ppg;
@@ -1219,10 +1253,8 @@ void testOrigGam()
         cout << "Std dev win    = " << sqrt( fabs( fracWinSq/(i+1) - fracWin * fracWin/(i+1)/(i+1) ) )*100 << endl;
         cout << "Std error      = " << sqrt( fabs( fracWinSq/(i+1) - fracWin * fracWin/(i+1)/(i+1) ) / (i+1) )*100 << endl;
         cout << endl;
-        cout << "ply cache size = " << s1.cacheSize() << endl;
-        cout << endl;
     }
-    
+    */
 }
 
 void playBearoff()

@@ -35,6 +35,7 @@ public:
     // constructors - takes the strategys for each side (0 and 1) and the RNG seed
     
     game( strategy * strat0, strategy * strat1, int seed );
+    game( strategy * strat0, strategy * strat1, CRandomMersenne * rng );
     game( const game& srcGame );
     
     // destructor
@@ -47,6 +48,7 @@ public:
     int turn();         // 0 or 1, depending on whose turn it is
     void setTurn( int turn ); 
     void step();        // steps the game ahead
+    void stepWithDice( const int& d1, const int& d2 ); // steps the game ahead given the dice rolls
     void stepToEnd();   // steps to the end of the game
     
     bool gameOver();    // true when the game is done
@@ -74,6 +76,7 @@ private:
     strategy * strat1;
     
     CRandomMersenne * rng;
+    bool myRng;
     
     hash_map<string,int> gameContext;
 };

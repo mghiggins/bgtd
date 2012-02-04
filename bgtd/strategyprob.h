@@ -34,6 +34,15 @@ public:
     double probBgLoss;     // probability of a backgammon loss
 };
 
+gameProbabilities operator+( const gameProbabilities& probs, double dv );
+gameProbabilities operator-( const gameProbabilities& probs, double dv );
+gameProbabilities operator*( const gameProbabilities& probs, double f );
+gameProbabilities operator/( const gameProbabilities& probs, double f );
+//gameProbabilities operator/( const gameProbabilities& probs, int f );
+gameProbabilities operator+( const gameProbabilities& probs1, const gameProbabilities& probs2 );
+gameProbabilities operator-( const gameProbabilities& probs1, const gameProbabilities& probs2 );
+gameProbabilities operator*( const gameProbabilities& probs1, const gameProbabilities& probs2 );
+
 ostream& operator<<( ostream& output, const gameProbabilities& probs );
 
 class strategyprob : public strategy

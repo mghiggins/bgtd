@@ -21,7 +21,8 @@
 
 #include <set>
 #include "board.h"
-#include "strategy.h"
+#include "strategyprob.h"
+#include "randomc.h"
 
 using namespace std;
 
@@ -35,17 +36,26 @@ set<board> possibleMoves( const board& brd, int die1, int die2 );
 
 bool isRace( const board& board );
 
-// rolloutBoardValue runs a Monte Carlo simulation to get a more accurate
-// estimate of the board value, using the supplied strategy to
+// rolloutBoardProbabilities runs a Monte Carlo simulation to get a more accurate
+// estimate of the board probabilities, using the supplied strategy to
 // figure out the moves. Assumes we start on the opponent's roll to
 // be consistent with strategy boardValue calculations.
 
-double rolloutBoardValue( const board& brd, strategy& strat, int nRuns, int seed );
+gameProbabilities rolloutBoardProbabilities( const board& brd, strategyprob& strat, int nRuns, int seed );
+gameProbabilities rolloutBoardProbabilities( const board& brd, strategyprob& strat, int nRuns, CRandomMersenne * rng );
 
-// rolloutBoardValueParallel does the same thing but breaks the runs into nThreads
-// threads and runs them in parallel.
+// rolloutBoardProbabilitiesVarReduction explicitly sets the first set of rolls to the 21
+// possible dice rolls, then does the usual MC simulation under that, to reduce
+// variance. nRuns must be a multiple of 21.
 
-double rolloutBoardValueParallel( const board& brd, strategy& strat, int nRuns, int seed, int nThreads );
+gameProbabilities rolloutBoardProbabilitiesVarReduction( const board& brd, strategyprob& strat, int nRuns, int seed );
+gameProbabilities rolloutBoardProbabilitiesVarReduction( const board& brd, strategyprob& strat, int nRuns, CRandomMersenne * rng );
+
+// rolloutBoardProbabilitiesParallel does the same thing but breaks the runs into nThreads
+// threads and runs them in parallel. if varReduc is true it will use the variance-reduced
+// version, and nRuns must be a multiple of 21*nThreads.
+
+gameProbabilities rolloutBoardProbabilitiesParallel( const board& brd, strategyprob& strat, int nRuns, int seed, int nThreads, bool varReduc );
 
 // roll is a simple class that holds a two-dice roll
 
