@@ -48,5 +48,6 @@ void compareBearoff();
 
 void playEscapes();
 
+void createBenchmarks();
 
 #endif

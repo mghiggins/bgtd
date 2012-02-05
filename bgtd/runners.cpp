@@ -35,6 +35,7 @@
 #include "strategyhuman.h"
 #include "game.h"
 #include "gamefns.h"
+#include "benchmark.h"
 
 void dispBoard( int ind, bool flipped, const strategytdmult& s, const board& b );
 void dispBoards( const strategytdmult& s );
@@ -1483,4 +1484,21 @@ void playEscapes()
     bl.print();
     cout << getBlockadeEscapeCount( bl, 6 ) << endl;
     
+}
+
+void createBenchmarks()
+{
+    strategytdmult s0( "benchmark", "player24" );
+    strategytdmult sf( "benchmark", "player24q" );
+    
+    int nGames = 100;
+    string pathName = "/Users/mghiggins/bgtdres/benchdb";
+    int nFileBenchmarks = 100;
+    int seed = 1;
+    
+    generateBenchmarkPositions( s0, sf, nGames, pathName, nFileBenchmarks, seed );
+    
+    int nRuns=2000;
+    int nThreads=4;
+    rolloutBenchmarkPositions( s0, pathName, nFileBenchmarks, nRuns, seed, nThreads );
 }
