@@ -407,6 +407,32 @@ void board::setOtherHit( int hit )
         hit0 = hit;
 }
 
+board::board( const string& brdRepr )
+{
+    // deserialize the board from the string representation
+    
+    persp = 0;
+    
+    bornIn0 = static_cast<int>( brdRepr[0] ) - 65;
+    bornIn1 = static_cast<int>( brdRepr[1] ) - 65;
+    hit0    = static_cast<int>( brdRepr[2] ) - 65;
+    hit1    = static_cast<int>( brdRepr[3] ) - 65;
+    
+    checkers0.resize(24,0);
+    checkers1.resize(24,0);
+    
+    int nCheck;
+    
+    for( int i=0; i<24; i++ )
+    {
+        nCheck = static_cast<int>( brdRepr[4+i] ) - 65;
+        if( nCheck > 0 )
+            checkers0[i] = nCheck;
+        else
+            checkers1[i] = -nCheck;
+    }
+}
+
 string board::repr() const
 {
     vector<int> checks( checkers() );

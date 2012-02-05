@@ -35,6 +35,7 @@ public:
     
     board();
     board( const board& srcBoard );
+    board( const string& brdRepr );
     
     // destructor
     
