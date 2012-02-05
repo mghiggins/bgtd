@@ -1496,7 +1496,7 @@ void createBenchmarks()
     int nFileBenchmarks = 100;
     int seed = 1;
     
-    generateBenchmarkPositions( s0, sf, nGames, pathName, nFileBenchmarks, seed );
+    generateBenchmarkPositions( s0, sf, nGames, pathName, nFileBenchmarks, seed, 1 );
     
     int nRuns=2000;
     int nThreads=4;
