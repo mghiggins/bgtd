@@ -403,7 +403,6 @@ gameProbabilities rolloutBoardProbabilitiesParallel( const board& brd, strategyp
 vector< set<roll> > * hittingRolls=0;
 vector< vector<int> > * shotIndexes=0;
 
-void setupHittingRolls();
 void setupHittingRolls()
 {
     // sets up the list that records the indirect ways to hit a blot for

@@ -78,6 +78,8 @@ set<roll> hittingShots( const board& brd, bool forOpponent );
 // hittingProb returns the probability of getting a hitting roll; takes
 // either a board or a pre-calculated set of shots.
 
+void setupHittingRolls();
+
 double hittingProb( const board& brd, bool forOpponent );
 double hittingProb( const set<roll>& shots );
 double hittingProb2( const board& brd, bool forOpponent );
