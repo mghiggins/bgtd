@@ -44,7 +44,7 @@ string writeBenchmarks( vector<boardAndVals>& benchmarks, const string& pathName
         f << it->b.repr() << "," << it->val0Ply << "," << it->val2Ply << endl;
     
     f.close();
-    //cout << "Wrote file " << fileName << endl;
+    cout << "Wrote file " << fileName << endl;
     
     // increment the file index and clear the benchmark list so we can start fresh on
     // the next set
@@ -152,6 +152,8 @@ vector<string> generateBenchmarkPositionsSerial( strategyprob& strat, strategypr
             for( set<board>::iterator it=moves.begin(); it!=moves.end(); it++ )
                 vals.push_back( boardAndVals( (*it), strat.boardValue( (*it) ) ) );
             
+            //cout << "     got 0-ply values\n";
+            
             // sort the moves by 0-ply equity
             
             sort( vals.begin(), vals.end(), boardAndValComp );
@@ -192,7 +194,7 @@ vector<string> generateBenchmarkPositionsSerial( strategyprob& strat, strategypr
             
             if( index2Ply != -1 ) b = vals.at(index2Ply).b;
             b.setPerspective( 1 - b.perspective() );
-            b.print();
+            //b.print();
             
             nSteps++;
         }
