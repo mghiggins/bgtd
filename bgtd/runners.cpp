@@ -1490,15 +1490,17 @@ void createBenchmarks()
 {
     strategytdmult s0( "benchmark", "player24" );
     strategytdmult sf( "benchmark", "player24q" );
+    setupHittingRolls();
     
-    int nGames = 100;
+    int nGames = 1200;
     string pathName = "/Users/mghiggins/bgtdres/benchdb";
     int nFileBenchmarks = 100;
     int seed = 1;
+    int nThreads = 15;
     
-    generateBenchmarkPositions( s0, sf, nGames, pathName, nFileBenchmarks, seed, 1 );
+    generateBenchmarkPositions( s0, sf, nGames, pathName, nFileBenchmarks, seed, nThreads );
+    //generateBenchmarkPositionsSerial( s0, sf, 10, pathName, nFileBenchmarks, seed, 0 );
     
-    int nRuns=2000;
-    int nThreads=4;
+    int nRuns=3000;
     rolloutBenchmarkPositions( s0, pathName, nFileBenchmarks, nRuns, seed, nThreads );
 }
