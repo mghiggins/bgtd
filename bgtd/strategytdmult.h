@@ -57,10 +57,12 @@ public:
     double doneValue( const board& brd, bool valIsAnyWin ) const;
     
     // update takes the old and new boards (before and after what it guesses is the optimal move)
-    // and updates the weights.
+    // and updates the weights using TD learning. updateFromProbs does supervised learning when
+    // supplied with target probabilities.
     
     virtual bool needsUpdate() const;
     virtual void update( const board& oldBoard, const board& newBoard );
+    void updateFromProbs( const board& brd, double probWin, double probGammonWin, double probGammonLoss, double probBgWin, double probBgLoss );
     
     // writeWeights writes the weights for each network to files (one per network, suffixed with the network name)
     
