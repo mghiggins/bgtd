@@ -1508,6 +1508,7 @@ void createBenchmarks()
 void trainBenchmarks()
 {
     strategytdmult s1( "benchmark", "player24" );
+    strategytdmult s2( "benchmark", "player24" );
     string pathName = "/Users/mghiggins/bgtdres/benchdb";
     
     int seed = 1;
@@ -1518,15 +1519,16 @@ void trainBenchmarks()
     
     for( int i=0; i<300; i++ )
     {
-        s1.alpha = s1.beta = 1.;
+        s1.alpha = s1.beta = 0.1;
         
         trainMult( s1, pathName, seed );
         
         cout << "Iteration " << i+1 << ":" << endl;
         printErrorStatistics(s1, pathName);
         cout << endl;
+        
+        if( i % 20 == 0 )
+            playParallelGen(s1, s2, 1000, 2);
     }
     
-    strategytdmult s2( "benchmark", "player24" );
-    playParallelGen(s1, s2, 1000, 2);
 }
