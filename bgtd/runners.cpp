@@ -1509,6 +1509,7 @@ void trainBenchmarks()
 {
     strategytdmult s1( "benchmark", "player24" );
     strategytdmult s2( "benchmark", "player24" );
+    s1.learning = s2.learning = false;
     string pathName = "/Users/mghiggins/bgtdres/benchdb";
     
     int seed = 1;
