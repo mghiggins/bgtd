@@ -297,6 +297,13 @@ void rolloutBenchmarkPositions( strategyprob& strat, const string& pathName, int
     
     if( rollouts.size() )
         writeRollouts( rollouts, pathName, fileIndex );
+    
+    // write out an info file with the # of rollout files
+    
+    string infoFileName = pathName + "/rolloutinfo.txt";
+    ofstream f( infoFileName.c_str() );
+    f << fileIndex << endl;
+    f.close();
 }
 
 void trainMult( strategytdmult& strat, const string& pathName, int seed )
