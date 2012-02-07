@@ -165,7 +165,8 @@ int main( int argc, char * argv [] )
 {
     //testOrigGam();
     //playEscapes();
-    createBenchmarks();
+    //createBenchmarks();
+    trainBenchmarks();
 }
 /*
 int main( int argc, char * argv [] )

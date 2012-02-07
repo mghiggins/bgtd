@@ -47,8 +47,15 @@ vector<string> generateBenchmarkPositionsSerial( strategyprob& strat, strategypr
 
 void rolloutBenchmarkPositions( strategyprob& strat, const string& pathName, int nFileBenchmarks, int nRuns, int seed, int nThreads );
 
-// trainMult trains a strategytdmult set of networks on the rolled-out benchmark positions
+// trainMult trains a strategytdmult set of networks on the rolled-out benchmark positions.
+// Does one step through the available rolled-out benchmarks, using learning rates alpha and
+// beta attached to the strategy.
 
-void trainMult( strategytdmult& strat, const string& pathName );
+void trainMult( strategytdmult& strat, const string& pathName, int seed );
+
+// printErrorStatistics runs through the rollout database and calculates statistics on
+// the diffs between the equity calculated by the strategy and the rolled-out equities.
+
+void printErrorStatistics( strategytdmult& strat, const string& pathName );
 
 #endif

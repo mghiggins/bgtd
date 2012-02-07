@@ -298,3 +298,171 @@ void rolloutBenchmarkPositions( strategyprob& strat, const string& pathName, int
     if( rollouts.size() )
         writeRollouts( rollouts, pathName, fileIndex );
 }
+
+void trainMult( strategytdmult& strat, const string& pathName, int seed )
+{
+    // get the number of rollout files from the rolloutinfo.txt file in the path
+    
+    string infoFileName = pathName + "/rolloutinfo.txt";
+    ifstream f0( infoFileName.c_str(), ios::in );
+    if( !f0 ) throw string( "Could not find rolloutinfo.txt file" );
+    
+    string line, bit;
+    getline( f0, line );
+    int nRolloutFiles = atoi( line.c_str() );
+    
+    double probWin, probGammonWin, probGammonLoss, probBgWin, probBgLoss;
+    
+    // load all the rollout info
+    
+    vector<boardAndRolloutProbs> states;
+    for( int i=0; i<nRolloutFiles; i++ )
+    {
+        stringstream ss;
+        ss << pathName << "/rollout" << i << ".txt";
+        ifstream fr( ss.str().c_str(), ios::in );
+        if( !fr )
+        {
+            ss << " not found";
+            throw ss.str();
+        }
+        while( !fr.eof() )
+        {
+            getline( fr, line );
+            if( line != "" )
+            {
+                // the line is comma-delimited: board,prob of win,prob of gammon win,prob of gammon loss,prob of bg win,prob of bg loss.
+                // Parse all that out.
+                
+                stringstream sb(line);
+                getline( sb, bit, ',' );
+                board b(bit);
+                getline( sb, bit, ',' );
+                probWin = atof( bit.c_str() );
+                getline( sb, bit, ',' );
+                probGammonWin = atof( bit.c_str() );
+                getline( sb, bit, ',' );
+                probGammonLoss = atof( bit.c_str() );
+                getline( sb, bit, ',' );
+                probBgWin = atof( bit.c_str() );
+                getline( sb, bit, ',' );
+                probBgLoss = atof( bit.c_str() );
+                
+                // add the board & rolled-out probabilities to the list
+                
+                gameProbabilities probs( probWin, probGammonWin, probGammonLoss, probBgWin, probBgLoss );
+                states.push_back( boardAndRolloutProbs( b, probs ) );
+            }
+        }
+    }
+    
+    // now do the training on randomly-selected boards
+    
+    int index, count=0;
+    CRandomMersenne rng(seed);
+    
+    while( states.size() > 0 )
+    {
+        // randomly select the board
+        
+        index = rng.IRandom( 0, (int) (states.size() - 1) );
+        
+        // run supervised learning for this step. The rollout probabilities represent probabilities
+        // assuming the opponent has the dice, whereas the network probabilities assume that
+        // the player has the dice. So we need to flip perspective around.
+        
+        board b( states.at(index).b );
+        b.setPerspective( 1 - b.perspective() );
+        
+        strat.updateFromProbs( b, 1 - states.at(index).probs.probWin, 
+                               states.at(index).probs.probGammonLoss, states.at(index).probs.probGammonWin,
+                               states.at(index).probs.probBgLoss, states.at(index).probs.probBgWin );
+        
+        // remove the entry from the states list so we don't do it again
+        
+        states.erase( states.begin() + index );
+        count++;
+    }
+}
+
+void printErrorStatistics( strategytdmult& strat, const string& pathName )
+{
+    // get the number of rollout files from the rolloutinfo.txt file in the path
+    
+    string infoFileName = pathName + "/rolloutinfo.txt";
+    ifstream f0( infoFileName.c_str(), ios::in );
+    if( !f0 ) throw string( "Could not find rolloutinfo.txt file" );
+    
+    string line, bit;
+    getline( f0, line );
+    int nRolloutFiles = atoi( line.c_str() );
+    
+    double probWin, probGammonWin, probGammonLoss, probBgWin, probBgLoss;
+    
+    // run through the rolled-out benchmarks
+    
+    double avgDiff=0, avgDiffSq=0, avgProb=0, avgProbSq=0;
+    int count=0;
+    
+    for( int i=0; i<nRolloutFiles; i++ )
+    {
+        stringstream ss;
+        ss << pathName << "/rollout" << i << ".txt";
+        ifstream fr( ss.str().c_str(), ios::in );
+        if( !fr )
+        {
+            ss << " not found";
+            throw ss.str();
+        }
+        while( !fr.eof() )
+        {
+            getline( fr, line );
+            if( line != "" )
+            {
+                // the line is comma-delimited: board,prob of win,prob of gammon win,prob of gammon loss,prob of bg win,prob of bg loss.
+                // Parse all that out.
+                
+                stringstream sb(line);
+                getline( sb, bit, ',' );
+                board b(bit);
+                getline( sb, bit, ',' );
+                probWin = atof( bit.c_str() );
+                getline( sb, bit, ',' );
+                probGammonWin = atof( bit.c_str() );
+                getline( sb, bit, ',' );
+                probGammonLoss = atof( bit.c_str() );
+                getline( sb, bit, ',' );
+                probBgWin = atof( bit.c_str() );
+                getline( sb, bit, ',' );
+                probBgLoss = atof( bit.c_str() );
+                
+                gameProbabilities probs( probWin, probGammonWin, probGammonLoss, probBgWin, probBgLoss );
+                
+                // calculate the equity from rollout and the equity from the strategy
+                
+                gameProbabilities calcProbs( strat.boardProbabilities(b) );
+                
+                double equityDiff = strat.boardValueFromProbs(calcProbs) - strat.boardValueFromProbs(probs);
+                double probDiff   = calcProbs.probWin - probWin;
+                
+                avgDiff   += equityDiff;
+                avgDiffSq += equityDiff * equityDiff;
+                avgProb   += probDiff;
+                avgProbSq += probDiff * probDiff;
+                
+                count++;
+            }
+        }
+    }
+    
+    cout << count << " scenarios\n";
+    avgDiff   /= count;
+    avgDiffSq /= count;
+    avgProb   /= count;
+    avgProbSq /= count;
+    
+    cout << "Average diff = " << avgDiff << endl;
+    cout << "Std dev      = " << sqrt( avgDiffSq - avgDiff * avgDiff ) << endl;
+    cout << "Avg prob df  = " << avgProb << endl;
+    cout << "Std dev      = " << sqrt( avgProbSq - avgProb * avgProb ) << endl;
+}

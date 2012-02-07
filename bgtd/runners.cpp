@@ -1492,10 +1492,10 @@ void createBenchmarks()
     strategytdmult sf( "benchmark", "player24q" );
     setupHittingRolls();
     
-    int nGames = 1200;
     string pathName = "/Users/mghiggins/bgtdres/benchdb";
-    int nFileBenchmarks = 100;
     int seed = 1;
+    int nGames = 1200;
+    int nFileBenchmarks = 100;
     int nThreads = 15;
     
     generateBenchmarkPositions( s0, sf, nGames, pathName, nFileBenchmarks, seed, nThreads );
@@ -1503,4 +1503,30 @@ void createBenchmarks()
     
     int nRuns=3000;
     rolloutBenchmarkPositions( s0, pathName, nFileBenchmarks, nRuns, seed, nThreads );
+}
+
+void trainBenchmarks()
+{
+    strategytdmult s1( "benchmark", "player24" );
+    string pathName = "/Users/mghiggins/bgtdres/benchdb";
+    
+    int seed = 1;
+    
+    cout << "Starting stats:\n";
+    printErrorStatistics(s1, pathName);
+    cout << endl;
+    
+    for( int i=0; i<300; i++ )
+    {
+        s1.alpha = s1.beta = 1.;
+        
+        trainMult( s1, pathName, seed );
+        
+        cout << "Iteration " << i+1 << ":" << endl;
+        printErrorStatistics(s1, pathName);
+        cout << endl;
+    }
+    
+    strategytdmult s2( "benchmark", "player24" );
+    playParallelGen(s1, s2, 1000, 2);
 }
