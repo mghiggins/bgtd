@@ -81,7 +81,7 @@ private:
     int initSeed;
 };
 
-void generateBenchmarkPositions( strategyprob& strat, strategyprob& filterStrat, int nGames, const string& pathName, int nFileBenchmarks, int seed, int nThreads )
+void generateBenchmarkPositions( strategyprob& strat, strategyprob& filterStrat, int nGames, const string& pathName, int nFileBenchmarks, int seed, int nThreads, int initIndex )
 {
     using namespace boost;
     
@@ -94,7 +94,7 @@ void generateBenchmarkPositions( strategyprob& strat, strategyprob& filterStrat,
     int nGamesPerThread = nGames / nThreads;
     
     thread_group ts;
-    for( int i=0; i<nThreads; i++ ) ts.create_thread( workerGenBenchmarks( strat, filterStrat, nGamesPerThread, pathName, nFileBenchmarks, i, seed )  );
+    for( int i=0; i<nThreads; i++ ) ts.create_thread( workerGenBenchmarks( strat, filterStrat, nGamesPerThread, pathName, nFileBenchmarks, initIndex+i, seed )  );
     ts.join_all();
     
     // write out the benchinfo.txt file with the names of all created files
@@ -245,7 +245,7 @@ void writeRollouts( vector<boardAndRolloutProbs>& rollouts, const string& pathNa
     rollouts.resize(0);
 }
 
-void rolloutBenchmarkPositions( strategyprob& strat, const string& pathName, int nFileBenchmarks, int nRuns, int seed, int nThreads )
+void rolloutBenchmarkPositions( strategyprob& strat, const string& pathName, int nFileBenchmarks, int nRuns, int seed, int nThreads, int initFileIndex )
 {
     // open the benchinfo file to get the names of benchmark files
     
@@ -254,7 +254,7 @@ void rolloutBenchmarkPositions( strategyprob& strat, const string& pathName, int
     if( !fi ) throw string( "No benchinfo file found" );
     
     vector<boardAndRolloutProbs> rollouts;
-    int fileIndex=0;
+    int fileIndex=initFileIndex;
     
     // run through the benchmark files and roll out each position
     

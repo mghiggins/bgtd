@@ -1498,11 +1498,11 @@ void createBenchmarks()
     int nFileBenchmarks = 100;
     int nThreads = 15;
     
-    generateBenchmarkPositions( s0, sf, nGames, pathName, nFileBenchmarks, seed, nThreads );
+    generateBenchmarkPositions( s0, sf, nGames, pathName, nFileBenchmarks, seed, nThreads, 15 );
     //generateBenchmarkPositionsSerial( s0, sf, 10, pathName, nFileBenchmarks, seed, 0 );
     
     int nRuns=3000;
-    rolloutBenchmarkPositions( s0, pathName, nFileBenchmarks, nRuns, seed, nThreads );
+    rolloutBenchmarkPositions( s0, pathName, nFileBenchmarks, nRuns, seed, nThreads, 144 );
 }
 
 void trainBenchmarks()

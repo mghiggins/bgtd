@@ -39,13 +39,13 @@
 // names of of benchmark files. "strat" below is meant to be the 0-ply strategy; the 2-ply version is
 // created internally along with the filter strategy filterStrat.
 
-void generateBenchmarkPositions( strategyprob& strat, strategyprob& filterStrat, int nGames, const string& pathName, int nFileBenchmarks, int seed, int nThreads );
+void generateBenchmarkPositions( strategyprob& strat, strategyprob& filterStrat, int nGames, const string& pathName, int nFileBenchmarks, int seed, int nThreads, int initIndex );
 vector<string> generateBenchmarkPositionsSerial( strategyprob& strat, strategyprob& filterStrat, int nGames, const string& pathName, int nFileBenchmarks, int seed, int fileSuffix );
 
 // rolloutBenchmarkPositions rolls out each of the benchmark positions already saved in the path
 // pathName.
 
-void rolloutBenchmarkPositions( strategyprob& strat, const string& pathName, int nFileBenchmarks, int nRuns, int seed, int nThreads );
+void rolloutBenchmarkPositions( strategyprob& strat, const string& pathName, int nFileBenchmarks, int nRuns, int seed, int nThreads, int initFileIndex );
 
 // trainMult trains a strategytdmult set of networks on the rolled-out benchmark positions.
 // Does one step through the available rolled-out benchmarks, using learning rates alpha and
