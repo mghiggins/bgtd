@@ -74,39 +74,50 @@ private:
     long initSeed;
 };
 
-double playParallel( strategytdbase& s1, strategy& s2, long n, long initSeed, long displayIndex, const string& fileSuffix )
+double playParallel( strategytdbase& s1, strategy& s2, long n, long initSeed, long displayIndex, const string& fileSuffix, int nBuckets )
 {
     using namespace boost;
     
     s1.learning = false;
     
-    // run each game in its own thread
-    
-    if( points.size() < n ) 
-    {
-        points.resize(n);
-        steps.resize(n);
-    }
-    
-    thread_group ts;
-    for( long i=0; i<n; i++ ) ts.create_thread( worker( i, s1, s2, n, initSeed ) );
-    ts.join_all();
+    if( n % nBuckets != 0 ) throw string( "Number of runs must be a multiple of nBuckts" );
+    long nRuns = n / nBuckets;
     
     double ppg=0, w0=0, q=0, avgSteps=0, ns=0, ng=0, nb=0;
-    int p, ap;
-    for( long i=0; i<n; i++ ) 
+    
+    for( int bkt=0; bkt<nBuckets; bkt++ )
     {
-        p  = points[i];
-        ap = abs( p );
-     
-        ppg += p;
-        q += ap;
-        if( p > 0 ) w0 += 1;
-        if( ap == 1 ) ns += 1;
-        if( ap == 2 ) ng += 1;
-        if( ap == 3 ) nb += 1;
-        avgSteps += steps[i];
+        cout << "o";
+        cout.flush();
+        
+        // run each game in its own thread
+        
+        if( points.size() < nRuns ) 
+        {
+            points.resize(nRuns);
+            steps.resize(nRuns);
+        }
+        
+        thread_group ts;
+        for( long i=0; i<nRuns; i++ ) ts.create_thread( worker( i, s1, s2, nRuns, initSeed + nRuns * bkt ) );
+        ts.join_all();
+        
+        int p, ap;
+        for( long i=0; i<nRuns; i++ ) 
+        {
+            p  = points[i];
+            ap = abs( p );
+         
+            ppg += p;
+            q += ap;
+            if( p > 0 ) w0 += 1;
+            if( ap == 1 ) ns += 1;
+            if( ap == 2 ) ng += 1;
+            if( ap == 3 ) nb += 1;
+            avgSteps += steps[i];
+        }
     }
+    cout << endl;
     ppg /= n;
     w0  /= n;
     q   /= n;
@@ -539,11 +550,11 @@ void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
     
     // try out the TD strategy with multiple networks
     
-    //strategytdmult s1( "benchmark", "mult_stdmult_80_0.02_0.02", false );
-    strategytdmult s1( nMiddle, false, false );
-    //strategytdmult s2( "benchmark", "mult_stdmult_80_0.02_0.02", false );
-    //s2.learning = false;
-    strategyPubEval s2;
+    strategytdmult s1( "benchmark", "player24" );
+    //strategytdmult s1( nMiddle, false, false );
+    strategytdmult s2( "benchmark", "player24" );
+    s2.learning = false;
+    setupHittingRolls();
     
     s1.alpha = alpha0;
     s1.beta  = beta0;
@@ -552,14 +563,14 @@ void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
     long maxInd=-1;
     
     //playSerial( s1, s2, 200, 1, 0, "mult_std" + fileSuffix, true );
-    playParallel( s1, s2, 1000, 1, 0, "std" + fileSuffix );
+    playParallel( s1, s2, 4000, 1, 0, "std" + fileSuffix, 10 );
     dispBoards( s1 );
     
     int nw=0, ng=0, nb=0, ns=0;
     
     for( long i=0; i<20000000; i++ )
     {
-        if( i==75000 or i==150000 or i==300000 )
+        if( i==100000 or i==300000 or i==900000 )
         {
             s1.alpha *= 1./sqrt(10);
             s1.beta  *= 1./sqrt(10);
@@ -613,11 +624,11 @@ void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
             s1.writeWeights( "std" + fileSuffix );
         }
         
-        if( (i+1)%1000 == 0 )
+        if( (i+1)%5000 == 0 )
         {
             cout << endl;
             //double ppg = playSerial( s1, s2, 200, 1, i+1, "mult_std" + fileSuffix, true );
-            double ppg = playParallel( s1, s2, 1000, 1, i+1, "std" + fileSuffix );
+            double ppg = playParallel( s1, s2, 4000, 1, i+1, "std" + fileSuffix, 10 );
 
             if( ppg > maxPpg )
             {
@@ -1175,62 +1186,47 @@ bool bandvComp( const bandv& v1, const bandv& v2 ) { return v1.val > v2.val; }
 
 void testOrigGam()
 {
-    strategytdmult s0( "benchmark", "player24", false );
+    strategytdmult s1( "", "stdplayer25" );
     //strategytdmult s1( "benchmark", "player24", false );
-    strategytdmult sf( "benchmark", "player24q" );
+    strategytdmult s2( "benchmark", "player24" );
     //strategytdorigbg s0( "benchmark", "benchmark2" );
     //strategytdorigbg sf(5);
     //strategytdmult sf(5,false,false);
-    s0.learning = false;
-    sf.learning = false;
-    //s2.learning = false;
-    
-    strategyply s1( 1, 3, 0.1, s0, sf );
-    strategyply s2( 2, 3, 0.1, s0, sf );
-    
-    board b( referenceBoard(7) );
-    b.print();
-    cout << "0-ply:\n" << s0.boardProbabilities(b) << endl;
-    cout << "1-ply:\n" << s1.boardProbabilities(b) << endl;
-    cout << "2-ply:\n" << s2.boardProbabilities(b) << endl;
-    
-    //cout << "rollout " << rolloutBoardValueVarReduction( b, s0, 21*100, 1 ) << endl;
-    
-    int nThreads=20;
-    int nRuns=21*nThreads*100;
-    int seed=1;
-    
-    cout << "Total number of paths = " << nRuns << endl << endl;
-    
-    gameProbabilities val;
-    double v1=0, v2=0, bv;
-    
-    int nTrials=100;
-    
-    for( int i=0; i<nTrials; i++ )
-    {
-        cout << "trial " << i+1 << endl;
-        val = rolloutBoardProbabilitiesParallel( b, s0, nRuns, seed+i*nRuns, nThreads, false );
-        //val = rolloutBoardProbabilities(b, s0, nRuns, &rng1 );
-        bv = s0.boardValueFromProbs(val);
-        cout << "rollout:\n" << val << endl;
-        
-        v1 = v1 + bv;
-        v2 = v2 + bv * bv;
-        
-        cout << "Avg = " << v1/(i+1) << endl;
-        cout << "SD  = " << sqrt( v2/(i+1) - v1 * v1/(i+1)/(i+1) ) << endl;
-        cout << endl;
-    }
-    
-    return;
+    s1.learning = false;
+    //sf.learning = false;
+    s2.learning = false;
+    setupHittingRolls();
     
     /*
-    //strategyPubEval s2;
-    strategytdmult s2( "benchmark", "player24" );
-    s2.learning = false;
+    const vector< vector<double> >& w1( s2.getMiddleWeights("race") );
+    const vector< vector<double> >& w2( s1.getMiddleWeights("race") );
     
-    int nTot=100000;
+    cout << w2[0][96] << "; " << w1[0][96] << endl;
+    
+    
+    
+    double avgDiff=0, avgDiffSq=0, diff;
+    for( int i=0; i<w1.size(); i++ )
+    {
+        diff = w1.at(i) - w2.at(i);
+        avgDiff += diff;
+        avgDiffSq += diff * diff;
+    }
+    
+    avgDiff /= w1.size();
+    avgDiffSq /= w1.size();
+    
+    cout << "Average diff = " << avgDiff << endl;
+    cout << "Std dev      = " << sqrt( avgDiffSq - avgDiff * avgDiff ) << endl;
+    
+    return;
+    */
+    //strategyPubEval s2;
+    //strategytdorigbg s2( "benchmark", "benchmark2" );
+    //s2.learning = false;
+    
+    
+    int nTot=40000;
     int nBkt=100;
     int nStep=nTot/nBkt;
     
@@ -1255,7 +1251,7 @@ void testOrigGam()
         cout << "Std error      = " << sqrt( fabs( fracWinSq/(i+1) - fracWin * fracWin/(i+1)/(i+1) ) / (i+1) )*100 << endl;
         cout << endl;
     }
-    */
+    
 }
 
 void playBearoff()

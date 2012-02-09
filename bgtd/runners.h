@@ -30,7 +30,7 @@ struct runStats
     double ppg, avgSteps, fracWin, absPpg, fracSingle, fracGammon, fracBg;
 };
 
-double playParallel( strategytdbase& s1, strategy& s2, long n, long initSeed, long displayIndex, const string& fileSuffix );
+double playParallel( strategytdbase& s1, strategy& s2, long n, long initSeed, long displayIndex, const string& fileSuffix, int nBuckets=0 );
 runStats playParallelGen( strategy& s1, strategy& s2, long n, long initSeed );
 double playSerial( strategytdbase& s1, strategy& s2, long n, long initSeed, long displayIndex, const string& fileSuffix, bool returnPpg=false );
 runStats playSerialGen( strategy& s1, strategy& s2, long n, long initSeed );
