@@ -74,6 +74,15 @@ public:
     bool useShotProbInput;
     bool usePrimesInput;
     
+    // interface to weights
+    
+    const vector<double>& getOutputProbWeights( const string& netName ) const;
+    const vector<double>& getOutputGammonWeights( const string& netName ) const;
+    const vector<double>& getOutputGammonLossWeights( const string& netName ) const;
+    const vector<double>& getOutputBgWeights( const string& netName ) const;
+    const vector<double>& getOutputBgLossWeights( const string& netName ) const;
+    const vector< vector<double> >& getMiddleWeights( const string& netName ) const;
+    
 private:
     void setup();
     void setupRandomWeights( int nMiddle );

@@ -79,10 +79,9 @@ void strategytdmult::setupRandomWeights( int nMiddle )
     
     // set up the network vectors for all the different networks
     
-    vector<string> nets(3);
+    vector<string> nets(2);
     nets[0] = "contact";
     nets[1] = "race";
-    nets[2] = "crashed";
     
     int i, nInput;
     
@@ -505,37 +504,45 @@ string strategytdmult::evaluator( const board& brd ) const
     // current setup. This is bespoke logic and can change if you want to set up many different nets
     // for different parts of the game (eg one for contact, one for race), and where you tell it to
     // use a bearoff database if appropriate.
+    //
+    // The two networks we use are:
+    //    Race: all player checkers are past the furthest-back opponent checker
+    //    Contact: everything else
+    //
+    // Other evaluator states are "done", when the game is over, and "bearoff", which is a race state
+    // where we can evaluate equity from a lookup table instead of a neural network.
     
     // did someone win? If so, return "done".
     
     if( brd.bornIn() == 15 or brd.otherBornIn() == 15 ) return "done";
     
     string contactName = "contact";
-    string crashedName = "contact";
     string raceName    = "race";
     
-    // If either player has anyone hit, it's contact.
+    // is this contact? Find the furthest player piece and check if any opponent piece is in front of it.
     
-    if( brd.hit() > 0 or brd.otherHit() > 0 ) return contactName;
+    int playerBack, opponentBack;
     
-    // is this contact or crashed? Find the furthest player piece and check if any opponent piece is in front of it.
+    if( brd.hit() > 0 )
+        playerBack = 24;
+    else
+    {
+        for( playerBack=23; playerBack>-1; playerBack-- )
+            if( brd.checker(playerBack) > 0 )
+                break;
+    }
     
-    int i, j;
-    for( i=23; i>-1; i-- )
-        if( brd.checker(i) > 0 )
-            break;
+    if( brd.otherHit() > 0 )
+        opponentBack = -1;
+    else
+    {
+        for( opponentBack=0; opponentBack<24; opponentBack++ )
+            if( brd.otherChecker(opponentBack) > 0 )
+                break;
+    }
     
-    for( j=0; j<i; j++ )
-        if( brd.otherChecker(j) > 0 )
-        {
-            // it's either contact or crashed. Crashed if the player has six or fewer pieces remaining on the
-            // board and none in the opponent's 1 or 2 slots.
-            
-            if( brd.bornIn() > 8 or brd.otherBornIn() > 8 )
-                return crashedName;
-            else
-                return contactName;
-        }
+    if( playerBack > opponentBack )
+        return contactName;
     
     // it's a race - just need to figure out whether it's time to use the bearoff db
     
@@ -544,6 +551,8 @@ string strategytdmult::evaluator( const board& brd ) const
     if( brd.bornIn() < 15 - bearoffNCheckers or brd.otherBornIn() < 15 - bearoffNCheckers ) return raceName;
     
     // if there are any checkers on spots past the largest spot we use for the bearoff db, need to use the race network
+    
+    int i;
     
     for( i=bearoffNPnts; i<24; i++ )
         if( brd.checker(i) > 0 ) return raceName;
@@ -1003,4 +1012,44 @@ void strategytdmult::loadWeights( const string& subPath, const string& filePrefi
             middleWeights[ netName ]       = midWeights;
         }
     }
+}
+
+const vector<double>& getWeightsFromMap( const hash_map< string, vector<double> >& map, const string& netName );
+const vector<double>& getWeightsFromMap( const hash_map< string, vector<double> >& map, const string& netName )
+{
+    hash_map< string, vector<double> >::const_iterator it=map.find(netName);
+    if( it == map.end() ) throw string( "Could not find network name" );
+    return it->second;
+}
+
+const vector<double>& strategytdmult::getOutputProbWeights( const string& netName ) const
+{
+    return getWeightsFromMap( outputProbWeights, netName );
+}
+
+const vector<double>& strategytdmult::getOutputGammonWeights( const string& netName ) const
+{
+    return getWeightsFromMap( outputGammonWeights, netName );
+}
+
+const vector<double>& strategytdmult::getOutputGammonLossWeights( const string& netName ) const
+{
+    return getWeightsFromMap( outputGammonLossWeights, netName );
+}
+
+const vector<double>& strategytdmult::getOutputBgWeights( const string& netName ) const
+{
+    return getWeightsFromMap( outputBgWeights, netName );
+}
+
+const vector<double>& strategytdmult::getOutputBgLossWeights( const string& netName ) const
+{
+    return getWeightsFromMap( outputBgLossWeights, netName );
+}
+
+const vector< vector<double> >& strategytdmult::getMiddleWeights( const string& netName ) const
+{
+    hash_map< string, vector< vector<double> > >::const_iterator it=middleWeights.find(netName);
+    if( it == middleWeights.end() ) throw string( "Could not find network name" );
+    return it->second;
 }
