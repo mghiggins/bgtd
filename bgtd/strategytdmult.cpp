@@ -42,21 +42,27 @@ strategytdmult::strategytdmult()
     setupRandomWeights( 40 ); // default # of middle nodes is 40
 }
 
-strategytdmult::strategytdmult( int nMiddle, bool useShotProbInput, bool usePrimesInput ) : useShotProbInput(useShotProbInput), usePrimesInput(usePrimesInput)
+strategytdmult::strategytdmult( int nMiddle, bool useShotProbInput, bool usePrimesInput, bool useExtendedBearoffInputs ) 
+  : useShotProbInput(useShotProbInput), usePrimesInput(usePrimesInput), useExtendedBearoffInputs(useExtendedBearoffInputs)
 {
     setupRandomWeights( nMiddle );
 }
 
-strategytdmult::strategytdmult( const string& path, const string& filePrefix, bool randomPrimesInput )
+strategytdmult::strategytdmult( const string& path, const string& filePrefix, bool randomExtendedBearoff )
 {
-    loadWeights( path, filePrefix, randomPrimesInput );
+    loadWeights( path, filePrefix, randomExtendedBearoff );
     setup();
 }
 
 int strategytdmult::nInputs( const string& netName ) const
 {
     if( netName == "race" )
-        return 198;
+    {
+        if( useExtendedBearoffInputs )
+            return 226;
+        else
+            return 198;
+    }
     else
     {
         if( usePrimesInput and not useShotProbInput ) throw "Must include shot prob input if include primes input";
@@ -256,6 +262,31 @@ gameProbabilities strategytdmult::boardProbabilities( const board& brd, const ha
 vector<double> strategytdmult::getInputValues( const board& brd, const string& netName ) const
 {
     vector<double> inputs( getBaseInputValues( brd ) );
+    
+    // if we're doing extended bearoff inputs for the race network, add them now
+    
+    if( netName == "race" and useExtendedBearoffInputs )
+    {
+        // 14 inputs for each player: the i'th input is 1 if the player has borne in at least i checkers
+        
+        for( int i=1; i<15; i++ )
+        {
+            if( brd.bornIn() < i )
+                inputs.push_back(0);
+            else
+                inputs.push_back(1);
+        }
+        for( int i=1; i<15; i++ )
+        {
+            if( brd.otherBornIn() < i )
+                inputs.push_back(0);
+            else
+                inputs.push_back(1);
+        }
+    }
+    
+    // for contact networks, add extended inputs
+    
     if( netName != "race" )
     {
         if( useShotProbInput )
@@ -818,6 +849,10 @@ void strategytdmult::writeWeights( const string& filePrefix ) const
         fn << 1 << endl;
     else
         fn << 0 << endl;
+    if( useExtendedBearoffInputs )
+        fn << 1 << endl;
+    else
+        fn << 0 << endl;
     
     for( hash_map< string, vector<double> >::const_iterator itProb = outputProbWeights.begin(); itProb != outputProbWeights.end(); itProb ++ )
     {
@@ -880,7 +915,7 @@ void strategytdmult::writeWeights( const string& filePrefix ) const
     fn.close();
 }
 
-void strategytdmult::loadWeights( const string& subPath, const string& filePrefix, bool randomPrimesInput )
+void strategytdmult::loadWeights( const string& subPath, const string& filePrefix, bool randomExtendedBearoff )
 {
     // load the # of middle nodes and the network names from the names file
     
@@ -905,10 +940,12 @@ void strategytdmult::loadWeights( const string& subPath, const string& filePrefi
     useShotProbInput = ( atoi( line.c_str() ) == 1 );
     getline( fn, line );
     usePrimesInput = ( atoi( line.c_str() ) == 1 );
-    if( randomPrimesInput )
+    getline( fn, line );
+    useExtendedBearoffInputs = ( atoi( line.c_str() ) == 1 );
+    if( randomExtendedBearoff )
     {
-        if( usePrimesInput ) throw "Cannot assign random weights to primes input - the file already contains these weights";
-        usePrimesInput = true; // we now assume the file doesn't contain them
+        if( useExtendedBearoffInputs ) throw "Cannot assign random weights to extended bearoff inputs - the file already contains these weights";
+        useExtendedBearoffInputs = true; // we now assume the file doesn't contain them
     }
     if( usePrimesInput and not useShotProbInput ) throw "Invalid file: if usePrimesInput, cannot be not useShotProbInput";
     
@@ -976,21 +1013,18 @@ void strategytdmult::loadWeights( const string& subPath, const string& filePrefi
                 midWeights.at(i).resize(nInput+1);
                 for( j=0; j<nInput+1; j++ )
                 {
-                    if( j < 198 or ( j < 200 and useShotProbInput ) or ( usePrimesInput and not randomPrimesInput ) or netName == "race" )
+                    // base inputs - always there for any network; also last element is always the bias weight and
+                    // needs to go in the last slot. Also contact we always load all weights. 
+                    // For the race network, if we're using random extended bearoff weights, add those in between
+                    // the last base weight and the bias weight, since they're not in the file we're loading from.
+                    
+                    if( netName != "race" or j < 198 or j == nInput )
                     {
                         getline( fm, line );
                         midWeights.at(i).at(j) = atof( line.c_str() );
                     }
-                    else if( j == nInput )
-                    {
-                        getline( fm, line );
-                        midWeights.at(i).at(nInput) = atof( line.c_str() ); // bias weight - needs to be in the last slot no matter what
-                    }
-                    else
-                    {
-                        // assign a random weight, since the weights file we're loading doesn't include a primes input weight
+                    else if( randomExtendedBearoff )
                         midWeights.at(i).at(j) = rng.IRandom(-100,100)/1000.;
-                    }
                 }
             }
             getline( fop, line );

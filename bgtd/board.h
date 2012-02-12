@@ -95,6 +95,11 @@ public:
     void setBornIn( int n );
     void setOtherBornIn( int n );
     
+    // setFromJosephID is a function that takes a string representation of the
+    // board that Joseph Heled came up with - related to the gnubg position key
+    
+    void setFromJosephID( const string& ID );
+    
     // repr is a string representation of the board
     
     string repr() const;
@@ -106,6 +111,8 @@ public:
     bool operator<( const board& otherBoard ) const;
     bool operator<=( const board& otherBoard ) const;
     bool operator>=( const board& otherBoard ) const;
+    
+    bool equalsFlipped( const board& otherBoard ) const;
     
     // assignment operator
     

@@ -23,6 +23,30 @@
 #include "strategyprob.h"
 #include "strategytdmult.h"
 
+class boardAndRolloutProbs
+{
+public:
+    boardAndRolloutProbs() {};
+    boardAndRolloutProbs( const board& b, const gameProbabilities& probs ) : b(b), probs(probs) {};
+    
+    board b;
+    gameProbabilities probs;
+};
+
+class benchmarkData
+{
+public:
+    benchmarkData( const board& startBoard, int die1, int die2, const board& bestBoard, double bestEquity, const vector<board>& otherBoards, const vector<double>& otherEquities )
+    : startBoard(startBoard), die1(die1), die2(die2), bestBoard(bestBoard), bestEquity(bestEquity), otherBoards(otherBoards), otherEquities(otherEquities) {};
+    
+    board startBoard;
+    int die1, die2;
+    board bestBoard;
+    double bestEquity;
+    vector<board> otherBoards;
+    vector<double> otherEquities;
+};
+
 // Benchmark idea: we run a bunch of games to generate a set of benchmarks to run supervised learning against.
 // At each point in the game, for a given roll, we generate the list of possible moves and
 // evaluate each at 0-ply and 2-ply. When 0-ply and 2-ply choose different moves and the 
@@ -57,5 +81,19 @@ void trainMult( strategytdmult& strat, const string& pathName, int seed );
 // the diffs between the equity calculated by the strategy and the rolled-out equities.
 
 void printErrorStatistics( strategytdmult& strat, const string& pathName );
+
+// gnuBgBenchmarkStates loads the benchmark database from a file
+
+vector<boardAndRolloutProbs> gnuBgBenchmarkStates( const string& fileName );
+
+// trainMultGnuBG trains using a gnubg training file
+
+void trainMultGnuBg( strategytdmult& strat, const vector<boardAndRolloutProbs>& states, int seed );
+
+void printErrorStatisticsGnuBg( strategytdmult& strat, const vector<boardAndRolloutProbs>& states );
+
+vector< vector<benchmarkData> > loadBenchmarkData( const string& fileName, int nBuckets );
+double gnuBgBenchmarkStatisticsSerial( strategytdmult& strat, const vector<benchmarkData>& benchmarks );
+double gnuBgBenchmarkER( strategytdmult& strat, const vector< vector<benchmarkData> >& dataSet );
 
 #endif

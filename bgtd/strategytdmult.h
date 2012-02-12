@@ -32,8 +32,8 @@ class strategytdmult : public strategytdbase
     
 public:
     strategytdmult();
-    strategytdmult( int nMiddle, bool useShotProbInput=true, bool usePrimesInput=true );
-    strategytdmult( const string& path, const string& filePrefix, bool randomPrimesInput=false );
+    strategytdmult( int nMiddle, bool useShotProbInput=true, bool usePrimesInput=true, bool useExtendedBearoffInputs=false );
+    strategytdmult( const string& path, const string& filePrefix, bool randomExtendedBearoff=false );
     virtual ~strategytdmult() {};
     
     virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ); 
@@ -73,6 +73,7 @@ public:
     
     bool useShotProbInput;
     bool usePrimesInput;
+    bool useExtendedBearoffInputs;
     
     // interface to weights
     

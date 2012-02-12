@@ -1186,16 +1186,29 @@ bool bandvComp( const bandv& v1, const bandv& v2 ) { return v1.val > v2.val; }
 
 void testOrigGam()
 {
-    strategytdmult s1( "", "stdplayer25" );
+    //strategytdmult s1( "", "stdplayer25" );
     //strategytdmult s1( "benchmark", "player24", false );
-    strategytdmult s2( "benchmark", "player24" );
+    strategytdmult s1( "benchmark", "player24", true );
+    strategytdmult s0( "benchmark", "player24", false );
     //strategytdorigbg s0( "benchmark", "benchmark2" );
     //strategytdorigbg sf(5);
     //strategytdmult sf(5,false,false);
     s1.learning = false;
     //sf.learning = false;
-    s2.learning = false;
+    s0.learning = false;
     setupHittingRolls();
+    
+    strategyply s2( 2, 8, 0.2, s0, s0 );
+    
+    
+    board b;
+    b.setFromJosephID( "OAOLOAADBALAGHOEAJAC" );
+    b.print();
+    b.setPerspective(1);
+    cout << s0.boardProbabilities(b) << endl;
+    //cout << rolloutBoardProbabilitiesParallel( b, s1, 1000, 1, 4, false ) << endl;
+    cout << s2.boardProbabilities(b) << endl;
+    
     
     /*
     const vector< vector<double> >& w1( s2.getMiddleWeights("race") );
@@ -1221,13 +1234,15 @@ void testOrigGam()
     
     return;
     */
-    //strategyPubEval s2;
+    
+    /*
+    strategyPubEval s2;
     //strategytdorigbg s2( "benchmark", "benchmark2" );
     //s2.learning = false;
     
     
-    int nTot=40000;
-    int nBkt=100;
+    int nTot=100;
+    int nBkt=1;
     int nStep=nTot/nBkt;
     
     double avgVal=0, avgValSq=0, fracWin=0, fracWinSq=0;
@@ -1251,7 +1266,7 @@ void testOrigGam()
         cout << "Std error      = " << sqrt( fabs( fracWinSq/(i+1) - fracWin * fracWin/(i+1)/(i+1) ) / (i+1) )*100 << endl;
         cout << endl;
     }
-    
+    */
 }
 
 void playBearoff()
@@ -1503,29 +1518,96 @@ void createBenchmarks()
 
 void trainBenchmarks()
 {
-    strategytdmult s1( "benchmark", "player24" );
+    //strategytdmult s1( "benchmark", "player24" );
+    //strategytdmult s1( "", "player3" );
+    strategytdmult s1( 120, true, true, false );
     strategytdmult s2( "benchmark", "player24" );
     s1.learning = s2.learning = false;
-    string pathName = "/Users/mghiggins/bgtdres/benchdb";
+    setupHittingRolls();
     
-    int seed = 1;
+    string playerName( "player3_120" );
+    stringstream ss( playerName );
+    ss << "_max";
+    string maxName( ss.str() );
+    
+    /*
+    board b;
+    b.setFromJosephID( "GMNLCEADCAMOJMIMABBI" );
+    b.setPerspective(1);
+    cout << s1.boardProbabilities(b) << endl;
+    
+    return;
+    */
+    int seed = 2;
+    
+    //playParallelGen(s1, s2, 1000, 2);
+    
+    double perf, alpha;
+    double alpha0=1.;
+    
+    vector<boardAndRolloutProbs> statesContact( gnuBgBenchmarkStates( "/Users/mghiggins/Downloads/contact-train-data" ) );
+    vector<boardAndRolloutProbs> statesCrashed( gnuBgBenchmarkStates( "/Users/mghiggins/Downloads/crashed-train-data" ) );
+    statesContact.insert( statesContact.end(), statesCrashed.begin(), statesCrashed.end() );
+    vector<boardAndRolloutProbs> statesRace( gnuBgBenchmarkStates( "/Users/mghiggins/Downloads/race-train-data" ) );
+    
+    int nThreads=4;
+    vector< vector<benchmarkData> > dataSetContact( loadBenchmarkData( "/Users/mghiggins/Downloads/contact.bm", nThreads ) );
+    vector< vector<benchmarkData> > dataSetCrashed( loadBenchmarkData( "/Users/mghiggins/Downloads/crashed.bm", nThreads ) );
+    vector< vector<benchmarkData> > dataSetRace( loadBenchmarkData( "/Users/mghiggins/Downloads/race.bm", nThreads ) );
     
     cout << "Starting stats:\n";
-    printErrorStatistics(s1, pathName);
+    double lastPerf = gnuBgBenchmarkER( s1, dataSetContact );
+    gnuBgBenchmarkER( s1, dataSetCrashed );
+    gnuBgBenchmarkER( s1, dataSetRace );
+    //printErrorStatisticsGnuBg( s1, statesContact );
     cout << endl;
+    
+    double bestPerf = lastPerf;
     
     for( int i=0; i<300; i++ )
     {
-        s1.alpha = s1.beta = 0.1;
+        if( i==0 )
+            alpha = alpha0;
+        if( i==3 )
+            alpha = alpha0/sqrt(10.);
+        if( i==7 )
+            alpha = alpha0/10.;
+        if( i==20 )
+            alpha = 0.003;
         
-        trainMult( s1, pathName, seed );
+        cout << endl << "***** Iteration " << i << " ******" << endl;
+        cout << "Alpha = " << alpha << endl << endl;
         
-        cout << "Iteration " << i+1 << ":" << endl;
-        printErrorStatistics(s1, pathName);
+        s1.alpha = s1.beta = alpha;
+        
+        trainMultGnuBg( s1, statesContact, seed );
+        //trainMultGnuBg( s1, statesCrashed, seed+i );
+        trainMultGnuBg( s1, statesRace, seed );
+        
+        perf = gnuBgBenchmarkER( s1, dataSetContact );
+        gnuBgBenchmarkER( s1, dataSetCrashed );
+        gnuBgBenchmarkER( s1, dataSetRace );
+        //printErrorStatisticsGnuBg( s1, statesContact );
         cout << endl;
         
-        if( i % 20 == 0 )
-            playParallelGen(s1, s2, 1000, 2);
+        if( perf > lastPerf )
+        {
+            cout << "Reordering data\n";
+            seed++;
+        }
+        
+        lastPerf = perf;
+        s1.writeWeights( playerName );
+        
+        if( perf < bestPerf )
+        {
+            cout << "----> Best performance <----\n";
+            bestPerf = perf;
+            s1.writeWeights( maxName );
+        }
+        
+        //if( (i+1) % 1 == 0 )
+        playParallelGen( s1, s2, 1000, 2 );
     }
     
 }

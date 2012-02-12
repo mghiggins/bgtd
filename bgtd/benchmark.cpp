@@ -208,16 +208,6 @@ vector<string> generateBenchmarkPositionsSerial( strategyprob& strat, strategypr
     return fileNames;
 }
 
-class boardAndRolloutProbs
-{
-public:
-    boardAndRolloutProbs() {};
-    boardAndRolloutProbs( const board& b, const gameProbabilities& probs ) : b(b), probs(probs) {};
-    
-    board b;
-    gameProbabilities probs;
-};
-
 void writeRollouts( vector<boardAndRolloutProbs>& rollouts, const string& pathName, int& fileIndex );
 void writeRollouts( vector<boardAndRolloutProbs>& rollouts, const string& pathName, int& fileIndex )
 {
@@ -473,3 +463,303 @@ void printErrorStatistics( strategytdmult& strat, const string& pathName )
     cout << "Avg prob df  = " << avgProb << endl;
     cout << "Std dev      = " << sqrt( avgProbSq - avgProb * avgProb ) << endl;
 }
+
+vector<boardAndRolloutProbs> gnuBgBenchmarkStates( const string& fileName )
+{
+    // load in the info
+    
+    vector<boardAndRolloutProbs> states;
+    ifstream f( fileName.c_str(), ios::in );
+    if( !f ) throw string( "File does not exist" );
+    
+    string line, bit;
+    double probWin, probGammonWin, probGammonLoss, probBgWin, probBgLoss;
+    
+    while( !f.eof() )
+    {
+        getline( f, line );
+        if( line != "" and line[0] != '#' )
+        {
+            stringstream sb(line);
+            getline( sb, bit, ' ' );
+            board b;
+            b.setFromJosephID( bit );
+            getline( sb, bit, ' ' );
+            probWin = atof( bit.c_str() );
+            getline( sb, bit, ' ' );
+            probGammonWin = atof( bit.c_str() );
+            getline( sb, bit, ' ' );
+            probBgWin = atof( bit.c_str() );
+            getline( sb, bit, ' ' );
+            probGammonLoss = atof( bit.c_str() );
+            getline( sb, bit, ' ' );
+            probBgLoss = atof( bit.c_str() );
+            
+            gameProbabilities probs( probWin, probGammonWin, probGammonLoss, probBgWin, probBgLoss );
+            
+            states.push_back( boardAndRolloutProbs( b, probs ) );
+        }
+    }
+    
+    cout << "Loaded " << states.size() << " training states from " << fileName << "\n";
+    
+    return states;
+}
+
+void trainMultGnuBg( strategytdmult& strat, const vector<boardAndRolloutProbs>& states, int seed )
+{
+    // do the training on randomly-ordered boards
+    
+    int index, count=0;
+    CRandomMersenne rng(seed);
+    
+    vector<int> indexes(states.size());
+    for( int i=0; i<states.size(); i++ ) indexes[i] = i;
+    
+    while( indexes.size() > 0 )
+    {
+        if( count % 100000 == 0 ) cout << "Training step " << count << endl;
+        
+        // randomly select the board
+        
+        index = rng.IRandom( 0, (int) (indexes.size() - 1) );
+        
+        // run supervised learning for this step. The rollout probabilities represent probabilities
+        // assuming the player has the dice.
+        
+        const board& b( states.at(indexes[index]).b );
+        const gameProbabilities& probs( states.at(indexes[index]).probs );
+        
+        strat.updateFromProbs( b, probs.probWin, 
+                              probs.probGammonWin, probs.probGammonLoss,
+                              probs.probBgWin, probs.probBgLoss );
+        
+        // remove the entry from the states list so we don't do it again
+        
+        indexes.erase( indexes.begin() + index );
+        count++;
+    }
+}
+
+void printErrorStatisticsGnuBg( strategytdmult& strat, const vector<boardAndRolloutProbs>& states )
+{
+    // run through the rolled-out benchmarks
+    
+    double avgDiff=0, avgDiffSq=0, avgProb=0, avgProbSq=0;
+    int count=0;
+    
+    for( vector<boardAndRolloutProbs>::const_iterator it=states.begin(); it!=states.end(); it++ )
+    {
+        // these probs are assuming the player holds the dice; want to compare them to
+        // boardProbabilities which assumes that the opponent has the dice. So need to
+        // flip things around a bit.
+        
+        gameProbabilities probs( it->probs.flippedProbs() );
+        
+        // calculate the equity from rollout and the equity from the strategy
+        
+        board flippedBoard(it->b);
+        flippedBoard.setPerspective(1);
+        
+        gameProbabilities calcProbs( strat.boardProbabilities(flippedBoard) );
+        
+        double equityDiff = strat.boardValueFromProbs(calcProbs) - strat.boardValueFromProbs(probs);
+        double probDiff   = calcProbs.probWin - probs.probWin;
+        
+        avgDiff   += equityDiff;
+        avgDiffSq += equityDiff * equityDiff;
+        avgProb   += probDiff;
+        avgProbSq += probDiff * probDiff;
+        
+        count++;
+    }
+    
+    cout << count << " scenarios\n";
+    avgDiff   /= count;
+    avgDiffSq /= count;
+    avgProb   /= count;
+    avgProbSq /= count;
+    
+    cout << "Average diff = " << avgDiff << endl;
+    cout << "Std dev      = " << sqrt( avgDiffSq - avgDiff * avgDiff ) << endl;
+    cout << "Avg prob df  = " << avgProb << endl;
+    cout << "Std dev      = " << sqrt( avgProbSq - avgProb * avgProb ) << endl;
+}
+
+vector< vector<benchmarkData> > loadBenchmarkData( const string& fileName, int nBuckets )
+{
+    vector< vector<benchmarkData> > dataSets(nBuckets);
+    int index=0;
+    
+    ifstream f( fileName.c_str(), ios::in );
+    if( !f ) throw string( "File does not exist" );
+    
+    string line, bit;
+    int die1, die2;
+    double bestEquity, otherEquity;
+    
+    while( !f.eof() )
+    {
+        getline( f, line );
+        if( line != "" and line[0] == 'm' )
+        {
+            stringstream sb(line);
+            getline( sb, bit, ' ' ); // first one is the 'm'; skip it
+            getline( sb, bit, ' ' ); // next is the board name
+            board startBoard;
+            startBoard.setFromJosephID( bit );
+            
+            // next are the two dice
+            
+            getline( sb, bit, ' ' );
+            die1 = atoi( bit.c_str() );
+            getline( sb, bit, ' ' );
+            die2 = atoi( bit.c_str() );
+            
+            // next are pairs of (board name,equity). The first pair is the best move with its equity; after that are
+            // other moves with equity diff vs the best move.
+            
+            getline( sb, bit, ' ' );
+            board bestBoard;
+            bestBoard.setFromJosephID( bit );
+            getline( sb, bit, ' ' );
+            bestEquity = atof( bit.c_str() );
+            
+            vector<board> otherBoards;
+            vector<double> otherEquities;
+            
+            while( !sb.eof() )
+            {
+                getline( sb, bit, ' ' );
+                if( bit == "" ) break;
+                board otherB;
+                otherB.setFromJosephID( bit );
+                getline( sb, bit, ' ' );
+                otherEquity = bestEquity - atof( bit.c_str() );
+                
+                otherBoards.push_back( otherB );
+                otherEquities.push_back( otherEquity );
+            }
+            
+            // add the element to the right bucket
+            
+            dataSets.at(index).push_back( benchmarkData( startBoard, die1, die2, bestBoard, bestEquity, otherBoards, otherEquities ) );
+            index ++;
+            if( index == nBuckets ) index = 0;
+        }
+    }
+    
+    int nTot=0;
+    for( int i=0; i<dataSets.size(); i++ ) nTot += dataSets.at(i).size();
+    
+    cout << "Loaded " << nTot << " benchmark moves from " << fileName << endl;
+    
+    return dataSets;
+}
+
+double gnuBgBenchmarkStatisticsSerial( strategytdmult& strat, const vector<benchmarkData>& benchmarks )
+{
+    int i;
+    bool foundBoard;
+    double equityErr=0, dEquity;
+    
+    for( vector<benchmarkData>::const_iterator it=benchmarks.begin(); it!=benchmarks.end(); it++ )
+    {
+        // get the preferred move from the strategy
+        
+        set<board> moves( possibleMoves( it->startBoard, it->die1, it->die2 ) );
+        board stratBoard( strat.preferredBoard( it->startBoard, moves ) );
+        
+        // check if the strategy chose the best move
+        
+        foundBoard = false;
+        
+        if( stratBoard.equalsFlipped( it->bestBoard ) )
+        {
+            dEquity = 0;
+            foundBoard = true;
+        }
+        
+        int nOthers = (int) it->otherBoards.size();
+        if( !foundBoard )
+        {
+            for( i=0; i<nOthers; i++ )
+            {
+                if( stratBoard.equalsFlipped( it->otherBoards.at(i) ) )
+                {
+                    dEquity = it->bestEquity - it->otherEquities.at(i);
+                    foundBoard = true;
+                    break;
+                }
+            }
+        }
+        
+        // if it didn't find the strategy's choice in the rollout list, it's worse than even the
+        // last tracked move there. In this case use the worst equity from the list. That's a bit
+        // aggressive since it'll make the strategy look better than it really is, but not sure what
+        // would be better. Should never be the case that the list of other boards is empty in this
+        // case though (since that'd mean that there's only one possible move, but the strategy didn't
+        // choose it).
+        
+        if( !foundBoard and nOthers == 0 ) throw string( "Don't know how this happened!" );
+        
+        // generate the statistic for Snowie error rating. This is 1000*(sum of equity errors)/(# of player moves + # of opponent moves)
+        // Since we're not playing a real game here, I'll approximate the denominator with 2*number of moves we check, which is just
+        // 2*the number of elements we're analyzing (so no need to track that here - just the summed equity error).
+        
+        equityErr += dEquity;
+    }
+    
+    return equityErr;
+}
+
+vector<double> parallelEquityErrors;
+
+class workerGnuBgBenchmarks
+{
+public:
+    workerGnuBgBenchmarks( strategytdmult& strat, const vector< vector<benchmarkData> >& dataSet, int index )
+      : strat(strat), dataSet(dataSet), index(index) {};
+    
+    void operator()()
+    {
+        double equityErr = gnuBgBenchmarkStatisticsSerial( strat, dataSet.at(index) );
+        parallelEquityErrors.at(index) = equityErr;
+    }
+    
+private:
+    strategytdmult& strat;
+    const vector< vector<benchmarkData> >& dataSet;
+    int index;
+};
+
+double gnuBgBenchmarkER( strategytdmult& strat, const vector< vector<benchmarkData> >& dataSet )
+{
+    using namespace boost;
+    int nThreads = (int) dataSet.size();
+    
+    // generate the threads for each piece
+    
+    parallelEquityErrors.resize( nThreads );
+    
+    thread_group ts;
+    for( int i=0; i<nThreads; i++ ) ts.create_thread( workerGnuBgBenchmarks( strat, dataSet, i ) );
+    ts.join_all();
+    
+    // aggregate the data
+    
+    double equityErr=0;
+    double numMoves=0;
+    for( int i=0; i<nThreads; i++ )
+    {
+        equityErr += parallelEquityErrors.at(i);
+        numMoves  += dataSet.at(i).size() * 2; // approx for # of player moves + # of opponent moves in the ER calc
+    }
+    
+    double ER = 1000*equityErr/numMoves;
+    
+    cout << "Snowie ER = " << ER << endl;
+    cout << "Number of analyzed moves = " << numMoves/2 << endl;
+    return ER;
+}
+

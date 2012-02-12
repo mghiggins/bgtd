@@ -468,6 +468,23 @@ bool board::operator==( const board& otherBoard ) const
     return true;
 }
 
+bool board::equalsFlipped( const board& otherBoard ) const
+{
+    if( hit0 != otherBoard.hit1 ) return false;
+    if( hit1 != otherBoard.hit0 ) return false;
+    if( bornIn0 != otherBoard.bornIn1 ) return false;
+    if( bornIn1 != otherBoard.bornIn0 ) return false;
+    
+    int i;
+    for( i=0; i<24; i++ )
+    {
+        if( checkers0[i] != otherBoard.checkers1[23-i] ) return false;
+        if( checkers1[i] != otherBoard.checkers0[23-i] ) return false;
+    }
+    
+    return true;
+}
+
 bool board::operator<( const board& otherBoard ) const
 {
     // there's no real way to determine whether a board is "smaller" than another
@@ -652,4 +669,77 @@ void board::validate() const
     
     if( count != 15 ) throw string("count is not 15");
     if( otherCount != 15 ) throw string("otherCount is not 15");
+}
+
+void board::setFromJosephID( const string& ID )
+{
+    if( ID.size() != 20 ) throw string( "The Joseph ID must have 20 characters" );
+    
+    // first translate the 20-character ID into a 10-bit gnubg position key
+    
+    unsigned char bits[10];
+    for( int i=0; i<10; i++ ) 
+        bits[i] = ((ID[2*i+0] - 'A') << 4) +  (ID[2*i+1] - 'A');
+	
+    // start with an empty board
+    
+    for( int i=0; i<24; i++ )
+    {
+        checkers0[i] = 0;
+        checkers1[i] = 0;
+    }
+    bornIn0 = bornIn1 = 0;
+    hit0 = hit1 = 0;
+    persp = 0;
+    
+    // translate the 10-bit key into the board layout. This is largely copying the
+    // gnubg code in positionid.c, function oldPositionFromKey.
+    
+    const unsigned char* a;
+    int i=0, j=0, k;
+    for( a=bits; a<bits+10; a++ )
+    {
+        unsigned char cur = *a;
+        for( k=0; k<8; k++ )
+        {
+            if( ( cur & 0x1 ) )
+            {
+                if( i>=2 or j>=25 ) throw string( "Invalid state - something went wrong in parsing position key" );
+                if( j<24 )
+                {
+                    if( i == 0 )
+                        checkers1[23-j] ++;
+                    else
+                        checkers0[j] ++;
+                }
+                else
+                {
+                    if( i == 0 )
+                        hit1 ++;
+                    else
+                        hit0 ++;
+                }
+            }
+            else
+            {
+                if( ++j == 25 )
+                {
+                    i++;
+                    j = 0;
+                }
+            }
+            cur >>= 1;
+        }
+    }
+    
+    // set the number borne in correctly
+    
+    int tot0=hit0, tot1=hit1;
+    for( int i=0; i<24; i++ )
+    {
+        tot0 += checkers0[i];
+        tot1 += checkers1[i];
+    }
+    bornIn0 = 15 - tot0;
+    bornIn1 = 15 - tot1;
 }
