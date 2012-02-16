@@ -657,7 +657,7 @@ vector< vector<benchmarkData> > loadBenchmarkData( const string& fileName, int n
     return dataSets;
 }
 
-double gnuBgBenchmarkStatisticsSerial( strategytdmult& strat, const vector<benchmarkData>& benchmarks )
+double gnuBgBenchmarkStatisticsSerial( strategy& strat, const vector<benchmarkData>& benchmarks )
 {
     int i;
     bool foundBoard;
@@ -718,7 +718,7 @@ vector<double> parallelEquityErrors;
 class workerGnuBgBenchmarks
 {
 public:
-    workerGnuBgBenchmarks( strategytdmult& strat, const vector< vector<benchmarkData> >& dataSet, int index )
+    workerGnuBgBenchmarks( strategy& strat, const vector< vector<benchmarkData> >& dataSet, int index )
       : strat(strat), dataSet(dataSet), index(index) {};
     
     void operator()()
@@ -728,12 +728,12 @@ public:
     }
     
 private:
-    strategytdmult& strat;
+    strategy& strat;
     const vector< vector<benchmarkData> >& dataSet;
     int index;
 };
 
-double gnuBgBenchmarkER( strategytdmult& strat, const vector< vector<benchmarkData> >& dataSet )
+double gnuBgBenchmarkER( strategy& strat, const vector< vector<benchmarkData> >& dataSet )
 {
     using namespace boost;
     int nThreads = (int) dataSet.size();
@@ -753,13 +753,13 @@ double gnuBgBenchmarkER( strategytdmult& strat, const vector< vector<benchmarkDa
     for( int i=0; i<nThreads; i++ )
     {
         equityErr += parallelEquityErrors.at(i);
-        numMoves  += dataSet.at(i).size() * 2; // approx for # of player moves + # of opponent moves in the ER calc
+        numMoves  += dataSet.at(i).size();
     }
     
     double ER = 1000*equityErr/numMoves;
     
-    cout << "Snowie ER = " << ER << endl;
-    cout << "Number of analyzed moves = " << numMoves/2 << endl;
+    cout << "ER = " << ER << endl;
+    cout << "Number of analyzed moves = " << numMoves << endl;
     return ER;
 }
 

@@ -157,37 +157,49 @@ double playParallel( strategytdbase& s1, strategy& s2, long n, long initSeed, lo
     return ppg;
 }
 
-runStats playParallelGen( strategy& s1, strategy& s2, long n, long initSeed )
+runStats playParallelGen( strategy& s1, strategy& s2, long n, long initSeed, int nBuckets )
 {
     using namespace boost;
     
-    // run each game in its own thread
+    if( n % nBuckets != 0 ) throw string( "n must be a multiple of nBuckets" );
     
-    if( points.size() < n ) 
-    {
-        points.resize(n);
-        steps.resize(n);
-    }
-    
-    thread_group ts;
-    for( long i=0; i<n; i++ ) ts.create_thread( worker( i, s1, s2, n, initSeed ) );
-    ts.join_all();
-    
+    long nRuns = n / nBuckets;
     double ppg=0, w0=0, q=0, avgSteps=0, ns=0, ng=0, nb=0;
-    int p, ap;
-    for( long i=0; i<n; i++ ) 
+
+    for( int bkt=0; bkt<nBuckets; bkt++ )
     {
-        p  = points[i];
-        ap = abs( p );
+        cout << "o";
+        cout.flush();
         
-        ppg += p;
-        q += ap;
-        if( p > 0 ) w0 += 1;
-        if( ap == 1 ) ns += 1;
-        if( ap == 2 ) ng += 1;
-        if( ap == 3 ) nb += 1;
-        avgSteps += steps[i];
+        // run each game in its own thread
+        
+        if( points.size() < nRuns ) 
+        {
+            points.resize(nRuns);
+            steps.resize(nRuns);
+        }
+        
+        thread_group ts;
+        for( long i=0; i<nRuns; i++ ) ts.create_thread( worker( i, s1, s2, nRuns, initSeed+bkt*nRuns ) );
+        ts.join_all();
+        
+        int p, ap;
+        for( long i=0; i<nRuns; i++ ) 
+        {
+            p  = points[i];
+            ap = abs( p );
+            
+            ppg += p;
+            q += ap;
+            if( p > 0 ) w0 += 1;
+            if( ap == 1 ) ns += 1;
+            if( ap == 2 ) ng += 1;
+            if( ap == 3 ) nb += 1;
+            avgSteps += steps[i];
+        }
     }
+    cout << endl;
+    
     ppg /= n;
     w0  /= n;
     q   /= n;
@@ -1186,70 +1198,22 @@ bool bandvComp( const bandv& v1, const bandv& v2 ) { return v1.val > v2.val; }
 
 void testOrigGam()
 {
-    //strategytdmult s1( "", "stdplayer25" );
-    //strategytdmult s1( "benchmark", "player24", false );
-    strategytdmult s1( "benchmark", "player24", true );
-    strategytdmult s0( "benchmark", "player24", false );
-    //strategytdorigbg s0( "benchmark", "benchmark2" );
-    //strategytdorigbg sf(5);
-    //strategytdmult sf(5,false,false);
-    s1.learning = false;
-    //sf.learning = false;
-    s0.learning = false;
-    setupHittingRolls();
-    
-    strategyply s2( 2, 8, 0.2, s0, s0 );
-    
-    
-    board b;
-    b.setFromJosephID( "OAOLOAADBALAGHOEAJAC" );
-    b.print();
-    b.setPerspective(1);
-    cout << s0.boardProbabilities(b) << endl;
-    //cout << rolloutBoardProbabilitiesParallel( b, s1, 1000, 1, 4, false ) << endl;
-    cout << s2.boardProbabilities(b) << endl;
-    
-    
-    /*
-    const vector< vector<double> >& w1( s2.getMiddleWeights("race") );
-    const vector< vector<double> >& w2( s1.getMiddleWeights("race") );
-    
-    cout << w2[0][96] << "; " << w1[0][96] << endl;
-    
-    
-    
-    double avgDiff=0, avgDiffSq=0, diff;
-    for( int i=0; i<w1.size(); i++ )
-    {
-        diff = w1.at(i) - w2.at(i);
-        avgDiff += diff;
-        avgDiffSq += diff * diff;
-    }
-    
-    avgDiff /= w1.size();
-    avgDiffSq /= w1.size();
-    
-    cout << "Average diff = " << avgDiff << endl;
-    cout << "Std dev      = " << sqrt( avgDiffSq - avgDiff * avgDiff ) << endl;
-    
-    return;
-    */
-    
-    /*
-    strategyPubEval s2;
+    strategytdmult s1( "", "player3_120" );
+    //strategytdmult s2( "benchmark", "player24" );
     //strategytdorigbg s2( "benchmark", "benchmark2" );
+    strategyPubEval s2;
+    s1.learning = false;
     //s2.learning = false;
     
-    
-    int nTot=100;
-    int nBkt=1;
+    int nTot=100000;
+    int nBkt=100;
     int nStep=nTot/nBkt;
     
     double avgVal=0, avgValSq=0, fracWin=0, fracWinSq=0;
     for( int i=0; i<nBkt; i++ )
     {
         cout << "Bucket " << i << endl;
-        runStats stats = playParallelGen( s1, s2, nStep, 1001 + i*nStep );
+        runStats stats = playParallelGen( s1, s2, nStep, 1 + i*nStep );
         //runStats stats = playSerialGen( s1, s2, nStep, 1001 + i*nStep );
         
         avgVal    += stats.ppg;
@@ -1266,7 +1230,7 @@ void testOrigGam()
         cout << "Std error      = " << sqrt( fabs( fracWinSq/(i+1) - fracWin * fracWin/(i+1)/(i+1) ) / (i+1) )*100 << endl;
         cout << endl;
     }
-    */
+    
 }
 
 void playBearoff()
@@ -1519,16 +1483,17 @@ void createBenchmarks()
 void trainBenchmarks()
 {
     //strategytdmult s1( "benchmark", "player24" );
-    //strategytdmult s1( "", "player3" );
-    strategytdmult s1( 120, true, true, false );
+    //strategytdmult s1( "", "player31_120" );
+    strategytdmult s1( 120, true, true, true );
+    //strategytdmult s1( "benchmark", "player3_120", true );
     strategytdmult s2( "benchmark", "player24" );
     s1.learning = s2.learning = false;
-    setupHittingRolls();
     
-    string playerName( "player3_120" );
-    stringstream ss( playerName );
-    ss << "_max";
+    string playerName( "player31" );
+    stringstream ss;
+    ss << playerName << "_max";
     string maxName( ss.str() );
+    cout << "Player name = " << playerName << endl;
     
     /*
     board b;
@@ -1543,22 +1508,22 @@ void trainBenchmarks()
     //playParallelGen(s1, s2, 1000, 2);
     
     double perf, alpha;
-    double alpha0=1.;
+    double alpha0=1;
     
-    vector<boardAndRolloutProbs> statesContact( gnuBgBenchmarkStates( "/Users/mghiggins/Downloads/contact-train-data" ) );
-    vector<boardAndRolloutProbs> statesCrashed( gnuBgBenchmarkStates( "/Users/mghiggins/Downloads/crashed-train-data" ) );
-    statesContact.insert( statesContact.end(), statesCrashed.begin(), statesCrashed.end() );
-    vector<boardAndRolloutProbs> statesRace( gnuBgBenchmarkStates( "/Users/mghiggins/Downloads/race-train-data" ) );
+    //vector<boardAndRolloutProbs> statesContact( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/contact-train-data" ) );
+    //vector<boardAndRolloutProbs> statesCrashed( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/crashed-train-data" ) );
+    //statesContact.insert( statesContact.end(), statesCrashed.begin(), statesCrashed.end() );
+    vector<boardAndRolloutProbs> statesRace( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/race-train-data" ) );
     
-    int nThreads=4;
-    vector< vector<benchmarkData> > dataSetContact( loadBenchmarkData( "/Users/mghiggins/Downloads/contact.bm", nThreads ) );
-    vector< vector<benchmarkData> > dataSetCrashed( loadBenchmarkData( "/Users/mghiggins/Downloads/crashed.bm", nThreads ) );
-    vector< vector<benchmarkData> > dataSetRace( loadBenchmarkData( "/Users/mghiggins/Downloads/race.bm", nThreads ) );
+    int nThreads=16;
+    //vector< vector<benchmarkData> > dataSetContact( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/contact.bm", nThreads ) );
+    //vector< vector<benchmarkData> > dataSetCrashed( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/crashed.bm", nThreads ) );
+    vector< vector<benchmarkData> > dataSetRace( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/race.bm", nThreads ) );
     
     cout << "Starting stats:\n";
-    double lastPerf = gnuBgBenchmarkER( s1, dataSetContact );
-    gnuBgBenchmarkER( s1, dataSetCrashed );
-    gnuBgBenchmarkER( s1, dataSetRace );
+    double lastPerf = gnuBgBenchmarkER( s1, dataSetRace );
+    //gnuBgBenchmarkER( s1, dataSetCrashed );
+    //gnuBgBenchmarkER( s1, dataSetRace );
     //printErrorStatisticsGnuBg( s1, statesContact );
     cout << endl;
     
@@ -1568,25 +1533,27 @@ void trainBenchmarks()
     {
         if( i==0 )
             alpha = alpha0;
-        if( i==3 )
+        if( i==8 )
             alpha = alpha0/sqrt(10.);
-        if( i==7 )
-            alpha = alpha0/10.;
         if( i==20 )
-            alpha = 0.003;
+            alpha = alpha0/10.;
+        if( i==60 )
+            alpha = alpha0/10./sqrt(10);
+        if( i==100 )
+            alpha = alpha0/100.;
         
         cout << endl << "***** Iteration " << i << " ******" << endl;
         cout << "Alpha = " << alpha << endl << endl;
         
         s1.alpha = s1.beta = alpha;
         
-        trainMultGnuBg( s1, statesContact, seed );
+        //trainMultGnuBg( s1, statesContact, seed );
         //trainMultGnuBg( s1, statesCrashed, seed+i );
         trainMultGnuBg( s1, statesRace, seed );
         
-        perf = gnuBgBenchmarkER( s1, dataSetContact );
-        gnuBgBenchmarkER( s1, dataSetCrashed );
-        gnuBgBenchmarkER( s1, dataSetRace );
+        perf = gnuBgBenchmarkER( s1, dataSetRace );
+        //gnuBgBenchmarkER( s1, dataSetCrashed );
+        //gnuBgBenchmarkER( s1, dataSetRace );
         //printErrorStatisticsGnuBg( s1, statesContact );
         cout << endl;
         
@@ -1606,8 +1573,30 @@ void trainBenchmarks()
             s1.writeWeights( maxName );
         }
         
-        //if( (i+1) % 1 == 0 )
-        playParallelGen( s1, s2, 1000, 2 );
+        //if( (i+1) % 10 == 0 )
+         //   playParallelGen( s1, s2, 30000, 1, 30 );
     }
     
+}
+
+void testBenchmark()
+{
+    // plot GNUbg benchmark error rate against reference player game performance
+    
+    //strategytdoriggam s1( "benchmark", "gam_stdgam_80_0.1_0.1" );
+    strategytdmult s1( "benchmark", "player31" );
+    //strategyPubEval s1;
+    //strategyPubEval s2;
+    strategytdmult s2( "benchmark", "player3_120" );
+    s1.learning = s2.learning = false;
+    
+    int nThreads=16;
+    vector< vector<benchmarkData> > dataSetContact( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/contact.bm", nThreads ) );
+    vector< vector<benchmarkData> > dataSetCrashed( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/crashed.bm", nThreads ) );
+    vector< vector<benchmarkData> > dataSetRace( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/race.bm", nThreads ) );
+    gnuBgBenchmarkER( s1, dataSetContact );
+    gnuBgBenchmarkER( s1, dataSetCrashed );
+    gnuBgBenchmarkER( s1, dataSetRace );
+    
+    playParallelGen( s1, s2, 400000, 2, 400 );
 }

@@ -93,7 +93,7 @@ void trainMultGnuBg( strategytdmult& strat, const vector<boardAndRolloutProbs>& 
 void printErrorStatisticsGnuBg( strategytdmult& strat, const vector<boardAndRolloutProbs>& states );
 
 vector< vector<benchmarkData> > loadBenchmarkData( const string& fileName, int nBuckets );
-double gnuBgBenchmarkStatisticsSerial( strategytdmult& strat, const vector<benchmarkData>& benchmarks );
-double gnuBgBenchmarkER( strategytdmult& strat, const vector< vector<benchmarkData> >& dataSet );
+double gnuBgBenchmarkStatisticsSerial( strategy& strat, const vector<benchmarkData>& benchmarks );
+double gnuBgBenchmarkER( strategy& strat, const vector< vector<benchmarkData> >& dataSet );
 
 #endif
