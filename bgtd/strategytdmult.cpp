@@ -85,9 +85,10 @@ void strategytdmult::setupRandomWeights( int nMiddle )
     
     // set up the network vectors for all the different networks
     
-    vector<string> nets(2);
+    vector<string> nets(3);
     nets[0] = "contact";
-    nets[1] = "race";
+    nets[1] = "crashed";
+    nets[2] = "race";
     
     int i, nInput;
     
@@ -132,6 +133,7 @@ void strategytdmult::setup()
         loadGammonBearoffDbOneSided( "/Users/mghiggins/bgtdres/benchmark/bearoffOSGam_6_15.csv" );
         cout << "One-sided db size = " << stepsProbs()->size() << endl;
         cout << "Gammon db size    = " << gamStepsProbs()->size() << endl;
+        setupHittingRolls();
     }
     
     // initialize the escape db. We don't bother serializing this one since it's quick to calculate
@@ -548,6 +550,7 @@ string strategytdmult::evaluator( const board& brd ) const
     if( brd.bornIn() == 15 or brd.otherBornIn() == 15 ) return "done";
     
     string contactName = "contact";
+    string crashedName = "contact";
     string raceName    = "race";
     
     // is this contact? Find the furthest player piece and check if any opponent piece is in front of it.
@@ -1018,7 +1021,7 @@ void strategytdmult::loadWeights( const string& subPath, const string& filePrefi
                     // For the race network, if we're using random extended bearoff weights, add those in between
                     // the last base weight and the bias weight, since they're not in the file we're loading from.
                     
-                    if( netName != "race" or j < 198 or j == nInput )
+                    if( netName != "race" or !randomExtendedBearoff or j < 198 or j == nInput )
                     {
                         getline( fm, line );
                         midWeights.at(i).at(j) = atof( line.c_str() );
