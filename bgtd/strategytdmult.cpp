@@ -531,6 +531,20 @@ double strategytdmult::bearoffProbabilityGammonLoss( const board& brd ) const
     return getProbabilityGammonLoss( brd, bearoffNPnts );
 }
 
+bool isCrashed( int nb, int n1, int n2 );
+bool isCrashed( int nb, int n1, int n2 )
+{
+    if( nb >= 9 ) return true;
+    if( n1 > 1 )
+    {
+        if( nb >= 9 - n1 ) return true;
+        if( n2 > 1 and nb >= 10 - n1 - n2 ) return true;
+    }
+    else if( nb >= 10 - n2 ) return true;
+    
+    return false;
+}
+
 string strategytdmult::evaluator( const board& brd ) const
 {
     // the evaluator returns the string name that defines how to calculate the board value from its
@@ -538,8 +552,9 @@ string strategytdmult::evaluator( const board& brd ) const
     // for different parts of the game (eg one for contact, one for race), and where you tell it to
     // use a bearoff database if appropriate.
     //
-    // The two networks we use are:
+    // The three networks we use are:
     //    Race: all player checkers are past the furthest-back opponent checker
+    //    Crashed: in contact, bearing off, most checkers on 1 or 2 point but racing checkers back still
     //    Contact: everything else
     //
     // Other evaluator states are "done", when the game is over, and "bearoff", which is a race state
@@ -550,7 +565,7 @@ string strategytdmult::evaluator( const board& brd ) const
     if( brd.bornIn() == 15 or brd.otherBornIn() == 15 ) return "done";
     
     string contactName = "contact";
-    string crashedName = "contact";
+    string crashedName = "crashed";
     string raceName    = "race";
     
     // is this contact? Find the furthest player piece and check if any opponent piece is in front of it.
@@ -576,7 +591,16 @@ string strategytdmult::evaluator( const board& brd ) const
     }
     
     if( playerBack > opponentBack )
+    {
+        // check if it's crashed
+        
+        if( isCrashed( brd.bornIn(), brd.checker(0), brd.checker(1) ) ) return crashedName;
+        if( isCrashed( brd.otherBornIn(), brd.otherChecker(23), brd.otherChecker(22) ) ) return crashedName;
+        
+        // not crashed, therefore contact
+        
         return contactName;
+    }
     
     // it's a race - just need to figure out whether it's time to use the bearoff db
     

@@ -1484,25 +1484,17 @@ void trainBenchmarks()
 {
     //strategytdmult s1( "benchmark", "player24" );
     //strategytdmult s1( "", "player31_120" );
-    strategytdmult s1( 120, true, true, true );
+    strategytdmult s1( 5, true, true, true );
     //strategytdmult s1( "benchmark", "player3_120", true );
     strategytdmult s2( "benchmark", "player24" );
     s1.learning = s2.learning = false;
     
-    string playerName( "player31" );
+    string playerName( "player32q" );
     stringstream ss;
     ss << playerName << "_max";
     string maxName( ss.str() );
     cout << "Player name = " << playerName << endl;
     
-    /*
-    board b;
-    b.setFromJosephID( "GMNLCEADCAMOJMIMABBI" );
-    b.setPerspective(1);
-    cout << s1.boardProbabilities(b) << endl;
-    
-    return;
-    */
     int seed = 2;
     
     //playParallelGen(s1, s2, 1000, 2);
@@ -1510,21 +1502,20 @@ void trainBenchmarks()
     double perf, alpha;
     double alpha0=1;
     
-    //vector<boardAndRolloutProbs> statesContact( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/contact-train-data" ) );
-    //vector<boardAndRolloutProbs> statesCrashed( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/crashed-train-data" ) );
+    vector<boardAndRolloutProbs> statesContact( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/contact-train-data" ) );
+    vector<boardAndRolloutProbs> statesCrashed( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/crashed-train-data" ) );
     //statesContact.insert( statesContact.end(), statesCrashed.begin(), statesCrashed.end() );
     vector<boardAndRolloutProbs> statesRace( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/race-train-data" ) );
     
     int nThreads=16;
-    //vector< vector<benchmarkData> > dataSetContact( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/contact.bm", nThreads ) );
-    //vector< vector<benchmarkData> > dataSetCrashed( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/crashed.bm", nThreads ) );
+    vector< vector<benchmarkData> > dataSetContact( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/contact.bm", nThreads ) );
+    vector< vector<benchmarkData> > dataSetCrashed( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/crashed.bm", nThreads ) );
     vector< vector<benchmarkData> > dataSetRace( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/race.bm", nThreads ) );
     
     cout << "Starting stats:\n";
-    double lastPerf = gnuBgBenchmarkER( s1, dataSetRace );
-    //gnuBgBenchmarkER( s1, dataSetCrashed );
-    //gnuBgBenchmarkER( s1, dataSetRace );
-    //printErrorStatisticsGnuBg( s1, statesContact );
+    double lastPerf = gnuBgBenchmarkER( s1, dataSetContact );
+    gnuBgBenchmarkER( s1, dataSetCrashed );
+    gnuBgBenchmarkER( s1, dataSetRace );
     cout << endl;
     
     double bestPerf = lastPerf;
@@ -1547,14 +1538,13 @@ void trainBenchmarks()
         
         s1.alpha = s1.beta = alpha;
         
-        //trainMultGnuBg( s1, statesContact, seed );
-        //trainMultGnuBg( s1, statesCrashed, seed+i );
+        trainMultGnuBg( s1, statesContact, seed );
+        trainMultGnuBg( s1, statesCrashed, seed );
         trainMultGnuBg( s1, statesRace, seed );
         
-        perf = gnuBgBenchmarkER( s1, dataSetRace );
-        //gnuBgBenchmarkER( s1, dataSetCrashed );
-        //gnuBgBenchmarkER( s1, dataSetRace );
-        //printErrorStatisticsGnuBg( s1, statesContact );
+        perf = gnuBgBenchmarkER( s1, dataSetContact );
+        gnuBgBenchmarkER( s1, dataSetCrashed );
+        gnuBgBenchmarkER( s1, dataSetRace );
         cout << endl;
         
         if( perf > lastPerf )
@@ -1584,19 +1574,24 @@ void testBenchmark()
     // plot GNUbg benchmark error rate against reference player game performance
     
     //strategytdoriggam s1( "benchmark", "gam_stdgam_80_0.1_0.1" );
-    strategytdmult s1( "benchmark", "player31" );
-    //strategyPubEval s1;
-    //strategyPubEval s2;
-    strategytdmult s2( "benchmark", "player3_120" );
-    s1.learning = s2.learning = false;
+    //strategytdmult s1( "benchmark", "player2" );
+    //strategytdorigbg s1( "benchmark", "bg_stdbg_40_0.1_0.1" );
+    strategyPubEval s1;
+    strategyPubEval s3;
+    //strategytdmult s2( "benchmark", "player31" );
+    strategytdorigbg s2( "benchmark", "benchmark2" );
+    //s1.learning = s2.learning = false;
+    s2.learning = false;
     
     int nThreads=16;
     vector< vector<benchmarkData> > dataSetContact( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/contact.bm", nThreads ) );
     vector< vector<benchmarkData> > dataSetCrashed( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/crashed.bm", nThreads ) );
     vector< vector<benchmarkData> > dataSetRace( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/race.bm", nThreads ) );
+    
     gnuBgBenchmarkER( s1, dataSetContact );
     gnuBgBenchmarkER( s1, dataSetCrashed );
     gnuBgBenchmarkER( s1, dataSetRace );
     
-    playParallelGen( s1, s2, 400000, 2, 400 );
+    //playParallelGen( s1, s2, 40000, 1, 40);
+    //playParallelGen( s1, s3, 40000, 1, 40);
 }
