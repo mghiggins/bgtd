@@ -18,7 +18,20 @@
 
 #include <iostream>
 #include <sstream>
+#include "gamefns.h"
 #include "strategyhuman.h"
+
+class humanBoardProbsPair
+{
+public:
+    humanBoardProbsPair( const board& b, const gameProbabilities& probs ) : b(b), probs(probs) {};
+    
+    board b;
+    gameProbabilities probs;
+};
+
+bool humanBoardProbsPairCompare( const humanBoardProbsPair& p1, const humanBoardProbsPair& p2 );
+bool humanBoardProbsPairCompare( const humanBoardProbsPair& p1, const humanBoardProbsPair& p2 ) { return p1.probs.equity() > p2.probs.equity(); };
 
 board strategyhuman::preferredBoard( const board& oldBoard, const set<board>& possibleMoves, const hash_map<string,int>* context )
 {
@@ -31,6 +44,7 @@ board strategyhuman::preferredBoard( const board& oldBoard, const set<board>& po
     {
         cout << "No choice on move. Hit enter to continue.\n";
         getline( cin, input );
+        nMoves ++;
         if( possibleMoves.size() == 0 )
             return oldBoard;
         else
@@ -42,6 +56,15 @@ board strategyhuman::preferredBoard( const board& oldBoard, const set<board>& po
     int count;
     vector<string> moveBits(2);
     
+    // use the guide strategy to value the moves - we'll use this to calculate equity error
+    // or to show hints.
+    
+    gameProbabilities probs;
+    vector<humanBoardProbsPair> pairs;
+    for( set<board>::const_iterator it=possibleMoves.begin(); it!=possibleMoves.end(); it++ )
+        pairs.push_back( humanBoardProbsPair( (*it), guideStrat.boardProbabilities((*it)) ) );
+    sort( pairs.begin(), pairs.end(), humanBoardProbsPairCompare );
+    
     while( true )
     {
         cout << "Enter move: ";
@@ -52,6 +75,38 @@ board strategyhuman::preferredBoard( const board& oldBoard, const set<board>& po
         // is called b and off is called o. 
         
         getline( cin, input );
+        if( input == "hint" )
+        {
+            int nMax = 3;
+            if( nMax > pairs.size() ) nMax = (int) pairs.size();
+            cout << "Best moves:\n";
+            for( int i=0; i<nMax; i++ )
+            {
+                pairs.at(i).b.print();
+                cout << pairs.at(i).probs.equity();
+                if( i > 0 ) cout << " (" << pairs.at(i).probs.equity() - pairs.at(0).probs.equity() << ")";
+                cout << endl << endl;
+            }
+            continue;
+        }
+        if( input == "rollout" )
+        {
+            vector<humanBoardProbsPair> rollPairs;
+            int nMax = 3;
+            if( nMax > pairs.size() ) nMax = (int) pairs.size();
+            for( int i=0; i<nMax; i++ )
+                rollPairs.push_back( humanBoardProbsPair( pairs.at(i).b, rolloutBoardProbabilitiesParallel( pairs.at(i).b, guideStrat, 1000, 1, 4, false ) ) );
+            sort( rollPairs.begin(), rollPairs.end(), humanBoardProbsPairCompare );
+            cout << "Best moves (rollout):\n";
+            for( int i=0; i<nMax; i++ )
+            {
+                rollPairs.at(i).b.print();
+                cout << rollPairs.at(i).probs.equity();
+                if( i > 0 ) cout << " (" << rollPairs.at(i).probs.equity() - rollPairs.at(0).probs.equity() << ")";
+                cout << endl << endl;
+            }
+            continue;
+        }
         stringstream ss1( input );
         string s1;
         bool validMove=true;
@@ -154,7 +209,20 @@ board strategyhuman::preferredBoard( const board& oldBoard, const set<board>& po
         // if the move is valid, return it, otherwise try again
         
         if( validMove ) 
+        {
+            // add the equity error to the total
+            
+            for( int i=0; i<possibleMoves.size(); i++ )
+            {
+                if( pairs.at(i).b == newBoard )
+                {
+                    equityError += pairs.at(0).probs.equity() - pairs.at(i).probs.equity();
+                    nMoves ++;
+                    break;
+                }
+            }
             return newBoard;
+        }
         else
             cout << "Proposed move is not a valid move. Please try again.\n";
     }

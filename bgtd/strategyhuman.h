@@ -20,11 +20,12 @@
 #define bgtd_strategyhuman_h
 
 #include "strategy.h"
+#include "strategyprob.h"
 
 class strategyhuman : public strategy
 {
 public:
-    strategyhuman() {};
+    strategyhuman( strategyprob& guideStrat ) : guideStrat(guideStrat), equityError(0), nMoves(0) {};
     virtual ~strategyhuman() {};
     
     // the boardValue always returns 0 in this strategy because it never
@@ -34,6 +35,14 @@ public:
     
     virtual double boardValue( const board& brd, const hash_map<string,int>* context=0 )  { return 0.; };
     virtual board preferredBoard( const board& oldBoard, const set<board>& possibleMoves, const hash_map<string,int>* context=0 );
+    
+    double SnowieER() const { return nMoves == 0 ? 0 : 1000 * equityError / 2. / nMoves; };
+    
+private:
+    strategyprob& guideStrat;
+    
+    double equityError;
+    int    nMoves;
 };
 
 #endif
