@@ -701,7 +701,11 @@ double gnuBgBenchmarkStatisticsSerial( strategy& strat, const vector<benchmarkDa
         // case though (since that'd mean that there's only one possible move, but the strategy didn't
         // choose it).
         
-        if( !foundBoard and nOthers == 0 ) throw string( "Don't know how this happened!" );
+        if( !foundBoard ) 
+        {
+            if( nOthers == 0 ) throw string( "Don't know how this happened!" );
+            dEquity = it->bestEquity - it->otherEquities.at(nOthers-1);
+        }
         
         // generate the statistic for Snowie error rating. This is 1000*(sum of equity errors)/(# of player moves + # of opponent moves)
         // Since we're not playing a real game here, I'll approximate the denominator with 2*number of moves we check, which is just
