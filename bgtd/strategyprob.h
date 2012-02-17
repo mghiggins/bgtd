@@ -34,6 +34,8 @@ public:
     double probBgLoss;     // probability of a backgammon loss
     
     gameProbabilities flippedProbs() const { return gameProbabilities( 1 - probWin, probGammonLoss, probGammonWin, probBgLoss, probBgWin ); };
+    
+    double equity() const { return 1 * ( probWin - probGammonWin ) + 2 * ( probGammonWin - probBgWin ) + 3 * probBgWin - 1 * ( 1 - probWin - probGammonLoss ) - 2 * ( probGammonLoss - probBgLoss ) - 3 * probBgLoss; };
 };
 
 gameProbabilities operator+( const gameProbabilities& probs, double dv );
