@@ -1504,8 +1504,8 @@ void trainBenchmarks()
 {
     //strategytdmult s1( "benchmark", "player24" );
     //strategytdmult s1( "", "player31_120" );
-    strategytdmult s1( 120, true, true, true, true );
-    //strategytdmult s1( "benchmark", "player3_120", true );
+    //strategytdmult s1( 120, true, true, true, true );
+    strategytdmult s1( "benchmark", "player32", true );
     s1.learning = false;
     
     string playerName( "player33" );
@@ -1521,7 +1521,7 @@ void trainBenchmarks()
     
     vector<boardAndRolloutProbs> statesContact( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/contact-train-data" ) );
     vector<boardAndRolloutProbs> statesCrashed( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/crashed-train-data" ) );
-    vector<boardAndRolloutProbs> statesRace( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/race-train-data" ) );
+    //vector<boardAndRolloutProbs> statesRace( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/race-train-data" ) );
     
     int nThreads=16;
     vector< vector<benchmarkData> > dataSetContact( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/contact.bm", nThreads ) );
@@ -1556,7 +1556,7 @@ void trainBenchmarks()
         
         trainMultGnuBg( s1, statesContact, seed );
         trainMultGnuBg( s1, statesCrashed, seed );
-        trainMultGnuBg( s1, statesRace, seed );
+        //trainMultGnuBg( s1, statesRace, seed );
         
         perf = gnuBgBenchmarkER( s1, dataSetContact );
         gnuBgBenchmarkER( s1, dataSetCrashed );
