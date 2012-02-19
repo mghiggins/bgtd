@@ -892,3 +892,301 @@ string moveDiff( const board& startBoard, const board& endBoard )
     }
     return ss.str();
 }
+
+set<roll> doubleHittingShots( const board& brd, bool forOpponent, bool noBlot, int minIndex, int maxIndex )
+{
+    if( minIndex < 0 or minIndex > 23 ) throw string( "minIndex must be in [0,23]" );
+    if( maxIndex < 0 or maxIndex > 23 ) throw string( "maxIndex must be in [0,23]" );
+    
+    vector<int> checkers, otherCheckers;
+    int otherHit;
+    if( forOpponent )
+    {
+        checkers = brd.checkers();
+        otherCheckers = brd.otherCheckers();
+        otherHit = brd.otherHit();
+    }
+    else
+    {
+        checkers = brd.otherCheckers();
+        otherCheckers = brd.checkers();
+        reverse( checkers.begin(), checkers.end() );
+        reverse( otherCheckers.begin(), otherCheckers.end() );
+        otherHit = brd.hit();
+    }
+    
+    set<roll> rolls;
+    
+    // start by finding where the opponent's 1st- and 2nd-most back checkers are - no player checker can be hit after the 2nd
+    
+    int back1=-2, back2, i;
+    
+    if( otherHit >= 2 )
+        back1 = back2 = -1;
+    else
+    {
+        if( otherHit > 0 ) back1 = -1;
+        
+        int count = otherHit;
+        for( i=0; i<24; i++ )
+            if( otherCheckers[i] > 0 )
+            {
+                count += otherCheckers[i];
+                if( count >= 1 and back1 == -2 )
+                    back1 = i;
+                if( count >= 2 )
+                    break;
+            }
+        if( i >= 23 ) return rolls; // no possibility of a double hit
+        
+        back2 = i;
+    }
+    
+    int j, k, startPos;
+    
+    // run through each player position from back2+1 and find blots - for each, check which rolls could hit it
+    
+    int iMin=back2+1;
+    int iMax=23;
+    
+    if( iMin < minIndex ) iMin = minIndex;
+    if( iMax > maxIndex ) iMax = maxIndex;
+    
+    for( i=iMin; i<=iMax; i++ )
+    {
+        if( checkers[i] == 1 )
+        {
+            // look for an opponent checker before it
+            
+            // start with non-doubles
+            
+            startPos = i-6;
+            if( startPos < back1 ) startPos = back1;
+            
+            for( j=startPos; j<i; j++ )
+            {
+                // if j (and back1) == -1 that means there's someone hit, so definitely a checker on that "point". Otherwise need to check.
+                
+                if( j==-1 or ( noBlot and ( otherCheckers[j] > 2 or otherCheckers[j] == 1 ) ) or ( !noBlot and otherCheckers[j] > 0 ) )
+                {
+                    // look at possible values for the other die
+                    
+                    for( k=1; k<i-j; k++ )
+                        if( ( noBlot and ( otherCheckers[i-k] == 1 or otherCheckers[i-k] > 2 ) ) or ( !noBlot and otherCheckers[i-k] > 0 ) )
+                            rolls.insert( roll(k,i-j) );
+                }
+            }
+            
+            // check all the doubles
+            
+            for( j=1; j<=6; j++ )
+            {
+                // direct
+                
+                if( i-j >= -1 )
+                {
+                    if( i-j == -1 )
+                        k = otherHit;
+                    else
+                        k = otherCheckers[i-j];
+                    if( ( noBlot and ( k > 3 or k == 2 ) ) or ( !noBlot and k>1 ) )
+                        rolls.insert(roll(j,j));
+                }
+                
+                // 2-step
+                
+                if( i-2*j >= -1 )
+                {
+                    if( checkers[i-j] > 1 ) continue;
+                    
+                    if( i-2*j == -1 )
+                        k = otherHit;
+                    else
+                        k = otherCheckers[i-2*j];
+                    
+                    if( ( noBlot and ( k > 3 or k == 2 ) ) or ( !noBlot and k>1 ) )
+                        rolls.insert(roll(j,j));
+                }
+                
+                // 3 of one and 1 of the other
+                
+                if( i-3*j >= -1 )
+                {
+                    if( checkers[i-j] > 1 or checkers[i-2*j] > 1 ) continue;
+                    
+                    // make sure there's an appropriate number of checkers on i-j to be the other leg
+                    
+                    if( not ( ( noBlot and ( otherCheckers[i-j] == 1 or otherCheckers[i-j] > 2 ) ) or ( !noBlot and otherCheckers[i-j] > 0 ) ) ) continue;
+                    
+                    if( i-3*j == -1 )
+                        k = otherHit;
+                    else
+                        k = otherCheckers[i-3*j];
+                    
+                    if( ( noBlot and ( k > 2 or k == 1 ) ) or ( !noBlot and k > 0 ) )
+                        rolls.insert(roll(j,j));
+                }
+            }
+        }
+    }
+    
+    return rolls;
+}
+
+double doubleHittingProb( const board& brd, bool forOpponent, bool noBlot, int minIndex, int maxIndex )
+{
+    // if we haven't initialized the hitting rolls list yet, do so now
+    
+    if( hittingRolls == 0 ) setupHittingRolls();
+    
+    if( minIndex < 0 or minIndex > 23 ) throw string( "minIndex must be in [0,23]" );
+    if( maxIndex < 0 or maxIndex > 23 ) throw string( "maxIndex must be in [0,23]" );
+    
+    vector<int> checkers, otherCheckers;
+    int otherHit;
+    if( forOpponent )
+    {
+        checkers = brd.checkers();
+        otherCheckers = brd.otherCheckers();
+        otherHit = brd.otherHit();
+    }
+    else
+    {
+        checkers = brd.otherCheckers();
+        otherCheckers = brd.checkers();
+        reverse( checkers.begin(), checkers.end() );
+        reverse( otherCheckers.begin(), otherCheckers.end() );
+        otherHit = brd.hit();
+    }
+    
+    vector<bool> rolls(21,false);
+    
+    // start by finding where the opponent's 1st- and 2nd-most back checkers are - no player checker can be hit after the 2nd
+    
+    int back1=-2, back2, i;
+    
+    if( otherHit >= 2 )
+        back1 = back2 = -1;
+    else
+    {
+        if( otherHit > 0 ) back1 = -1;
+        
+        int count = otherHit;
+        for( i=0; i<24; i++ )
+            if( otherCheckers[i] > 0 )
+            {
+                count += otherCheckers[i];
+                if( count >= 1 and back1 == -2 )
+                    back1 = i;
+                if( count >= 2 )
+                    break;
+            }
+        if( i >= 23 ) return 0;
+        
+        back2 = i;
+    }
+    
+    int j, k, startPos;
+    
+    // run through each player position from back2+1 and find blots - for each, check which rolls could hit it
+    
+    int iMin=back2+1;
+    int iMax=23;
+    
+    if( iMin < minIndex ) iMin = minIndex;
+    if( iMax > maxIndex ) iMax = maxIndex;
+    
+    for( i=iMin; i<=iMax; i++ )
+    {
+        if( checkers[i] == 1 )
+        {
+            // look for an opponent checker before it
+            
+            // start with non-doubles
+            
+            startPos = i-6;
+            if( startPos < back1 ) startPos = back1;
+            
+            for( j=startPos; j<i; j++ )
+            {
+                // if j (and back1) == -1 that means there's someone hit, so definitely a checker on that "point". Otherwise need to check.
+                
+                if( j==-1 or ( noBlot and ( otherCheckers[j] > 2 or otherCheckers[j] == 1 ) ) or ( !noBlot and otherCheckers[j] > 0 ) )
+                {
+                    // look at possible values for the other die
+                    
+                    for( k=1; k<i-j; k++ )
+                        if( ( noBlot and ( otherCheckers[i-k] == 1 or otherCheckers[i-k] > 2 ) ) or ( !noBlot and otherCheckers[i-k] > 0 ) )
+                            rolls[ (*shotIndexes)[k-1][i-j-k] ] = true;
+                }
+            }
+            
+            // check all the doubles
+            
+            for( j=1; j<=6; j++ )
+            {
+                // direct
+                
+                if( i-j >= -1 )
+                {
+                    if( i-j == -1 )
+                        k = otherHit;
+                    else
+                        k = otherCheckers[i-j];
+                    if( ( noBlot and ( k > 3 or k == 2 ) ) or ( !noBlot and k>1 ) )
+                        rolls[ (*shotIndexes)[j-1][0] ] = true;
+                }
+                
+                // 2-step
+                
+                if( i-2*j >= -1 )
+                {
+                    if( checkers[i-j] > 1 ) continue;
+                    
+                    if( i-2*j == -1 )
+                        k = otherHit;
+                    else
+                        k = otherCheckers[i-2*j];
+                    
+                    if( ( noBlot and ( k > 3 or k == 2 ) ) or ( !noBlot and k>1 ) )
+                        rolls[ (*shotIndexes)[j-1][0] ] = true;
+                }
+                
+                // 3 of one and 1 of the other
+                
+                if( i-3*j >= -1 )
+                {
+                    if( checkers[i-j] > 1 or checkers[i-2*j] > 1 ) continue;
+                    
+                    // make sure there's an appropriate number of checkers on i-j to be the other leg
+                    
+                    if( not ( ( noBlot and ( otherCheckers[i-j] == 1 or otherCheckers[i-j] > 2 ) ) or ( !noBlot and otherCheckers[i-j] > 0 ) ) ) continue;
+                    
+                    if( i-3*j == -1 )
+                        k = otherHit;
+                    else
+                        k = otherCheckers[i-3*j];
+                    
+                    if( ( noBlot and ( k > 2 or k == 1 ) ) or ( !noBlot and k > 0 ) )
+                        rolls[ (*shotIndexes)[j-1][0] ] = true;
+                }
+            }
+        }
+    }
+    
+    double prob;
+    for( i=0; i<21; i++ )
+    {
+        if( rolls[i] )
+        {
+            if( i == 0 or i == 6 or i == 11 or i == 15 or i == 18 or i == 20 )
+                prob += 1; // double
+            else
+                prob += 2; // mixed roll
+        }
+    }
+    
+    prob /= 36.;
+    
+    return prob;
+}

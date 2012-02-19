@@ -84,6 +84,15 @@ double hittingProb( const board& brd, bool forOpponent );
 double hittingProb( const set<roll>& shots );
 double hittingProb2( const board& brd, bool forOpponent );
 
+// doubleHittingShots calculates the rolls of the opponent that would hit
+// any of a player's blots and also cover up. Same convention as hittingShots
+// for forOpponent argument. If noBlot is true, it ignores rolls that would
+// leave a new blot. minIndex and maxIndex set the range for the checkers
+// we'll check for being hit (0-based, so runs from 0->23).
+
+set<roll> doubleHittingShots( const board& brd, bool forOpponent, bool noBlot, int minIndex, int maxIndex );
+double doubleHittingProb( const board& brd, bool forOpponent, bool noBlot, int minIndex, int maxIndex );
+
 // primesCount counts the max number of points in a prime. forPlayer==true
 // means it does it for the player; false means for the opponent. Only
 // counts on the appropriate side of the board (ie for the player, it
