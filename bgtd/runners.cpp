@@ -1458,6 +1458,19 @@ void testHittingShots()
     
 }
 
+void testDoubleHittingShots()
+{
+    board b;
+    b.setFromJosephID("GGGGOIAAEDGCLHANGAAC");
+    //b.setPerspective(1);
+    b.print();
+    
+    set<roll> shots( doubleHittingShots(b, true, false,18,23) );
+    for( set<roll>::iterator i=shots.begin(); i!=shots.end(); i++ )
+        cout << "( " << i->die1 << ", " << i->die2 << " )" << endl;
+    cout << doubleHittingProb(b, true, false, 18, 23) << endl;
+}
+
 void playEscapes()
 {
     constructBlockadeEscapeDb();
@@ -1491,12 +1504,11 @@ void trainBenchmarks()
 {
     //strategytdmult s1( "benchmark", "player24" );
     //strategytdmult s1( "", "player31_120" );
-    strategytdmult s1( 5, true, true, true );
+    strategytdmult s1( 120, true, true, true, true );
     //strategytdmult s1( "benchmark", "player3_120", true );
-    strategytdmult s2( "benchmark", "player24" );
-    s1.learning = s2.learning = false;
+    s1.learning = false;
     
-    string playerName( "player32q" );
+    string playerName( "player33" );
     stringstream ss;
     ss << playerName << "_max";
     string maxName( ss.str() );
@@ -1504,14 +1516,11 @@ void trainBenchmarks()
     
     int seed = 2;
     
-    //playParallelGen(s1, s2, 1000, 2);
-    
     double perf, alpha;
     double alpha0=1;
     
     vector<boardAndRolloutProbs> statesContact( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/contact-train-data" ) );
     vector<boardAndRolloutProbs> statesCrashed( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/crashed-train-data" ) );
-    //statesContact.insert( statesContact.end(), statesCrashed.begin(), statesCrashed.end() );
     vector<boardAndRolloutProbs> statesRace( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/race-train-data" ) );
     
     int nThreads=16;
@@ -1569,9 +1578,6 @@ void trainBenchmarks()
             bestPerf = perf;
             s1.writeWeights( maxName );
         }
-        
-        //if( (i+1) % 10 == 0 )
-         //   playParallelGen( s1, s2, 30000, 1, 30 );
     }
     
 }

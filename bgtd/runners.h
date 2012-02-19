@@ -41,6 +41,7 @@ void sim9( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
 void test4();
 void testOrigGam();
 void testHittingShots();
+void testDoubleHittingShots();
 
 void playBearoff();
 void playBearoffOneSided();
