@@ -95,4 +95,10 @@ int primesCount( const board& brd, bool forPlayer );
 
 double sigmoid( double x );
 
+// moveDiff takes a start and end board and returns a string describing
+// the move. eg "24/18 15/11" would mean taking a checker from (player) point
+// 24 and moving it to point 18, then another checker from 15 to 11.
+
+string moveDiff( const board& startBoard, const board& endBoard );
+
 #endif

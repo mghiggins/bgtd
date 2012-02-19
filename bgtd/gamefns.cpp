@@ -753,3 +753,142 @@ double sigmoid( double x )
     arg *= arg;
     return 1./(1+arg);
 }
+
+string moveDiff( const board& startBoard, const board& endBoard )
+{
+    vector<int> fromPoints;
+    vector<int> toPoints;
+    
+    int startNum, endNum, i, j, k, count;
+    bool foundOne;
+    
+    for( i=24; i>=0; i-- )
+    {
+        if( i == 24 )
+        {
+            startNum = startBoard.hit();
+            endNum   = endBoard.hit();
+        }
+        else
+        {
+            startNum = startBoard.checker(i);
+            endNum   = endBoard.checker(i);
+        }
+        int nextInd=i-1;
+        while( startNum > endNum )
+        {
+            // find the first place the checker count went up - make sure 
+            // we don't re-use a slot
+            
+            foundOne = false;
+            
+            for( j=nextInd; j>=0; j-- )
+                if( startBoard.checker(j) < endBoard.checker(j) )
+                {
+                    // count the number we've already added here - if it's >= diff then
+                    // we can't use this slot
+                    
+                    count=0;
+                    for( k=0; k<toPoints.size(); k++ )
+                        if( toPoints.at(k) == j ) count++;
+                    if( count >= endBoard.checker(j) - startBoard.checker(j) ) continue;
+                    
+                    foundOne = true;
+                    fromPoints.push_back(i);
+                    toPoints.push_back(j);
+                    if( count + 1 == endBoard.checker(j) - startBoard.checker(j) ) nextInd = j-1;
+                    break;
+                }
+            if( !foundOne )
+            {
+                if( startBoard.bornIn() < endBoard.bornIn() )
+                {
+                    foundOne = true;
+                    fromPoints.push_back(i);
+                    toPoints.push_back(-1);
+                }
+                else
+                    throw string( "Shouldn't be possible" );
+            }
+            
+            startNum -= 1;
+        }
+    }
+    
+    // now deal with hitting player blots
+    
+    int hitDiff = endBoard.otherHit() - startBoard.otherHit();
+    int startIndex = 0;
+    
+    while( hitDiff > 0 )
+    {
+        // figure out where the blots came from and potentially adjust the moves to hit them
+        
+        for( i=startIndex; i<24; i++ )
+            if( startBoard.otherChecker(i) > endBoard.otherChecker(i) )
+            {
+                // see if any checker move landed on this spot; if so, we're good
+                
+                foundOne = false;
+                
+                for( j=0; j<toPoints.size(); j++ )
+                    if( toPoints.at(j) == i )
+                    {
+                        foundOne = true;
+                        break;
+                    }
+                if( foundOne ) 
+                {
+                    hitDiff --;
+                    startIndex = i+1;
+                    break;
+                }
+                
+                // otherwise we need to split a move to land on the opponent blot
+                
+                foundOne = false;
+                
+                for( j=0; j<toPoints.size(); j++ )
+                {
+                    if( fromPoints.at(j) > i and toPoints.at(j) < i )
+                    {
+                        fromPoints.push_back(fromPoints.at(j));
+                        toPoints.push_back(i);
+                        fromPoints.push_back(i);
+                        toPoints.push_back(toPoints.at(j));
+                        foundOne = true;
+                        break;
+                    }
+                }
+                
+                if( !foundOne ) throw string( "Shouldn't be possible" );
+                
+                // delete the move we split
+                
+                fromPoints.erase( fromPoints.begin() + j );
+                toPoints.erase( toPoints.begin() + j );
+                hitDiff --;
+                startIndex = i+1;
+                break;
+            }
+    }
+    
+    // now construct the string
+    
+    stringstream ss;
+    for( i=0; i<fromPoints.size(); i++ )
+    {
+        if( fromPoints.at(i) == 24 )
+            ss << "b";
+        else
+            ss << fromPoints.at(i)+1;
+        ss << "/";
+        if( toPoints.at(i) == -1 )
+            ss << "o";
+        else
+            ss << toPoints.at(i)+1;
+        if( i < fromPoints.size() - 1 )
+            ss << " ";
+    }
+    return ss.str();
+}
