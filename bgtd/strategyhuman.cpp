@@ -77,15 +77,18 @@ board strategyhuman::preferredBoard( const board& oldBoard, const set<board>& po
         getline( cin, input );
         if( input == "hint" )
         {
+            //cout << oldBoard.repr() << endl;
             int nMax = 3;
             if( nMax > pairs.size() ) nMax = (int) pairs.size();
             cout << "Best moves:\n";
             for( int i=0; i<nMax; i++ )
             {
-                pairs.at(i).b.print();
+                //pairs.at(i).b.print();
+                //cout << pairs.at(i).b.repr() << endl;
+                cout << moveDiff(oldBoard, pairs.at(i).b) << ": ";
                 cout << pairs.at(i).probs.equity();
                 if( i > 0 ) cout << " (" << pairs.at(i).probs.equity() - pairs.at(0).probs.equity() << ")";
-                cout << endl << endl;
+                cout << endl;
             }
             continue;
         }
@@ -95,15 +98,16 @@ board strategyhuman::preferredBoard( const board& oldBoard, const set<board>& po
             int nMax = 3;
             if( nMax > pairs.size() ) nMax = (int) pairs.size();
             for( int i=0; i<nMax; i++ )
-                rollPairs.push_back( humanBoardProbsPair( pairs.at(i).b, rolloutBoardProbabilitiesParallel( pairs.at(i).b, guideStrat, 1000, 1, 4, false ) ) );
+                rollPairs.push_back( humanBoardProbsPair( pairs.at(i).b, rolloutBoardProbabilitiesParallel( pairs.at(i).b, guideStrat, 3200, 1, 16, false ) ) );
             sort( rollPairs.begin(), rollPairs.end(), humanBoardProbsPairCompare );
             cout << "Best moves (rollout):\n";
             for( int i=0; i<nMax; i++ )
             {
-                rollPairs.at(i).b.print();
+                //rollPairs.at(i).b.print();
+                cout << moveDiff(oldBoard, rollPairs.at(i).b) << ": ";
                 cout << rollPairs.at(i).probs.equity();
                 if( i > 0 ) cout << " (" << rollPairs.at(i).probs.equity() - rollPairs.at(0).probs.equity() << ")";
-                cout << endl << endl;
+                cout << endl;
             }
             continue;
         }
