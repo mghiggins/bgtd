@@ -1100,12 +1100,18 @@ void test4()
 {
     // try out playing against a human
     
-    strategytdmult s1( "benchmark", "player24" );
+    strategytdmult s1( "benchmark", "player32" );
     //strategytdorigbg s1( "benchmark", "benchmark2" );
     s1.learning = false;
     //strategyPubEval s1;
     
-    strategyhuman s2;
+    /*
+    board b( "AABA@AAACDAC@AA=FAAA=A<AAAAC" );
+    board nextb( "AAAA@AAACDAC@CA=DAAA=A<ABBAB" );
+    cout << moveDiff(b, nextb) << endl;
+    return;
+    */
+    strategyhuman s2(s1);
     
     vector<int> scores;
     int n=10;
@@ -1115,7 +1121,7 @@ void test4()
     for( int i=0; i<n; i++ )
     {
         cout << "NEW GAME - game # " << i+1 << endl;
-        game g(&s1,&s2,i+585);
+        game g(&s2,&s1,i+787);
         g.verbose = true;
         g.setTurn(i%2);
         g.getBoard().print();
@@ -1157,6 +1163,7 @@ void test4()
             cout << "Probability of white bg loss     = " << pbl << endl;
             cout << "White pips                       = " << g.getBoard().pips() << endl;
             cout << "Black pips                       = " << g.getBoard().otherPips() << endl;
+            cout << "Snowie ER                        = " << s2.SnowieER() << endl;
             g.step();
         }
         
