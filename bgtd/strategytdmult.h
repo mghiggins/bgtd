@@ -32,8 +32,8 @@ class strategytdmult : public strategytdbase
     
 public:
     strategytdmult();
-    strategytdmult( int nMiddle, bool useShotProbInput=true, bool usePrimesInput=true, bool useExtendedBearoffInputs=false );
-    strategytdmult( const string& path, const string& filePrefix, bool randomExtendedBearoff=false );
+    strategytdmult( int nMiddle, bool useShotProbInput=true, bool usePrimesInput=true, bool useExtendedBearoffInputs=true, bool useDoubleHitInput=true );
+    strategytdmult( const string& path, const string& filePrefix, bool randomDoubleHitInput=false );
     virtual ~strategytdmult() {};
     
     virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ); 
@@ -67,13 +67,14 @@ public:
     // writeWeights writes the weights for each network to files (one per network, suffixed with the network name)
     
     void writeWeights( const string& filePrefix ) const;
-    void loadWeights( const string& path, const string& filePrefix, bool randomPrimesInput );
+    void loadWeights( const string& path, const string& filePrefix, bool randomDoubleHitInput );
     
     // define some parameters
     
     bool useShotProbInput;
     bool usePrimesInput;
     bool useExtendedBearoffInputs;
+    bool useDoubleHitInput;
     
     // interface to weights
     
