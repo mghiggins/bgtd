@@ -42,15 +42,15 @@ strategytdmult::strategytdmult()
     setupRandomWeights( 40 ); // default # of middle nodes is 40
 }
 
-strategytdmult::strategytdmult( int nMiddle, bool useShotProbInput, bool usePrimesInput, bool useExtendedBearoffInputs, bool useDoubleHitInput ) 
-  : useShotProbInput(useShotProbInput), usePrimesInput(usePrimesInput), useExtendedBearoffInputs(useExtendedBearoffInputs), useDoubleHitInput(useDoubleHitInput)
+strategytdmult::strategytdmult( int nMiddle, bool useShotProbInput, bool usePrimesInput, bool useExtendedBearoffInputs ) 
+  : useShotProbInput(useShotProbInput), usePrimesInput(usePrimesInput), useExtendedBearoffInputs(useExtendedBearoffInputs)
 {
     setupRandomWeights( nMiddle );
 }
 
-strategytdmult::strategytdmult( const string& path, const string& filePrefix, bool randomDoubleHitInput )
+strategytdmult::strategytdmult( const string& path, const string& filePrefix )
 {
-    loadWeights( path, filePrefix, randomDoubleHitInput );
+    loadWeights( path, filePrefix );
     setup();
 }
 
@@ -66,9 +66,6 @@ int strategytdmult::nInputs( const string& netName ) const
     else
     {
         if( usePrimesInput and !useShotProbInput ) throw string( "Must include shot prob input if include primes input" );
-        if( useDoubleHitInput and ( !useShotProbInput or !usePrimesInput ) ) throw string( "Must include other two inputs is using double hit input" );
-        if( useDoubleHitInput )
-            return 208;
         if( usePrimesInput )
             return 204;
         else if( useShotProbInput )
@@ -327,16 +324,6 @@ vector<double> strategytdmult::getInputValues( const board& brd, const string& n
                 }
                 inputs.push_back( rollsMin / 36. );
             }
-        }
-        if( useDoubleHitInput )
-        {
-            // for each player add two inputs: one for odds of double-hit for checkers in the opponent's home board, and one for double-hit
-            // in the rest of the board.
-            
-            inputs.push_back( doubleHittingProb(brd, true, true, 0, 17) );
-            inputs.push_back( doubleHittingProb(brd, true, true, 18, 23) );
-            inputs.push_back( doubleHittingProb(brd, false, true, 0, 17) );
-            inputs.push_back( doubleHittingProb(brd, false, true, 18, 23) );
         }
     }
     
@@ -867,7 +854,7 @@ void strategytdmult::updateFromProbs( const board& brd, double probWin, double p
     (*itBgLossWeights).second.at(nMiddle)  += alpha * bgLossDiff * dBgLossdMiddle.at(nMiddle);
 }
 
-void strategytdmult::writeWeights( const string& filePrefix ) const
+void strategytdmult::writeWeights( const string& filePrefix, const string& singleNetName ) const
 {
     // write the weights and traces to files. Six files per network name: one for prob of win output->middle weights;
     // one for of prob gammon output->middle weights; one for gammon loss; one for bg win; one for bg loss and 
@@ -876,29 +863,39 @@ void strategytdmult::writeWeights( const string& filePrefix ) const
     string path = "/Users/mghiggins/bgtdres";
     
     // define the file name for the list of network names and open that file. This file will also contain the number
-    // of middle nodes. Also entries for the optional parameters.
+    // of middle nodes. Also entries for the optional parameters. Write this file if singleNetName is blank (so we
+    // write all net weights) or if it's "contact".
     
     string netName = path + "/netNames_" + filePrefix + ".txt";
-    ofstream fn( netName.c_str() );
-    fn << nMiddle << endl;
-    if( useShotProbInput )
-        fn << 1 << endl;
-    else
-        fn << 0 << endl;
-    if( usePrimesInput )
-        fn << 1 << endl;
-    else
-        fn << 0 << endl;
-    if( useExtendedBearoffInputs )
-        fn << 1 << endl;
-    else
-        fn << 0 << endl;
+    ofstream fn;
+    if( singleNetName == "" or singleNetName == "contact" )
+    {
+        fn.open( netName.c_str(), fstream::trunc );
+        fn << nMiddle << endl;
+        if( useShotProbInput )
+            fn << 1 << endl;
+        else
+            fn << 0 << endl;
+        if( usePrimesInput )
+            fn << 1 << endl;
+        else
+            fn << 0 << endl;
+        if( useExtendedBearoffInputs )
+            fn << 1 << endl;
+        else
+            fn << 0 << endl;
+    }
     
     for( hash_map< string, vector<double> >::const_iterator itProb = outputProbWeights.begin(); itProb != outputProbWeights.end(); itProb ++ )
     {
         // write the network name to the file
         
-        fn << itProb->first << endl;
+        if( singleNetName == "" or singleNetName == "contact" )
+            fn << itProb->first << endl;
+        
+        // don't write out the file if we've specified a single net name and this isn't it
+        
+        if( singleNetName != "" and singleNetName != itProb->first ) continue;
         
         // get the # of inputs for this network
         
@@ -952,10 +949,11 @@ void strategytdmult::writeWeights( const string& filePrefix ) const
         fm.close();
     }
     
-    fn.close();
+    if( singleNetName == "" or singleNetName == "contact" )
+        fn.close();
 }
 
-void strategytdmult::loadWeights( const string& subPath, const string& filePrefix, bool randomDoubleHitInput )
+void strategytdmult::loadWeights( const string& subPath, const string& filePrefix )
 {
     // load the # of middle nodes and the network names from the names file
     
@@ -982,14 +980,6 @@ void strategytdmult::loadWeights( const string& subPath, const string& filePrefi
     usePrimesInput = ( atoi( line.c_str() ) == 1 );
     getline( fn, line );
     useExtendedBearoffInputs = ( atoi( line.c_str() ) == 1 );
-    getline( fn, line );
-    useDoubleHitInput = ( atoi( line.c_str() ) == 1 );
-    if( randomDoubleHitInput )
-    {
-        if( useDoubleHitInput ) throw string( "Cannot assign random weights to double hit input - the file already contains these weights" );
-        if( !useShotProbInput or !usePrimesInput ) throw string( "Can't use random double hit input if not using other two non-race inputs" );
-        useDoubleHitInput = true; // we now assume the file doesn't contain them
-    }
     if( usePrimesInput and not useShotProbInput ) throw string( "Invalid file: if usePrimesInput, cannot be not useShotProbInput" );
     
     CRandomMersenne rng(1); // used for random weights if we're loading weights from a file with no shot prob weight but the network needs one
@@ -1056,6 +1046,7 @@ void strategytdmult::loadWeights( const string& subPath, const string& filePrefi
                 midWeights.at(i).resize(nInput+1);
                 for( j=0; j<nInput+1; j++ )
                 {
+                    /*
                     // base inputs - always there for any network; also last element is always the bias weight and
                     // needs to go in the last slot. Also contact we always load all weights. 
                     // For the race network, if we're using random extended bearoff weights, add those in between
@@ -1068,6 +1059,9 @@ void strategytdmult::loadWeights( const string& subPath, const string& filePrefi
                     }
                     else if( randomDoubleHitInput )
                         midWeights.at(i).at(j) = rng.IRandom(-100,100)/1000.;
+                    */
+                    getline( fm, line );
+                    midWeights.at(i).at(j) = atof( line.c_str() );
                 }
             }
             getline( fop, line );

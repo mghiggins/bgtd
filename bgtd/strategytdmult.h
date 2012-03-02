@@ -32,8 +32,8 @@ class strategytdmult : public strategytdbase
     
 public:
     strategytdmult();
-    strategytdmult( int nMiddle, bool useShotProbInput=true, bool usePrimesInput=true, bool useExtendedBearoffInputs=true, bool useDoubleHitInput=true );
-    strategytdmult( const string& path, const string& filePrefix, bool randomDoubleHitInput=false );
+    strategytdmult( int nMiddle, bool useShotProbInput=true, bool usePrimesInput=true, bool useExtendedBearoffInputs=true );
+    strategytdmult( const string& path, const string& filePrefix );
     virtual ~strategytdmult() {};
     
     virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ); 
@@ -64,17 +64,19 @@ public:
     virtual void update( const board& oldBoard, const board& newBoard );
     void updateFromProbs( const board& brd, double probWin, double probGammonWin, double probGammonLoss, double probBgWin, double probBgLoss );
     
-    // writeWeights writes the weights for each network to files (one per network, suffixed with the network name)
+    // writeWeights writes the weights for each network to files (one per network, suffixed with the network name).
+    // If singleNetName is blank it writes files for all networks' weights; otherwise it just writes files for the
+    // specified network name. Also writes a file called netNames that lists out the network names for the player
+    // along with parameter info; that gets written if singleNetName is blank or if it's "contact".
     
-    void writeWeights( const string& filePrefix ) const;
-    void loadWeights( const string& path, const string& filePrefix, bool randomDoubleHitInput );
+    void writeWeights( const string& filePrefix, const string& singleNetName="" ) const;
+    void loadWeights( const string& path, const string& filePrefix );
     
     // define some parameters
     
     bool useShotProbInput;
     bool usePrimesInput;
     bool useExtendedBearoffInputs;
-    bool useDoubleHitInput;
     
     // interface to weights
     
