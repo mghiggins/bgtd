@@ -550,39 +550,44 @@ void dispBoards( const strategytdmult& s )
 
 void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, const string& srcSuffix )
 {
-    // print out the reference boards
-    
-    for( int ind=0; ind<7; ind++ )
-    {
-        cout << "Reference board " << ind << endl;
-        board b( referenceBoard( ind ) );
-        b.print();
-        cout << endl;
-    }
-    
     // try out the TD strategy with multiple networks
     
-    strategytdmult s1( "benchmark", "player24" );
+    //strategytdmult s1( nMiddle, true, true, true );
     //strategytdmult s1( nMiddle, false, false );
-    strategytdmult s2( "benchmark", "player24" );
-    s2.learning = false;
-    setupHittingRolls();
+    strategytdmult s1( "benchmark", "player32" );
     
     s1.alpha = alpha0;
     s1.beta  = beta0;
     
-    double maxPpg = -100;
-    long maxInd=-1;
+    int nThreads=16;
+    vector< vector<benchmarkData> > dataSetContact( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/contact.bm", nThreads ) );
+    vector< vector<benchmarkData> > dataSetCrashed( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/crashed.bm", nThreads ) );
+    vector< vector<benchmarkData> > dataSetRace( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/race.bm", nThreads ) );
     
-    //playSerial( s1, s2, 200, 1, 0, "mult_std" + fileSuffix, true );
-    playParallel( s1, s2, 4000, 1, 0, "std" + fileSuffix, 10 );
-    dispBoards( s1 );
+    long minContactInd=-1, minCrashedInd=-1, minRaceInd=-1;
+    
+    double minContactER = gnuBgBenchmarkER( s1, dataSetContact );
+    double minCrashedER = gnuBgBenchmarkER( s1, dataSetCrashed );
+    double minRaceER    = gnuBgBenchmarkER( s1, dataSetRace );
+    
+    double contactER, crashedER, raceER;
+    
+    string path  = "/Users/mghiggins/bgtdres";
+    string fName = path + "/td_comparisonresults_" + fileSuffix + ".csv";
+    
+    {
+        ofstream f;
+        f.open( fName.c_str(), fstream::trunc ); // start a new file
+        f << 0 << "," << minContactER << "," << minCrashedER << "," << minRaceER << endl;
+        f.close();
+    }
     
     int nw=0, ng=0, nb=0, ns=0;
     
     for( long i=0; i<20000000; i++ )
     {
-        if( i==100000 or i==300000 or i==900000 )
+        //if( i==300000 or i==800000 or i==1500000 )
+        if( i==1000000 or i==3000000 )
         {
             s1.alpha *= 1./sqrt(10);
             s1.beta  *= 1./sqrt(10);
@@ -593,7 +598,7 @@ void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
         }
         s1.learning = true;
         
-        game g( &s1, &s1, (int) (i+1) );
+        game g( &s1, &s1, (int) (i+10000000) );
         g.setTurn( (int) i%2 );
         try 
         {
@@ -636,24 +641,48 @@ void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, c
             s1.writeWeights( "std" + fileSuffix );
         }
         
-        if( (i+1)%5000 == 0 )
+        if( (i+1)%1000 == 0 )
         {
             cout << endl;
-            //double ppg = playSerial( s1, s2, 200, 1, i+1, "mult_std" + fileSuffix, true );
-            double ppg = playParallel( s1, s2, 4000, 1, i+1, "std" + fileSuffix, 10 );
-
-            if( ppg > maxPpg )
+            contactER = gnuBgBenchmarkER( s1, dataSetContact );
+            crashedER = gnuBgBenchmarkER( s1, dataSetCrashed );
+            raceER    = gnuBgBenchmarkER( s1, dataSetRace );
+            
             {
-                cout << "***** Rolling best ppg = " << ppg << " vs previous max " << maxPpg << "*****\n";
-                maxPpg = ppg;
-                maxInd = i;
-                s1.writeWeights( "max" + fileSuffix );
+                ofstream f;
+                f.open( fName.c_str(), fstream::app ); // append to an existing one
+                f << i+1 << "," << contactER << "," << crashedER << "," << raceER << endl;
+                f.close();
+            }
+
+            if( contactER < minContactER )
+            {
+                cout << "***** Rolling best contact ER = " << contactER << " vs previous min " << minContactER << "*****\n";
+                minContactER = contactER;
+                minContactInd = i;
+                s1.writeWeights( fileSuffix, "contact" );
             }
             else
-                cout << "Prev best " << maxPpg << " at index " << maxInd+1 << endl;
+                cout << "Prev best contact ER " << minContactER << " at index " << minContactInd+1 << endl;
+            if( crashedER < minCrashedER )
+            {
+                cout << "***** Rolling best crashed ER = " << crashedER << " vs previous min " << minCrashedER << "*****\n";
+                minCrashedER = crashedER;
+                minCrashedInd = i;
+                s1.writeWeights( fileSuffix, "crashed" );
+            }
+            else
+                cout << "Prev best crashed ER " << minCrashedER << " at index " << minCrashedInd+1 << endl;
+            if( raceER < minRaceER )
+            {
+                cout << "***** Rolling best race ER = " << raceER << " vs previous min " << minRaceER << "*****\n";
+                minRaceER = raceER;
+                minRaceInd = i;
+                s1.writeWeights( fileSuffix, "race" );
+            }
+            else
+                cout << "Prev best race ER " << minRaceER << " at index " << minRaceInd+1 << endl;
             cout << endl;
-            
-            dispBoards( s1 );
         }
     }
 }
@@ -1505,23 +1534,21 @@ void trainBenchmarks()
     //strategytdmult s1( "benchmark", "player24" );
     //strategytdmult s1( "", "player31_120" );
     //strategytdmult s1( 120, true, true, true, true );
-    strategytdmult s1( "benchmark", "player32", true );
+    strategytdmult s1( "", "stdplayer33a" );
     s1.learning = false;
     
-    string playerName( "player33" );
-    stringstream ss;
-    ss << playerName << "_max";
-    string maxName( ss.str() );
+    string playerName( "player33b" );
+    string stdName = "std" + playerName;
     cout << "Player name = " << playerName << endl;
     
     int seed = 2;
     
-    double perf, alpha;
-    double alpha0=1;
+    double alpha;
+    double alphaMax=1, alphaMin=0.01;
     
     vector<boardAndRolloutProbs> statesContact( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/contact-train-data" ) );
     vector<boardAndRolloutProbs> statesCrashed( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/crashed-train-data" ) );
-    //vector<boardAndRolloutProbs> statesRace( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/race-train-data" ) );
+    vector<boardAndRolloutProbs> statesRace( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/race-train-data" ) );
     
     int nThreads=16;
     vector< vector<benchmarkData> > dataSetContact( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/contact.bm", nThreads ) );
@@ -1529,55 +1556,91 @@ void trainBenchmarks()
     vector< vector<benchmarkData> > dataSetRace( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/race.bm", nThreads ) );
     
     cout << "Starting stats:\n";
-    double lastPerf = gnuBgBenchmarkER( s1, dataSetContact );
-    gnuBgBenchmarkER( s1, dataSetCrashed );
-    gnuBgBenchmarkER( s1, dataSetRace );
+    double minContactER = gnuBgBenchmarkER( s1, dataSetContact );
+    double minCrashedER = gnuBgBenchmarkER( s1, dataSetCrashed );
+    double minRaceER    = gnuBgBenchmarkER( s1, dataSetRace );
     cout << endl;
     
-    double bestPerf = lastPerf;
+    string fileName = "/Users/mghiggins/bgtdres/sl_comparison_results_" + playerName + ".csv";
+    ofstream fr( fileName.c_str(), fstream::trunc );
+    fr << 0 << "," << minContactER << "," << minCrashedER << "," << minRaceER << endl;
+    fr.close();
+    
+    double contactER, crashedER, raceER;
+    int minContactInd=-1, minCrashedInd=-1, minRaceInd=-1;
+    
+    double lastContactER = minContactER;
+    int bestLag=0;
+    
+    alpha = alphaMax/sqrt(10);;
     
     for( int i=0; i<300; i++ )
     {
-        if( i==0 )
-            alpha = alpha0;
-        if( i==8 )
-            alpha = alpha0/sqrt(10.);
-        if( i==20 )
-            alpha = alpha0/10.;
-        if( i==60 )
-            alpha = alpha0/10./sqrt(10);
-        if( i==100 )
-            alpha = alpha0/100.;
+        if( bestLag == 2 )
+        {
+            alpha /= sqrt(10.);
+            if( alpha < alphaMin ) alpha = alphaMax;
+            cout << "alpha changed to " << alpha << endl;
+        }
         
-        cout << endl << "***** Iteration " << i << " ******" << endl;
+        cout << endl << "***** Iteration " << i+1 << " ******" << endl;
         cout << "Alpha = " << alpha << endl << endl;
         
         s1.alpha = s1.beta = alpha;
         
         trainMultGnuBg( s1, statesContact, seed );
         trainMultGnuBg( s1, statesCrashed, seed );
-        //trainMultGnuBg( s1, statesRace, seed );
+        trainMultGnuBg( s1, statesRace, seed );
         
-        perf = gnuBgBenchmarkER( s1, dataSetContact );
-        gnuBgBenchmarkER( s1, dataSetCrashed );
-        gnuBgBenchmarkER( s1, dataSetRace );
+        contactER = gnuBgBenchmarkER( s1, dataSetContact );
+        crashedER = gnuBgBenchmarkER( s1, dataSetCrashed );
+        raceER    = gnuBgBenchmarkER( s1, dataSetRace );
         cout << endl;
         
-        if( perf > lastPerf )
-        {
-            cout << "Reordering data\n";
-            seed++;
-        }
+        fr.open( fileName.c_str(), fstream::app );
+        fr << i+1 << "," << contactER << "," << crashedER << "," << raceER << endl;
+        fr.close();
         
-        lastPerf = perf;
-        s1.writeWeights( playerName );
+        s1.writeWeights( stdName );
         
-        if( perf < bestPerf )
+        if( contactER < minContactER )
         {
-            cout << "----> Best performance <----\n";
-            bestPerf = perf;
-            s1.writeWeights( maxName );
+            cout << "**** Best contact ER " << contactER << " vs previous best " << minContactER << endl;
+            minContactER = contactER;
+            minContactInd = i;
+            s1.writeWeights( playerName, "contact" );
         }
+        else
+            cout << "Previous best contact ER " << minContactER << " at index " << minContactInd + 1 << endl;
+        if( crashedER < minCrashedER )
+        {
+            cout << "**** Best crashed ER " << crashedER << " vs previous best " << minCrashedER << endl;
+            minCrashedER = crashedER;
+            minCrashedInd = i;
+            s1.writeWeights( playerName, "crashed" );
+        }
+        else
+            cout << "Previous best crashed ER " << minCrashedER << " at index " << minCrashedInd + 1 << endl;
+        if( raceER < minRaceER )
+        {
+            cout << "**** Best race ER " << raceER << " vs previous best " << minRaceER << endl;
+            minRaceER = raceER;
+            minRaceInd = i;
+            s1.writeWeights( playerName, "race" );
+        }
+        else
+            cout << "Previous best race ER " << minRaceER << " at index " << minRaceInd + 1 << endl;
+        
+        if( contactER > lastContactER )
+        {
+            cout << "Reseeding\n";
+            seed ++;
+            bestLag ++;
+        }
+        else
+            bestLag = 0;
+        
+        lastContactER = contactER;
     }
     
 }
@@ -1589,12 +1652,11 @@ void testBenchmark()
     //strategytdoriggam s1( "benchmark", "gam_stdgam_80_0.1_0.1" );
     //strategytdmult s1( "benchmark", "player2" );
     //strategytdorigbg s1( "benchmark", "bg_stdbg_40_0.1_0.1" );
-    strategyPubEval s1;
-    strategyPubEval s3;
     //strategytdmult s2( "benchmark", "player31" );
-    strategytdorigbg s2( "benchmark", "benchmark2" );
+    //strategytdorigbg s2( "benchmark", "benchmark2" );
     //s1.learning = s2.learning = false;
-    s2.learning = false;
+    strategytdmult s1( "", "player33_max" );
+    s1.learning = false;
     
     int nThreads=16;
     vector< vector<benchmarkData> > dataSetContact( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/contact.bm", nThreads ) );
