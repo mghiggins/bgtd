@@ -24,10 +24,11 @@
 #define bgtd_runners_h
 
 #include "strategytdbase.h"
+#include "doublestrat.h"
 
 struct runStats
 {
-    double ppg, avgSteps, fracWin, absPpg, fracSingle, fracGammon, fracBg;
+    double ppg, avgSteps, fracWin, absPpg, fracSingle, fracGammon, fracBg, avgCube;
 };
 
 double playParallel( strategytdbase& s1, strategy& s2, long n, long initSeed, long displayIndex, const string& fileSuffix, int nBuckets=1 );
@@ -52,5 +53,10 @@ void playEscapes();
 void createBenchmarks();
 void trainBenchmarks();
 void testBenchmark();
+
+void testMatchEquity();
+
+runStats playParallelCubeful( strategy& s1, strategy& s2, doublestrat& ds1, doublestrat& ds2, long n, long initSeed, int nBuckets );
+void testCubefulMoney();
 
 #endif

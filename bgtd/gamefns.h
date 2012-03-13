@@ -39,7 +39,8 @@ bool isRace( const board& board );
 // rolloutBoardProbabilities runs a Monte Carlo simulation to get a more accurate
 // estimate of the board probabilities, using the supplied strategy to
 // figure out the moves. Assumes we start on the opponent's roll to
-// be consistent with strategy boardValue calculations.
+// be consistent with strategy boardValue calculations. depth=0 means run to end;
+// otherwise it stops after depth plies.
 
 gameProbabilities rolloutBoardProbabilities( const board& brd, strategyprob& strat, int nRuns, int seed );
 gameProbabilities rolloutBoardProbabilities( const board& brd, strategyprob& strat, int nRuns, CRandomMersenne * rng );
