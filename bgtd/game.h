@@ -23,6 +23,7 @@
 #include "board.h"
 #include "common.h"
 #include "strategy.h"
+#include "doublestrat.h"
 #include "randomc.h"
 
 class game
@@ -37,6 +38,10 @@ public:
     game( strategy * strat0, strategy * strat1, int seed );
     game( strategy * strat0, strategy * strat1, CRandomMersenne * rng );
     game( const game& srcGame );
+    
+    // others that add doubling strategies for each player
+    
+    game( strategy * strat0, strategy * strat1, int seed, doublestrat * doubler0, doublestrat * doubler1 );
     
     // destructor
     
@@ -69,11 +74,26 @@ public:
     void setContextValue( const string& elemName, int elemVal ) { gameContext[elemName] = elemVal; };
     int getContextValue( const string& elemName ) const;
     
+    // doubling cube methods
+    
+    // getCube returns the current doubling cube setting (1 if it's still centered).
+    // doubleCube doubles the value.
+    
+    int getCube() const { return cube; };
+    void doubleCube() { cube *= 2; };
+    
 private:
     board      brd;
     int        trn;
     strategy * strat0;
     strategy * strat1;
+    
+    doublestrat * doubler0;
+    doublestrat * doubler1;
+    
+    int cube;
+    int cubeOwner; // 0 or 1 if player 0 or 1 owns; -1 if the cube is in the middle
+    int cubedOutPlayer; // 0 or 1 if player 0 or 1 has doubled and the other passed, ending the game. -1 if that hasn't happened.
     
     CRandomMersenne * rng;
     bool myRng;

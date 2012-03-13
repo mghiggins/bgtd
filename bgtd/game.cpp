@@ -33,6 +33,11 @@ game::game( strategy * strat0, strategy * strat1, int seed )
     verbose = false;
     nSteps = 0;
     trn = 0;
+    
+    doubler0 = doubler1 = 0;
+    cube = 1;
+    cubedOutPlayer = -1;
+    cubeOwner = -1;
 }
 
 game::game( strategy * strat0, strategy * strat1, CRandomMersenne * rng )
@@ -44,16 +49,43 @@ game::game( strategy * strat0, strategy * strat1, CRandomMersenne * rng )
     verbose = false;
     nSteps = 0;
     trn = 0;
+    
+    doubler0 = doubler1 = 0;
+    cube = 1;
+    cubedOutPlayer = -1;
+    cubeOwner = -1;
 }
 
 game::game( const game& srcGame )
 {
-    brd     = srcGame.brd;
-    strat0  = srcGame.strat0;
-    strat1  = srcGame.strat1;
-    verbose = srcGame.verbose;
-    nSteps  = srcGame.nSteps;
-    trn     = srcGame.trn;
+    brd      = srcGame.brd;
+    strat0   = srcGame.strat0;
+    strat1   = srcGame.strat1;
+    verbose  = srcGame.verbose;
+    nSteps   = srcGame.nSteps;
+    trn      = srcGame.trn;
+    doubler0 = srcGame.doubler0;
+    doubler1 = srcGame.doubler1;
+    cube     = srcGame.cube;
+    cubedOutPlayer = srcGame.cubedOutPlayer;
+    cubeOwner      = srcGame.cubeOwner;
+}
+
+game::game( strategy * strat0, strategy * strat1, int seed, doublestrat * doubler0, doublestrat * doubler1 )
+{
+    this->strat0 = strat0;
+    this->strat1 = strat1;
+    rng = new CRandomMersenne(seed);
+    myRng = true;
+    verbose = false;
+    nSteps = 0;
+    trn = 0;
+    
+    this->doubler0 = doubler0;
+    this->doubler1 = doubler1;
+    cube = 1;
+    cubedOutPlayer = -1;
+    cubeOwner = -1;
 }
 
 game::~game()
@@ -80,14 +112,75 @@ void game::setTurn( int turn )
 
 void game::step()
 {
-    // roll the dice
+    // check for a double
     
-    int d1 = rng->IRandom(1,6);
-    int d2 = rng->IRandom(1,6);
+    doublestrat * doublerPlayer;
+    doublestrat * doublerOpponent;
+    if( trn == 0 )
+    {
+        doublerPlayer   = doubler0;
+        doublerOpponent = doubler1;
+    }
+    else
+    {
+        doublerPlayer   = doubler1;
+        doublerOpponent = doubler0;
+    }
     
-    // step with them
+    // if they haven't specified a player doubler, it'll never offer a double. Otherwise, check.
+    // Can only double if player has the cube or it's in the middle. Also can't double before the
+    // first roll. Also can't double if the cube's already at 64.
     
-    stepWithDice( d1, d2 );
+    brd.setPerspective(trn); // make sure the board is from the appropriate perspective when checking double stuff
+    
+    if( nSteps > 0 and cube < 64 and doublerPlayer and ( cubeOwner == -1 or cubeOwner == trn ) and doublerPlayer->offerDouble(brd,cubeOwner==-1) )
+    {
+        // if there's no opponent doubler specified, by arbitrary convention the opponent always takes.
+        // Otherwise, check the doubling strategy.
+        
+        if( !doublerOpponent or doublerOpponent->takeDouble(brd,cubeOwner==-1) )
+        {
+            doubleCube();
+            cubeOwner = 1 - trn;
+        }
+        else
+        {
+            // the player automatically wins a single game
+            
+            cubedOutPlayer = trn;
+        }
+    }
+    
+    // if the game isn't over (ie neither player has been doubled and passed), roll the
+    // dice and move.
+    
+    if( cubedOutPlayer == -1 )
+    {
+        // roll the dice
+        
+        int d1 = rng->IRandom(1,6);
+        int d2 = rng->IRandom(1,6);
+        
+        // if it's the first roll, the dice can't be the same, and we'll choose the player based on which is bigger
+        
+        while( nSteps == 0 and d1 == d2 )
+        {
+            d1 = rng->IRandom(1, 6);
+            d2 = rng->IRandom(1, 6);
+        }
+        
+        if( nSteps == 0 )
+        {
+            if( d1 > d2 )
+                trn = 0;
+            else
+                trn = 1;
+        }
+        
+        // step with them
+        
+        stepWithDice( d1, d2 );
+    }
 }
 
 void game::stepWithDice( const int& d1, const int& d2 )
@@ -130,7 +223,7 @@ void game::stepWithDice( const int& d1, const int& d2 )
     if( strat->needsUpdate() )
         strat->update( oldBoard, brd );
     
-    trn = ( trn + 1 ) % 2;
+    trn = 1 - trn;
     brd.setPerspective( 0 ); // always leave the board in perspective 0 so that it prints out consistently
     nSteps ++;
     
@@ -151,6 +244,8 @@ void game::stepToEnd()
 
 bool game::gameOver()
 {
+    if( cubedOutPlayer != -1 ) return true;
+    
     if( brd.bornIn() == 15 || brd.otherBornIn() == 15 )
         return true;
     else
@@ -159,6 +254,11 @@ bool game::gameOver()
 
 int game::winner()
 {
+    // if a player cubed out, it means they doubled they opponent and the opponent passed
+    
+    if( cubedOutPlayer != -1 )
+        return cubedOutPlayer;
+    
     if( gameOver() )
     {
         int winner;
@@ -178,31 +278,34 @@ int game::winnerScore()
 {
     if( gameOver() )
     {
+        if( cubedOutPlayer != -1 )
+            return cube;
+        
         if( brd.bornIn() == 15 )
         {
             // check if it was a regular win
-            if( brd.otherBornIn() != 0 ) return 1;
+            if( brd.otherBornIn() != 0 ) return cube;
             
             // check for a backgammon
-            if( brd.otherHit() != 0 ) return 3;
+            if( brd.otherHit() != 0 ) return 3*cube;
             for( int i=0; i<6; i++ )
-                if( brd.otherChecker( i ) != 0 ) return 3;
+                if( brd.otherChecker( i ) != 0 ) return 3*cube;
             
             // otherwise a regular gammon
-            return 2;
+            return 2*cube;
         }
         else
         {
             // check if it was a regular win
-            if( brd.bornIn() != 0 ) return 1;
+            if( brd.bornIn() != 0 ) return cube;
             
             // check for a backgammon
-            if( brd.hit() != 0 ) return 3;
+            if( brd.hit() != 0 ) return 3*cube;
             for( int i=18; i<24; i++ )
-                if( brd.checker( i ) != 0 ) return 3;
+                if( brd.checker( i ) != 0 ) return 3*cube;
             
             // otherwise a regular gammon
-            return 2;
+            return 2*cube;
         }
     }
     else

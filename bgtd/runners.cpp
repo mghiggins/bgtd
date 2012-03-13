@@ -36,9 +36,12 @@
 #include "game.h"
 #include "gamefns.h"
 #include "benchmark.h"
+#include "doublefns.h"
+#include "doublestratsimple.h"
+#include "doublestratjanowski.h"
 
-void dispBoard( int ind, bool flipped, const strategytdmult& s, const board& b );
-void dispBoards( const strategytdmult& s );
+void dispBoard( int ind, bool flipped, strategytdmult& s, const board& b );
+void dispBoards( strategytdmult& s );
 void dispBoardGam( int ind, bool flipped, const strategytdoriggam& s, const board& b );
 void dispBoardsGam( const strategytdoriggam& s );
 void dispBoardBg( int ind, bool flipped, const strategytdorigbg& s, const board& b );
@@ -55,7 +58,7 @@ public:
     void operator()()
     {
         game g( &s1, &s2, (int)(i+initSeed) );
-        g.setTurn( ((int) i)%2 );
+        //g.setTurn( ((int) i)%2 );
         //g.setContextValue( "singleGame", 1 );
         g.stepToEnd();
         double s = g.winnerScore();
@@ -168,7 +171,7 @@ runStats playParallelGen( strategy& s1, strategy& s2, long n, long initSeed, int
 
     for( int bkt=0; bkt<nBuckets; bkt++ )
     {
-        cout << "o";
+        if( nBuckets > 1 ) cout << bkt+1 << " ";
         cout.flush();
         
         // run each game in its own thread
@@ -198,7 +201,7 @@ runStats playParallelGen( strategy& s1, strategy& s2, long n, long initSeed, int
             avgSteps += steps[i];
         }
     }
-    cout << endl;
+    if( nBuckets > 1 ) cout << endl;
     
     ppg /= n;
     w0  /= n;
@@ -503,7 +506,7 @@ board referenceBoard( int index )
     throw "invalid index";
 }
 
-void dispBoard( int ind, bool flipped, const strategytdmult& s, const board& b )
+void dispBoard( int ind, bool flipped, strategytdmult& s, const board& b )
 {
     string eval( s.evaluator( b ) );
     string netName;
@@ -532,10 +535,16 @@ void dispBoard( int ind, bool flipped, const strategytdmult& s, const board& b )
         double bpgl = s.bearoffProbabilityGammonLoss( b );
         cout << " --> bearoff (pwin,pgamwin,pgamloss) = ( " << bpw << ", " << bpg << ", " << bpgl << " )";
     }
+    else
+    {
+        gameProbabilities probs( rolloutBoardProbabilitiesParallel(b, s, 4000, 1, 20, false) );
+        cout << " --> rollout: " << probs.probWin << "; ( " << probs.probGammonWin << ", " << probs.probGammonLoss << " ); ( " << probs.probBgWin << ", " << probs.probBgLoss << " )";
+                                
+    }
     cout << endl;
 }
 
-void dispBoards( const strategytdmult& s )
+void dispBoards( strategytdmult& s )
 {
     for( int ind=0; ind<7; ind++ ) 
     {
@@ -1534,17 +1543,17 @@ void trainBenchmarks()
     //strategytdmult s1( "benchmark", "player24" );
     //strategytdmult s1( "", "player31_120" );
     //strategytdmult s1( 120, true, true, true, true );
-    strategytdmult s1( "", "stdplayer33a" );
+    strategytdmult s1( "", "player33b" );
     s1.learning = false;
     
-    string playerName( "player33b" );
+    string playerName( "player33c" );
     string stdName = "std" + playerName;
     cout << "Player name = " << playerName << endl;
     
-    int seed = 2;
+    int seed = 1;
     
     double alpha;
-    double alphaMax=1, alphaMin=0.01;
+    double alphaMax=0.1/sqrt(10), alphaMin=0.03;
     
     vector<boardAndRolloutProbs> statesContact( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/contact-train-data" ) );
     vector<boardAndRolloutProbs> statesCrashed( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/crashed-train-data" ) );
@@ -1560,6 +1569,7 @@ void trainBenchmarks()
     double minCrashedER = gnuBgBenchmarkER( s1, dataSetCrashed );
     double minRaceER    = gnuBgBenchmarkER( s1, dataSetRace );
     cout << endl;
+    s1.writeWeights( playerName ); // write the initial set of weights as the best ones; we'll overwrite network by network later
     
     string fileName = "/Users/mghiggins/bgtdres/sl_comparison_results_" + playerName + ".csv";
     ofstream fr( fileName.c_str(), fstream::trunc );
@@ -1572,15 +1582,16 @@ void trainBenchmarks()
     double lastContactER = minContactER;
     int bestLag=0;
     
-    alpha = alphaMax/sqrt(10);;
+    alpha = alphaMax;
     
-    for( int i=0; i<300; i++ )
+    for( int i=0; i<30000; i++ )
     {
-        if( bestLag == 2 )
+        if( bestLag >= 4 )
         {
             alpha /= sqrt(10.);
             if( alpha < alphaMin ) alpha = alphaMax;
             cout << "alpha changed to " << alpha << endl;
+            bestLag = 0;
         }
         
         cout << endl << "***** Iteration " << i+1 << " ******" << endl;
@@ -1633,8 +1644,8 @@ void trainBenchmarks()
         
         if( contactER > lastContactER )
         {
-            cout << "Reseeding\n";
             seed ++;
+            cout << "Reseeding - seed now = " << seed << "\n";
             bestLag ++;
         }
         else
@@ -1655,8 +1666,18 @@ void testBenchmark()
     //strategytdmult s2( "benchmark", "player31" );
     //strategytdorigbg s2( "benchmark", "benchmark2" );
     //s1.learning = s2.learning = false;
-    strategytdmult s1( "", "player33_max" );
+    strategytdmult s1( "", "player33b" );
+    //strategytdmult s1( "benchmark", "player32" );
     s1.learning = false;
+    //strategytdorigbg s2( "benchmark", "benchmark2" );
+    strategytdmult s2( "benchmark", "player32" );
+    s2.learning = false;
+    //strategyPubEval s2;
+    
+    //dispBoards(s1);
+    
+    playParallelGen(s1, s2, 100000, 1, 100);
+    return;
     
     int nThreads=16;
     vector< vector<benchmarkData> > dataSetContact( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/contact.bm", nThreads ) );
@@ -1669,4 +1690,189 @@ void testBenchmark()
     
     //playParallelGen( s1, s2, 40000, 1, 40);
     //playParallelGen( s1, s3, 40000, 1, 40);
+}
+
+void testMatchEquity()
+{
+    /*
+    strategytdmult s0( "", "player33" );
+    strategytdmult sf( "benchmark", "player32q" );
+    strategyply strat( 2, 8, 0.1, s0, sf );
+    
+    writeCrawfordFirstDoubleStateProbDb( "/Users/mghiggins/bgtdres/benchdb/matcheq_postC_single.txt", strat, true );
+    writeCrawfordFirstDoubleStateProbDb( "/Users/mghiggins/bgtdres/benchdb/matcheq_postC.txt", strat, false );
+    */
+    
+    vector<stateData> singleData( loadCrawfordFirstDoubleStateProbDb("/Users/mghiggins/bgtdres/benchdb/matcheq_postC_single.txt") );
+    vector<stateData> data( loadCrawfordFirstDoubleStateProbDb("/Users/mghiggins/bgtdres/benchdb/matcheq_postC.txt") );
+    
+    double pw3=0, pw4=0;
+    for( int i=0; i<singleData.size(); i++ )
+    {
+        pw3 += data.at(i).stateProb * data.at(i).stateGameProbs.probGammonWin;
+        pw4 += data.at(i).stateProb * data.at(i).stateGameProbs.probGammonLoss;
+    }
+    
+    double gamProb = 0.5 * ( pw3 + pw4 );
+    //double gamProb=0.139;
+    cout << "Gammon probability = " << gamProb << endl;
+    
+    for( int i=1; i<=25; i++ )
+    {
+        double eq=matchEquityPostCrawford(i, gamProb, singleData, data);
+        cout << i << ": " << eq << "; " << (1-eq)/2. << endl;
+    }
+}
+
+vector<int> pntsCubeful;
+vector<int> scoresCubeful;
+vector<int> cubesCubeful;
+vector<int> stepsCubeful;
+
+class workerCubeful
+{
+public:
+    workerCubeful( long i, strategy& s1, strategy& s2, doublestrat& ds1, doublestrat& ds2, long n, long initSeed ) : i(i), s1(s1), s2(s2), ds1(ds1), ds2(ds2), n(n), initSeed(initSeed) {};
+    
+    void operator()()
+    {
+        game g( &s1, &s2, (int)(i+initSeed), &ds1, &ds2 );
+        g.setTurn( ((int) i)%2 );
+        //g.setContextValue( "singleGame", 1 );
+        g.stepToEnd();
+        double s = g.winnerScore();
+        if( g.winner() == 0 )
+            pntsCubeful[i] = s;
+        else
+            pntsCubeful[i] = -s;
+        scoresCubeful[i] = s/g.getCube();
+        cubesCubeful[i] = g.getCube();
+        stepsCubeful[i] = g.nSteps;
+    }
+    
+private:
+    long i;
+    strategy& s1;
+    strategy& s2;
+    doublestrat& ds1;
+    doublestrat& ds2;
+    long n;
+    long initSeed;
+};
+
+runStats playParallelCubeful( strategy& s1, strategy& s2, doublestrat& ds1, doublestrat& ds2, long n, long initSeed, int nBuckets )
+{
+    using namespace boost;
+    
+    if( n % nBuckets != 0 ) throw string( "n must be a multiple of nBuckets" );
+    
+    long nRuns = n / nBuckets;
+    double ppg=0, w0=0, q=0, avgSteps=0, avgCube=0, ns=0, ng=0, nb=0;
+    double avgAvgPpg=0, avgPpgSq=0;
+    
+    for( int bkt=0; bkt<nBuckets; bkt++ )
+    {
+        if( nBuckets > 1 )
+        {
+            cout << bkt+1 << " ";
+            cout.flush();
+        }
+        
+        // run each game in its own thread
+        
+        if( pntsCubeful.size() < nRuns ) 
+        {
+            pntsCubeful.resize(nRuns);
+            scoresCubeful.resize(nRuns);
+            cubesCubeful.resize(nRuns);
+            stepsCubeful.resize(nRuns);
+        }
+        
+        thread_group ts;
+        for( long i=0; i<nRuns; i++ ) ts.create_thread( workerCubeful( i, s1, s2, ds1, ds2, nRuns, initSeed+bkt*nRuns ) );
+        ts.join_all();
+        
+        int p, score;
+        double subAvgPpg=0;
+        for( long i=0; i<nRuns; i++ ) 
+        {
+            p  = pntsCubeful[i];
+            score = scoresCubeful[i];
+            
+            ppg += p;
+            subAvgPpg += p;
+            q += score;
+            if( p > 0 ) w0 += 1;
+            if( score == 1 ) ns += 1;
+            if( score == 2 ) ng += 1;
+            if( score == 3 ) nb += 1;
+            avgSteps += stepsCubeful[i];
+            avgCube  += cubesCubeful[i];
+        }
+        subAvgPpg /= n/nBuckets;
+        avgAvgPpg += subAvgPpg;
+        avgPpgSq  += subAvgPpg * subAvgPpg;
+    }
+    if( nBuckets > 1 ) cout << endl;
+    
+    ppg /= n;
+    w0  /= n;
+    q   /= n;
+    ns  /= n;
+    ng  /= n;
+    nb  /= n;
+    avgSteps /= n;
+    avgCube  /= n;
+    
+    cout << "Average ppg        = " << ppg << endl;
+    cout << "Prob of P1 winning = " << w0 * 100 << endl;
+    cout << "Average score      = " << q << endl;
+    cout << "Frac single        = " << ns << endl;
+    cout << "Frac gammon        = " << ng << endl;
+    cout << "Frac backgammon    = " << nb << endl;
+    cout << "Average steps/game = " << avgSteps << endl;
+    cout << "Average cube       = " << avgCube << endl;
+    cout << endl;
+    if( nBuckets > 2 )
+    {
+        avgAvgPpg /= nBuckets;
+        avgPpgSq  /= nBuckets;
+        
+        cout << "Std dev of bkt ppg = " << sqrt( avgPpgSq - avgAvgPpg*avgAvgPpg ) << endl;
+        cout << "Std err of ppg     = " << sqrt( ( avgPpgSq - avgAvgPpg*avgAvgPpg ) / ( nBuckets - 1 ) ) << endl << endl;
+    }
+    
+    runStats stats;
+    stats.ppg        = ppg;
+    stats.fracWin    = w0;
+    stats.avgSteps   = avgSteps;
+    stats.fracSingle = ns;
+    stats.fracGammon = ng;
+    stats.fracBg     = nb;
+    stats.avgCube    = avgCube;
+    
+    return stats;
+}
+
+void testCubefulMoney()
+{
+    strategytdmult s1( "benchmark", "player32" );
+    doublestratjanowski ds1( s1, 0. );
+    //doublestratdeadcube ds1(s1);
+    doublestratjanowski ds2( s1, 0.65 );
+    
+    playParallelCubeful(s1, s1, ds2, ds2, 1000, 1, 10);
+    
+    /*
+    board b;
+    marketWindow w1( ds1.getMarketWindow(b) );
+    marketWindow w2( ds2.getMarketWindow(b) );
+    
+    cout << w1.probWin << "," << w1.takePoint << "," << w1.cashPoint << endl;
+    cout << w2.probWin << "," << w2.takePoint << "," << w2.cashPoint << endl;
+    */
+    
+    //game g(&s1,&s1,2,&ds2,&ds2);
+    //g.stepToEnd();
+    
 }
