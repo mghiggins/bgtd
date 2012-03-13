@@ -24,6 +24,9 @@
 		C07E426E14C533B700C748F6 /* strategytdorigbg.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C07E426D14C533B700C748F6 /* strategytdorigbg.cpp */; };
 		C08926FE144F5EC100D8F606 /* bearofffns.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C08926FD144F5EC100D8F606 /* bearofffns.cpp */; };
 		C08927011450AF7700D8F606 /* strategytdmult.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C08927001450AF7700D8F606 /* strategytdmult.cpp */; };
+		C09D65D4150A9EC100AF978A /* doublefns.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C09D65D3150A9EC100AF978A /* doublefns.cpp */; };
+		C09D65DA150C1B2F00AF978A /* doublestratsimple.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C09D65D9150C1B2F00AF978A /* doublestratsimple.cpp */; };
+		C09D65DD150D406C00AF978A /* doublestratjanowski.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C09D65DC150D406C00AF978A /* doublestratjanowski.cpp */; };
 		C0E5DB5713D9BF8B009FC15A /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C0E5DB5613D9BF8B009FC15A /* main.cpp */; };
 		C0E5DB5913D9BF8B009FC15A /* bgtd.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = C0E5DB5813D9BF8B009FC15A /* bgtd.1 */; };
 		C0E87BD213ECD2770006CC15 /* strategyhuman.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C0E87BD113ECD2770006CC15 /* strategyhuman.cpp */; };
@@ -80,6 +83,13 @@
 		C08926FF1450AF5900D8F606 /* strategytdmult.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = strategytdmult.h; sourceTree = "<group>"; };
 		C08927001450AF7700D8F606 /* strategytdmult.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strategytdmult.cpp; sourceTree = "<group>"; };
 		C093671B14CBA59600C67D90 /* common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = common.h; sourceTree = "<group>"; };
+		C09D65D1150A9EB700AF978A /* doublefns.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = doublefns.h; sourceTree = "<group>"; };
+		C09D65D3150A9EC100AF978A /* doublefns.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = doublefns.cpp; sourceTree = "<group>"; };
+		C09D65D5150C18BC00AF978A /* doublestrat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = doublestrat.h; sourceTree = "<group>"; };
+		C09D65D8150C1A7500AF978A /* doublestratsimple.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = doublestratsimple.h; sourceTree = "<group>"; };
+		C09D65D9150C1B2F00AF978A /* doublestratsimple.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = doublestratsimple.cpp; sourceTree = "<group>"; };
+		C09D65DB150D3F4400AF978A /* doublestratjanowski.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = doublestratjanowski.h; sourceTree = "<group>"; };
+		C09D65DC150D406C00AF978A /* doublestratjanowski.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = doublestratjanowski.cpp; sourceTree = "<group>"; };
 		C0E5DB5213D9BF8B009FC15A /* bgtd */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = bgtd; sourceTree = BUILT_PRODUCTS_DIR; };
 		C0E5DB5613D9BF8B009FC15A /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		C0E5DB5813D9BF8B009FC15A /* bgtd.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = bgtd.1; sourceTree = "<group>"; };
@@ -128,6 +138,13 @@
 				C0F201DE13E4BB100050D98F /* runners.cpp */,
 				C031150214DDABA4002894EB /* benchmark.h */,
 				C031150414DDADB5002894EB /* benchmark.cpp */,
+				C09D65D1150A9EB700AF978A /* doublefns.h */,
+				C09D65D3150A9EC100AF978A /* doublefns.cpp */,
+				C09D65D5150C18BC00AF978A /* doublestrat.h */,
+				C09D65D8150C1A7500AF978A /* doublestratsimple.h */,
+				C09D65D9150C1B2F00AF978A /* doublestratsimple.cpp */,
+				C09D65DB150D3F4400AF978A /* doublestratjanowski.h */,
+				C09D65DC150D406C00AF978A /* doublestratjanowski.cpp */,
 				C0202DDE13E3361600F00B48 /* tests.h */,
 				C0202DE013E3362000F00B48 /* tests.cpp */,
 				C0E5DB5813D9BF8B009FC15A /* bgtd.1 */,
@@ -234,6 +251,9 @@
 				C07E426E14C533B700C748F6 /* strategytdorigbg.cpp in Sources */,
 				C004BC2214D9759C00F2C012 /* strategyprob.cpp in Sources */,
 				C031150514DDADB5002894EB /* benchmark.cpp in Sources */,
+				C09D65D4150A9EC100AF978A /* doublefns.cpp in Sources */,
+				C09D65DA150C1B2F00AF978A /* doublestratsimple.cpp in Sources */,
+				C09D65DD150D406C00AF978A /* doublestratjanowski.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
