@@ -88,6 +88,23 @@ game::game( strategy * strat0, strategy * strat1, int seed, doublestrat * double
     cubeOwner = -1;
 }
 
+game::game( strategy * strat0, strategy * strat1, doublestrat * doubler0, doublestrat * doubler1, CRandomMersenne * rng )
+{
+    this->strat0 = strat0;
+    this->strat1 = strat1;
+    this->rng = rng;
+    myRng   = false;
+    verbose = false;
+    nSteps  = 0;
+    trn     = 0;
+    
+    this->doubler0 = doubler0;
+    this->doubler1 = doubler1;
+    cube = 1;
+    cubedOutPlayer = -1;
+    cubeOwner = -1;
+}
+
 game::~game()
 {
     if( myRng )

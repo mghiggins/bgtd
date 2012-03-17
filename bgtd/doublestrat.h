@@ -31,15 +31,15 @@ public:
     virtual ~doublestrat() {};
     
     // offerDouble takes a board, assuming the player holds the dice and has the opportunity
-    // to double. Returns true if the player should double and false if not. centeredCube
-    // should be true if the cube is in the center and false if the player holds the cube.
+    // to double. Returns true if the player should double and false if not. cube is the value
+    // of the cube (1 if in the center).
     
-    virtual bool offerDouble( const board& b, bool centeredCube ) = 0;
+    virtual bool offerDouble( const board& b, int cube ) = 0;
     
     // takeDouble takes a board, assuming the player is being offered the cube. If it returns
     // true the player takes; false, the player passes. 
     
-    virtual bool takeDouble( const board& b, bool centeredCube ) = 0;
+    virtual bool takeDouble( const board& b, int cube ) = 0;
 };
 
 #endif

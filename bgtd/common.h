@@ -20,6 +20,7 @@
 #define bgtd_common_h
 
 #include <string>
+#include <hash_map.h>
 
 // define a hash fn for string so that hash_map can use strings as keys
 

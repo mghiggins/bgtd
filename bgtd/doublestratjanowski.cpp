@@ -18,7 +18,7 @@
 
 #include "doublestratjanowski.h"
 
-bool doublestratjanowski::offerDouble( const board& b, bool centeredCube )
+bool doublestratjanowski::offerDouble( const board& b, int cube )
 {
     // double if cubeful equity is in (0,1). Cubeful equity for cube in the middle is approximated with a piecewise 
     // linear fn: -L -> -1 for prob [0,TP], -1 -> +1 in [TP,CP], and +1 to +W in [CP,1].
@@ -40,7 +40,7 @@ bool doublestratjanowski::offerDouble( const board& b, bool centeredCube )
     
     // equity if we don't double depends on whether the cube is centered
     
-    if( centeredCube )
+    if( cube == 1 )
     {
         if( window.probWin < window.takePoint )
             equityNoDouble = ( window.probWin * (-1) + ( window.takePoint - window.probWin ) * (-window.L) ) / window.takePoint;
@@ -60,7 +60,7 @@ bool doublestratjanowski::offerDouble( const board& b, bool centeredCube )
     return equityDouble > equityNoDouble;
 }
 
-bool doublestratjanowski::takeDouble( const board& b, bool centeredCube )
+bool doublestratjanowski::takeDouble( const board& b, int cube )
 {
     marketWindow window( getMarketWindow(b) );
     

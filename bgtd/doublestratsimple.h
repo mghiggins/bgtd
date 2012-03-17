@@ -32,8 +32,8 @@ public:
     doublestratdeadcube( strategyprob& strat ) : strat(strat) {};
     virtual ~doublestratdeadcube() {};
     
-    virtual bool offerDouble( const board& b, bool centeredCube );
-    virtual bool takeDouble( const board& b, bool centeredCube );
+    virtual bool offerDouble( const board& b, int cube );
+    virtual bool takeDouble( const board& b, int cube );
     
 private:
     strategyprob& strat;
@@ -47,8 +47,8 @@ public:
     doublestratnodouble() {};
     virtual ~doublestratnodouble() {};
     
-    virtual bool offerDouble( const board& b, bool centeredCube ) { return false; };
-    virtual bool takeDouble( const board& b, bool centeredCube ) { return true; };
+    virtual bool offerDouble( const board& b, int cube ) { return false; };
+    virtual bool takeDouble( const board& b, int cube ) { return true; };
 };
 
 #endif

@@ -19,7 +19,7 @@
 
 #include "doublestratsimple.h"
 
-bool doublestratdeadcube::offerDouble( const board& b, bool centeredCube )
+bool doublestratdeadcube::offerDouble( const board& b, int cube )
 {
     gameProbabilities probs( strat.boardProbabilities( b ) );
     
@@ -27,7 +27,7 @@ bool doublestratdeadcube::offerDouble( const board& b, bool centeredCube )
     return equity > 0 and equity < 1;
 }
 
-bool doublestratdeadcube::takeDouble( const board& b, bool centeredCube )
+bool doublestratdeadcube::takeDouble( const board& b, int cube )
 {
     gameProbabilities probs( strat.boardProbabilities( b ) );
     double equity = probs.equity();

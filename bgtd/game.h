@@ -42,6 +42,7 @@ public:
     // others that add doubling strategies for each player
     
     game( strategy * strat0, strategy * strat1, int seed, doublestrat * doubler0, doublestrat * doubler1 );
+    game( strategy * strat0, strategy * strat1, doublestrat * doubler0, doublestrat * doubler1, CRandomMersenne * rng );
     
     // destructor
     

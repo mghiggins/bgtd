@@ -44,8 +44,8 @@ public:
     doublestratjanowski( strategyprob& strat, double cubeLifeIndex ) : strat(strat), cubeLifeIndex(cubeLifeIndex) {};
     virtual ~doublestratjanowski() {};
     
-    virtual bool offerDouble( const board& b, bool centeredCube );
-    virtual bool takeDouble( const board& b, bool centeredCube );
+    virtual bool offerDouble( const board& b, int cube );
+    virtual bool takeDouble( const board& b, int cube );
     
     marketWindow getMarketWindow( const board& b );
     

@@ -39,6 +39,9 @@
 #include "doublefns.h"
 #include "doublestratsimple.h"
 #include "doublestratjanowski.h"
+#include "doublestratmatch.h"
+#include "match.h"
+#include "matchequitytable.h"
 
 void dispBoard( int ind, bool flipped, strategytdmult& s, const board& b );
 void dispBoards( strategytdmult& s );
@@ -1695,33 +1698,45 @@ void testBenchmark()
 void testMatchEquity()
 {
     /*
-    strategytdmult s0( "", "player33" );
+    strategytdmult s0( "benchmark", "player32" );
     strategytdmult sf( "benchmark", "player32q" );
-    strategyply strat( 2, 8, 0.1, s0, sf );
+    strategyply strat( 1, 8, 0.1, s0, sf );
     
     writeCrawfordFirstDoubleStateProbDb( "/Users/mghiggins/bgtdres/benchdb/matcheq_postC_single.txt", strat, true );
     writeCrawfordFirstDoubleStateProbDb( "/Users/mghiggins/bgtdres/benchdb/matcheq_postC.txt", strat, false );
     */
-    
+    /*
     vector<stateData> singleData( loadCrawfordFirstDoubleStateProbDb("/Users/mghiggins/bgtdres/benchdb/matcheq_postC_single.txt") );
     vector<stateData> data( loadCrawfordFirstDoubleStateProbDb("/Users/mghiggins/bgtdres/benchdb/matcheq_postC.txt") );
     
-    double pw3=0, pw4=0;
+    double pw3=0, pw4=0, pw5=0;
     for( int i=0; i<singleData.size(); i++ )
     {
         pw3 += data.at(i).stateProb * data.at(i).stateGameProbs.probGammonWin;
         pw4 += data.at(i).stateProb * data.at(i).stateGameProbs.probGammonLoss;
+        pw5 += data.at(i).stateProb * data.at(i).stateGameProbs.probBgWin;
     }
     
+    cout << pw3 << "," << pw4 << "," << pw5 << endl;
     double gamProb = 0.5 * ( pw3 + pw4 );
-    //double gamProb=0.139;
+    //double gamProb=0.1;
     cout << "Gammon probability = " << gamProb << endl;
     
-    for( int i=1; i<=25; i++ )
+    writeMatchEquityTable(gamProb, singleData, data, "/Users/mghiggins/bgtdres/benchdb/MET.txt" );
+    */
+    loadMatchEquityTable( "/Users/mghiggins/bgtdres/benchdb/MET.txt" );
+    
+    for( int i=0; i<12; i++ )
+        cout << 100-(matchEquityPostCrawfordCached(i+1)+1)/2.*100 << ",";
+    cout << endl << endl;
+    
+    for( int i=0; i<12; i++ ) 
     {
-        double eq=matchEquityPostCrawford(i, gamProb, singleData, data);
-        cout << i << ": " << eq << "; " << (1-eq)/2. << endl;
+        for( int j=i+1; j<12; j++ )
+            cout << (matchEquityCached(i+1,j+1)+1)/2*100 << ",";
+        cout << endl;
     }
+    cout << endl;
 }
 
 vector<int> pntsCubeful;
@@ -1875,4 +1890,108 @@ void testCubefulMoney()
     //game g(&s1,&s1,2,&ds2,&ds2);
     //g.stepToEnd();
     
+}
+
+vector<int> pntsMatch;
+
+class workerMatch
+{
+public:
+    workerMatch( int i, int target, strategyprob& s1, strategy& s2, const matchequitytable& MET, doublestrat& ds2, int initSeed ) : i(i), target(target), s1(s1), s2(s2), MET(MET), ds2(ds2), initSeed(initSeed) {};
+    
+    void operator()()
+    {
+        doublestratmatch ds1( s1, MET );
+        match m( target, &s1, &s2, i+initSeed, &ds1, &ds2 );
+        ds1.setMatch(&m);
+        m.stepToEnd();
+        if( m.winner() == 0 )
+            pntsMatch.at(i) = 1;
+        else
+            pntsMatch.at(i) = -1;
+    }
+    
+private:
+    int i;
+    int target;
+    strategyprob& s1;
+    strategy& s2;
+    //doublestratmatch& ds1;
+    const matchequitytable& MET;
+    doublestrat& ds2;
+    int initSeed;
+};
+
+void testMatch()
+{
+    using namespace boost;
+    
+    strategytdmult s( "benchmark", "player33" );
+    doublestratmatch ds1(s,"/Users/mghiggins/bgtdres/benchdb/MET.txt");
+    //doublestratjanowski ds2(s,0.7);
+    //doublestratdeadcube ds2(s);
+    doublestratnodouble ds2;
+    
+    matchequitytable MET( ds1.getMET() );
+    
+    
+    match m0( 7, &s, &s, 1, &ds1, &ds2 );
+    ds1.setMatch(&m0);
+    
+    board b;
+    gameProbabilities probs( s.boardProbabilities(b) );
+    interpMEdata data( ds1.equityInterpFn(probs, 0, 2, 1, 4, 4) );
+    
+    cout << data.takePoint << "," << data.takeME << " : " << data.cashPoint << "," << data.cashME << endl;
+    cout << ds1.offerDouble(b, 1) << endl;
+    cout << ds1.takeDouble(b,1) << endl;
+    return;
+    
+    int n=10000;
+    int nBuckets=100;
+    int target=3;
+    if( n % nBuckets != 0 ) throw string( "nRuns must be a multiple of nBuckets" );
+    
+    int nRuns = n / nBuckets;
+    double ppm=0;
+    
+    bool runParallel=true;
+    
+    for( int bkt=0; bkt<nBuckets; bkt++ )
+    {
+        if( nBuckets > 1 )
+        {
+            cout << bkt+1 << " ";
+            if( !runParallel ) cout << endl;
+            cout.flush();
+        }
+        
+        // run each game in its own thread
+        
+        if( pntsMatch.size() < nRuns ) 
+            pntsMatch.resize(nRuns);
+        
+        if( runParallel )
+        {
+            thread_group ts;
+            for( int i=0; i<nRuns; i++ ) ts.create_thread( workerMatch( i, target, s, s, MET, ds2, 2+bkt*nRuns ) );
+            ts.join_all();
+        }
+        else
+        {
+            for( int i=0; i<nRuns; i++ )
+            {
+                cout << "  Serial " << i << endl;
+                workerMatch w( i, target, s, s, MET, ds2, 2+bkt*nRuns );
+                w();
+            }
+        }
+        
+        for( int i=0; i<nRuns; i++ )
+            ppm += pntsMatch.at(i);
+    }
+    if( nBuckets > 1 ) cout << endl;
+
+    ppm /= n;
+    cout << "Average player match equity = " << ppm << endl;
 }
