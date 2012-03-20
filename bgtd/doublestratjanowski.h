@@ -37,6 +37,8 @@ public:
     double L() const;
     double takePoint() const;
     double cashPoint() const;
+    double initialDoublePoint() const;
+    double redoublePoint() const;
     double equity( double probWin, int cube, bool ownsCube ) const;
 };
 
@@ -54,6 +56,8 @@ public:
     
     double getCubeLifeIndex() const { return cubeLifeIndex; };
     void setCubeLifeIndex( double newIndex ) { if( newIndex < 0 or newIndex > 1 ) throw string( "cube life index must be in [0,1]" ); cubeLifeIndex=newIndex; };
+    
+    gameProbabilities boardProbabilities( const board& b );
     
 private:
     strategyprob& strat;

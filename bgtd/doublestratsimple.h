@@ -35,6 +35,8 @@ public:
     virtual bool offerDouble( const board& b, int cube );
     virtual bool takeDouble( const board& b, int cube );
     
+    gameProbabilities boardProbabilities( const board& b );
+    
 private:
     strategyprob& strat;
 };

@@ -21,7 +21,7 @@
 
 bool doublestratdeadcube::offerDouble( const board& b, int cube )
 {
-    gameProbabilities probs( strat.boardProbabilities( b ) );
+    gameProbabilities probs( boardProbabilities( b ) );
     
     double equity = probs.equity();
     return equity > 0 and equity < 1;
@@ -29,7 +29,15 @@ bool doublestratdeadcube::offerDouble( const board& b, int cube )
 
 bool doublestratdeadcube::takeDouble( const board& b, int cube )
 {
-    gameProbabilities probs( strat.boardProbabilities( b ) );
+    gameProbabilities probs( boardProbabilities( b ) );
     double equity = probs.equity();
     return 2 * equity > -1;
+}
+
+gameProbabilities doublestratdeadcube::boardProbabilities( const board& b )
+{
+    board fb(b);
+    fb.setPerspective(1-b.perspective());
+    gameProbabilities probs( strat.boardProbabilities(fb) );
+    return probs.flippedProbs();
 }

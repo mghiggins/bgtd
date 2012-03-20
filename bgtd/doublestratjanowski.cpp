@@ -42,6 +42,20 @@ double marketWindowJanowski::cashPoint() const
     return ( l + 0.5 + 0.5*cubeLifeIndex ) / ( w + l + cubeLifeIndex/2. );
 }
 
+double marketWindowJanowski::initialDoublePoint() const
+{
+    double l=L();
+    double w=W();
+    return (l+(3-cubeLifeIndex)/(2-cubeLifeIndex)*cubeLifeIndex/2.)/(w+l+cubeLifeIndex/2.);
+}
+
+double marketWindowJanowski::redoublePoint() const
+{
+    double l=L();
+    double w=W();
+    return (l+cubeLifeIndex)/(w+l+0.5*cubeLifeIndex);
+}
+
 double marketWindowJanowski::equity( double probWin, int cube, bool ownsCube ) const
 {
     if( probWin < takePoint() ) return -cube;
@@ -64,7 +78,7 @@ bool doublestratjanowski::offerDouble( const board& b, int cube )
     // Cubeful equity when opponent owns the cube is approximated as piecewise linear as well: -L -> -1 in [0,TP]
     // and -1 -> W in [TP,1]. Cubeful equity when player owns the cube is -L -> +1 in [0,CP] and +1 -> W in [CP,1].
     
-    marketWindowJanowski window( strat.boardProbabilities(b), cubeLifeIndex );
+    marketWindowJanowski window( boardProbabilities(b), cubeLifeIndex );
     
     // equity if we double is always the one where the opponent holds the cube
     
@@ -81,12 +95,22 @@ bool doublestratjanowski::offerDouble( const board& b, int cube )
 
 bool doublestratjanowski::takeDouble( const board& b, int cube )
 {
-    marketWindowJanowski window( strat.boardProbabilities(b), cubeLifeIndex );
+    marketWindowJanowski window( boardProbabilities(b), cubeLifeIndex );
     
     // once the player takes the cube he owns it and can't get doubled again (unless he redoubles). We need to calculate the cubeful equity
     // post-take, and we take if that's > -1.
     
-    double equityDouble = window.equity( window.probs.probWin, 2, false );
+    double equityDouble = window.equity( window.probs.probWin, 2, true );
     return equityDouble > -1;
 }
 
+gameProbabilities doublestratjanowski::boardProbabilities( const board& b )
+{
+    // boardProbabilities from the strategy corresponds to probabilities *after* the player
+    // has passed the dice; we need it before.
+    
+    board fb(b);
+    fb.setPerspective(1-b.perspective());
+    gameProbabilities probs( strat.boardProbabilities(fb) );
+    return probs.flippedProbs();
+}
