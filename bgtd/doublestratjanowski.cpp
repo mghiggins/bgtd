@@ -18,6 +18,45 @@
 
 #include "doublestratjanowski.h"
 
+double marketWindowJanowski::W() const
+{
+    return probs.probWin == 0 ? 1 : ( probs.probWin + probs.probGammonWin + probs.probBgWin ) / probs.probWin;
+}
+
+double marketWindowJanowski::L() const
+{
+    return 1-probs.probWin == 0 ? 1 : ( 1-probs.probWin + probs.probGammonLoss + probs.probBgLoss ) / ( 1 - probs.probWin );
+}
+
+double marketWindowJanowski::takePoint() const
+{
+    double l=L();
+    double w=W();
+    return ( l - 0.5 ) / ( w + l + cubeLifeIndex/2. );
+}
+
+double marketWindowJanowski::cashPoint() const
+{
+    double l=L();
+    double w=W();
+    return ( l + 0.5 + 0.5*cubeLifeIndex ) / ( w + l + cubeLifeIndex/2. );
+}
+
+double marketWindowJanowski::equity( double probWin, int cube, bool ownsCube ) const
+{
+    if( probWin < takePoint() ) return -cube;
+    if( probWin > cashPoint() ) return cube;
+    double l=L();
+    double w=W();
+    
+    if( cube == 1 ) // centered
+        return 4*cube/(4-cubeLifeIndex) * ( probWin * ( w + l + 0.5*cubeLifeIndex ) - l - 0.25*cubeLifeIndex );
+    if( ownsCube )
+        return cube * ( probWin * ( w + l + 0.5*cubeLifeIndex ) - l );
+    else
+        return cube * ( probWin * ( w + l + 0.5*cubeLifeIndex ) - l - 0.5*cubeLifeIndex );
+}
+
 bool doublestratjanowski::offerDouble( const board& b, int cube )
 {
     // double if cubeful equity is in (0,1). Cubeful equity for cube in the middle is approximated with a piecewise 
@@ -25,69 +64,29 @@ bool doublestratjanowski::offerDouble( const board& b, int cube )
     // Cubeful equity when opponent owns the cube is approximated as piecewise linear as well: -L -> -1 in [0,TP]
     // and -1 -> W in [TP,1]. Cubeful equity when player owns the cube is -L -> +1 in [0,CP] and +1 -> W in [CP,1].
     
-    marketWindow window( getMarketWindow(b) );
-    
-    double equityNoDouble, equityDouble;
+    marketWindowJanowski window( strat.boardProbabilities(b), cubeLifeIndex );
     
     // equity if we double is always the one where the opponent holds the cube
     
-    if( window.probWin < window.takePoint )
-        equityDouble = ( window.probWin * (-1) + ( window.takePoint - window.probWin ) * (-window.L) ) / window.takePoint;
-    else
-        equityDouble = ( ( 1 - window.probWin ) * (-1) + ( window.probWin - window.takePoint ) * window.W ) / ( 1 - window.takePoint );
+    double equityDouble = window.equity( window.probs.probWin, 2*cube, false );
     
-    equityDouble *= 2; // what we calculated before was for cube=1, but if they take, it's worth twice as much
+    // equity if we don't double is the one where we own the cube at its current value
     
-    // equity if we don't double depends on whether the cube is centered
+    double equityNoDouble = window.equity( window.probs.probWin, cube, true );
     
-    if( cube == 1 )
-    {
-        if( window.probWin < window.takePoint )
-            equityNoDouble = ( window.probWin * (-1) + ( window.takePoint - window.probWin ) * (-window.L) ) / window.takePoint;
-        else if( window.probWin < window.cashPoint )
-            equityNoDouble = ( ( window.probWin - window.takePoint ) * 1 + ( window.cashPoint - window.probWin ) * (-1) ) / ( window.cashPoint - window.takePoint );
-        else
-            equityNoDouble = ( ( 1 - window.probWin ) * 1 + ( window.probWin - window.cashPoint ) * window.W ) / ( 1 - window.cashPoint );
-    }
-    else
-    {
-        if( window.probWin < window.cashPoint )
-            equityNoDouble = ( window.probWin * 1 + ( window.cashPoint - window.probWin ) * (-window.L) ) / window.cashPoint;
-        else
-            equityNoDouble = ( ( 1 - window.probWin ) * 1 + ( window.probWin - window.cashPoint ) * window.W ) / ( 1 - window.cashPoint );
-    }
+    // we double if it's better to do so from an equity perspective
     
     return equityDouble > equityNoDouble;
 }
 
 bool doublestratjanowski::takeDouble( const board& b, int cube )
 {
-    marketWindow window( getMarketWindow(b) );
+    marketWindowJanowski window( strat.boardProbabilities(b), cubeLifeIndex );
     
     // once the player takes the cube he owns it and can't get doubled again (unless he redoubles). We need to calculate the cubeful equity
-    // post-take, and we take if that's > -1. We approximate the cubeful equity when we hold the cube as piecewise linear, -L -> +1 in [0,CP]
-    // and +1 -> W in [CP,1].
+    // post-take, and we take if that's > -1.
     
-    double equityDouble;
-    if( window.probWin < window.cashPoint )
-        equityDouble = ( window.probWin * 1 + ( window.cashPoint - window.probWin ) * (-window.L) ) / window.cashPoint;
-    else
-        equityDouble = ( ( 1 - window.probWin ) * 1 + ( window.probWin - window.cashPoint ) * window.W ) / ( 1 - window.cashPoint );
-    
-    equityDouble *= 2; // cube doubles the value of the game
-    
+    double equityDouble = window.equity( window.probs.probWin, 2, false );
     return equityDouble > -1;
 }
 
-marketWindow doublestratjanowski::getMarketWindow( const board& b )
-{
-    gameProbabilities probs( strat.boardProbabilities( b ) );
-    
-    double W = ( probs.probWin + probs.probGammonWin + probs.probBgWin ) / probs.probWin; // winning score conditional on a win (+ve)
-    double L = ( 1 - probs.probWin + probs.probGammonLoss + probs.probBgLoss ) / ( 1 - probs.probWin ); // losing score conditional on a loss (+ve)
-    
-    double TP = ( L - 0.5 ) / ( W + L + 0.5 * cubeLifeIndex ); // take point for prob of win
-    double CP = ( L + 0.5 + 0.5 * cubeLifeIndex ) / ( W + L + 0.5 * cubeLifeIndex );
-    
-    return marketWindow( TP, CP, probs.probWin, W, L );
-}

@@ -1872,8 +1872,8 @@ runStats playParallelCubeful( strategy& s1, strategy& s2, doublestrat& ds1, doub
 void testCubefulMoney()
 {
     strategytdmult s1( "benchmark", "player32" );
-    doublestratjanowski ds1( s1, 0. );
-    //doublestratdeadcube ds1(s1);
+    //doublestratjanowski ds1( s1, 0. );
+    doublestratdeadcube ds1(s1);
     doublestratjanowski ds2( s1, 0.65 );
     
     playParallelCubeful(s1, s1, ds2, ds2, 1000, 1, 10);
@@ -1934,21 +1934,8 @@ void testMatch()
     
     matchequitytable MET( ds1.getMET() );
     
-    
-    match m0( 7, &s, &s, 1, &ds1, &ds2 );
-    ds1.setMatch(&m0);
-    
-    board b;
-    gameProbabilities probs( s.boardProbabilities(b) );
-    interpMEdata data( ds1.equityInterpFn(probs, 0, 2, 1, 4, 4) );
-    
-    cout << data.takePoint << "," << data.takeME << " : " << data.cashPoint << "," << data.cashME << endl;
-    cout << ds1.offerDouble(b, 1) << endl;
-    cout << ds1.takeDouble(b,1) << endl;
-    return;
-    
-    int n=10000;
-    int nBuckets=100;
+    int n=1000;
+    int nBuckets=10;
     int target=3;
     if( n % nBuckets != 0 ) throw string( "nRuns must be a multiple of nBuckets" );
     
@@ -1966,7 +1953,7 @@ void testMatch()
             cout.flush();
         }
         
-        // run each game in its own thread
+        // run each match in its own thread
         
         if( pntsMatch.size() < nRuns ) 
             pntsMatch.resize(nRuns);

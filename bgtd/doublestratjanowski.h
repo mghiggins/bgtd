@@ -23,16 +23,21 @@
 #include "doublestrat.h"
 #include "strategyprob.h"
 
-class marketWindow
+class marketWindowJanowski
 {
-public:
-    marketWindow( double takePoint, double cashPoint, double probWin, double W, double L ) : takePoint(takePoint), cashPoint(cashPoint), probWin(probWin), W(W), L(L) {};
+    // class used to calculate cube decision points and cubeful equities in Janowski's model
     
-    double takePoint; // below this prob of any win, you pass when offered the cube
-    double cashPoint; // above this prob of any win, your opponent will pass when offered the cube
-    double probWin;   // probability of any win
-    double W;         // expected winning points conditional on a win (+ve)
-    double L;         // expected losing points conditional on a loss (-ve)
+public:
+    marketWindowJanowski( gameProbabilities probs, double cubeLifeIndex ) : probs(probs), cubeLifeIndex(cubeLifeIndex) {};
+    
+    gameProbabilities probs; // cubeless game probabilities when the market window was created
+    double cubeLifeIndex;   // Janowski's cube life index
+    
+    double W() const;
+    double L() const;
+    double takePoint() const;
+    double cashPoint() const;
+    double equity( double probWin, int cube, bool ownsCube ) const;
 };
 
 class doublestratjanowski : public doublestrat
@@ -46,8 +51,6 @@ public:
     
     virtual bool offerDouble( const board& b, int cube );
     virtual bool takeDouble( const board& b, int cube );
-    
-    marketWindow getMarketWindow( const board& b );
     
     double getCubeLifeIndex() const { return cubeLifeIndex; };
     void setCubeLifeIndex( double newIndex ) { if( newIndex < 0 or newIndex > 1 ) throw string( "cube life index must be in [0,1]" ); cubeLifeIndex=newIndex; };
