@@ -1788,6 +1788,8 @@ runStats playParallelCubeful( strategy& s1, strategy& s2, doublestrat& ds1, doub
     double avgAvgPpg=0, avgPpgSq=0;
     int count=0;
     
+    vector<double> cubeFracs(7,0);
+    
     for( int bkt=0; bkt<nBuckets; bkt++ )
     {
         if( nBuckets > 1 )
@@ -1824,6 +1826,23 @@ runStats playParallelCubeful( strategy& s1, strategy& s2, doublestrat& ds1, doub
             avgSteps += stepsCubeful[i];
             avgCube  += cubesCubeful[i];
             count++;
+            
+            if( cubesCubeful[i] == 1 )
+                cubeFracs[0] ++;
+            else if( cubesCubeful[i] == 2 )
+                cubeFracs[1] ++;
+            else if( cubesCubeful[i] == 4 )
+                cubeFracs[2] ++;
+            else if( cubesCubeful[i] == 8 )
+                cubeFracs[3] ++;
+            else if( cubesCubeful[i] == 16 )
+                cubeFracs[4] ++;
+            else if( cubesCubeful[i] == 32 )
+                cubeFracs[5] ++;
+            else if( cubesCubeful[i] == 64 )
+                cubeFracs[6] ++;
+            else
+                throw string( "Invalid cube value" );
         }
         subAvgPpg /= n/nBuckets;
         avgAvgPpg += subAvgPpg;
@@ -1857,6 +1876,9 @@ runStats playParallelCubeful( strategy& s1, strategy& s2, doublestrat& ds1, doub
         cout << "Std dev of bkt ppg = " << sqrt( avgPpgSq - avgAvgPpg*avgAvgPpg ) << endl;
         cout << "Std err of ppg     = " << sqrt( ( avgPpgSq - avgAvgPpg*avgAvgPpg ) / ( nBuckets - 1 ) ) << endl << endl;
     }
+    
+    for( int i=0; i<7; i++ )
+        cout << "Cube = " << pow((float)2,(float)i) << ": " << cubeFracs[i]/n << endl;
     
     runStats stats;
     stats.ppg        = ppg;
@@ -1901,8 +1923,8 @@ void testCubefulMoney()
     cout << "Take centered?  " << ds2.takeDouble(b, 1) << endl;
     cout << "Take at 2?      " << ds2.takeDouble(b, 2) << endl;
     */
-    //playParallelCubeful(s1, s1, ds2, ds1, 1000, 1, 10);
-    
+    playParallelCubeful(s1, s1, ds2, ds1, 100000, 1, 100);
+    /*
     game g( &s1, &s1, 8, &ds2, &ds2 );
     g.verbose = true;
     g.getBoard().print();
@@ -1925,6 +1947,7 @@ void testCubefulMoney()
                 cout << ds2.boardProbabilities(g.getBoard()) << endl;
         }
     }
+    */
 }
 
 vector<int> pntsMatch;
