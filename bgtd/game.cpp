@@ -152,19 +152,28 @@ void game::step()
     
     if( nSteps > 0 and cube < 64 and doublerPlayer and ( cubeOwner == -1 or cubeOwner == trn ) and doublerPlayer->offerDouble(brd,cube) )
     {
+        if( verbose )
+            cout << "DOUBLE: Player " << trn << " offers cube to player " << 1-trn << " at level " << 2*cube << endl;
+        
         // if there's no opponent doubler specified, by arbitrary convention the opponent always takes.
-        // Otherwise, check the doubling strategy.
+        // Otherwise, check the doubling strategy using the board from the opponent's perspective.
+        
+        brd.setPerspective(1-trn);
         
         if( !doublerOpponent or doublerOpponent->takeDouble(brd,cube) )
         {
             doubleCube();
             cubeOwner = 1 - trn;
+            if( verbose )
+                cout << "        Player " << 1-trn << " takes the cube\n";
         }
         else
         {
             // the player automatically wins a single game
             
             cubedOutPlayer = trn;
+            if( verbose )
+                cout << "        Player " << 1-trn << " passes on the cube\n";
         }
     }
     
