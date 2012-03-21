@@ -1784,14 +1784,12 @@ runStats playParallelCubeful( strategy& s1, strategy& s2, doublestrat& ds1, doub
     long nRuns = n / nBuckets;
     double ppg=0, w0=0, q=0, avgSteps=0, avgCube=0, ns=0, ng=0, nb=0;
     double avgAvgPpg=0, avgPpgSq=0;
+    int count=0;
     
     for( int bkt=0; bkt<nBuckets; bkt++ )
     {
         if( nBuckets > 1 )
-        {
-            cout << bkt+1 << " ";
-            cout.flush();
-        }
+            cout << bkt+1 << "; " << ppg/count << endl;
         
         // run each game in its own thread
         
@@ -1823,6 +1821,7 @@ runStats playParallelCubeful( strategy& s1, strategy& s2, doublestrat& ds1, doub
             if( score == 3 ) nb += 1;
             avgSteps += stepsCubeful[i];
             avgCube  += cubesCubeful[i];
+            count++;
         }
         subAvgPpg /= n/nBuckets;
         avgAvgPpg += subAvgPpg;
@@ -1876,7 +1875,27 @@ void testCubefulMoney()
     doublestratdeadcube ds1(s1);
     doublestratjanowski ds2( s1, 0.65 );
     
-    playParallelCubeful(s1, s1, ds2, ds2, 1000, 1, 10);
+    //board b(referenceBoard(3));
+    board b;
+    b.setFromJosephID("OAHDMGEBCAIMGHMDABAD");
+    b.print();
+    
+    gameProbabilities probs(ds2.boardProbabilities(b));
+    cout << probs << endl << endl;
+    
+    marketWindowJanowski window(probs,0.65);
+    cout << "Take point  = " << window.takePoint() << endl;
+    cout << "Cash point  = " << window.cashPoint() << endl;
+    cout << "Init double = " << window.initialDoublePoint() << endl;
+    cout << "Redouble    = " << window.redoublePoint() << endl;
+    cout << "Equity      = " << window.equity(window.probs.probWin, 1, true) << endl;
+    cout << "Equity2o    = " << window.equity(window.probs.probWin, 2, false) << endl;
+    cout << "Equity2p    = " << window.equity(window.probs.probWin, 2, true) << endl;
+    
+    cout << ds2.offerDouble(b, 1) << endl;
+    cout << ds2.takeDouble(b, 1) << endl;
+    
+    //playParallelCubeful(s1, s1, ds2, ds1, 1000, 1, 10);
     
     /*
     board b;
