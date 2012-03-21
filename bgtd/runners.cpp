@@ -31,7 +31,6 @@
 #include "strategytdoriggam.h"
 #include "strategytdorigbg.h"
 #include "strategypubeval.h"
-#include "strategypimm.h"
 #include "strategyply.h"
 #include "strategyhuman.h"
 #include "game.h"
@@ -1678,14 +1677,12 @@ void testBenchmark()
     //s2.learning = false;
     //strategyPubEval s2;
     
-    strategypimm s1;
-    //strategytdorig s1(40);
-    strategyPubEval s2;
+    strategyPubEval s1;
     
     //dispBoards(s1);
     
-    playParallelGen(s1, s2, 10000, 1, 50);
-    return;
+    //playParallelGen(s1, s2, 10000, 1, 50);
+    //return;
     
     int nThreads=16;
     vector< vector<benchmarkData> > dataSetContact( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/contact.bm", nThreads ) );
