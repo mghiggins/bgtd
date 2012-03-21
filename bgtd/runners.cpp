@@ -31,6 +31,7 @@
 #include "strategytdoriggam.h"
 #include "strategytdorigbg.h"
 #include "strategypubeval.h"
+#include "strategypimm.h"
 #include "strategyply.h"
 #include "strategyhuman.h"
 #include "game.h"
@@ -1669,17 +1670,21 @@ void testBenchmark()
     //strategytdmult s2( "benchmark", "player31" );
     //strategytdorigbg s2( "benchmark", "benchmark2" );
     //s1.learning = s2.learning = false;
-    strategytdmult s1( "", "player33b" );
+    //strategytdmult s1( "", "player33b" );
     //strategytdmult s1( "benchmark", "player32" );
-    s1.learning = false;
+    //s1.learning = false;
     //strategytdorigbg s2( "benchmark", "benchmark2" );
-    strategytdmult s2( "benchmark", "player32" );
-    s2.learning = false;
+    //strategytdmult s2( "benchmark", "player32" );
+    //s2.learning = false;
     //strategyPubEval s2;
+    
+    strategypimm s1;
+    //strategytdorig s1(40);
+    strategyPubEval s2;
     
     //dispBoards(s1);
     
-    playParallelGen(s1, s2, 100000, 1, 100);
+    playParallelGen(s1, s2, 10000, 1, 50);
     return;
     
     int nThreads=16;
@@ -1870,6 +1875,19 @@ runStats playParallelCubeful( strategy& s1, strategy& s2, doublestrat& ds1, doub
 
 void testCubefulMoney()
 {
+    strategyPubEval s0;
+    board b0;
+    b0.setChecker(4, 2);
+    b0.setChecker(5, 4);
+    b0.setChecker(7, 2);
+    b0.print();
+    
+    hash_map<string,int> ctx;
+    ctx["isRace"] = false;
+    cout << s0.boardValue(b0,&ctx) << endl;
+    
+    return;
+    
     strategytdmult s1( "benchmark", "player32" );
     //doublestratjanowski ds1( s1, 0. );
     doublestratdeadcube ds1(s1);
@@ -1877,7 +1895,8 @@ void testCubefulMoney()
     
     //board b(referenceBoard(3));
     board b;
-    b.setFromJosephID("OAHDMGEBCAIMGHMDABAD");
+    b.setFromJosephID("ONLGBDABAABNLPABAAAA");
+    //b.setPerspective(1);
     b.print();
     
     gameProbabilities probs(ds2.boardProbabilities(b));
@@ -1888,12 +1907,16 @@ void testCubefulMoney()
     cout << "Cash point  = " << window.cashPoint() << endl;
     cout << "Init double = " << window.initialDoublePoint() << endl;
     cout << "Redouble    = " << window.redoublePoint() << endl;
+    cout << "Too Good    = " << window.tooGoodPoint() << endl;
     cout << "Equity      = " << window.equity(window.probs.probWin, 1, true) << endl;
     cout << "Equity2o    = " << window.equity(window.probs.probWin, 2, false) << endl;
     cout << "Equity2p    = " << window.equity(window.probs.probWin, 2, true) << endl;
-    
-    cout << ds2.offerDouble(b, 1) << endl;
-    cout << ds2.takeDouble(b, 1) << endl;
+    cout << endl;
+    cout << "Offer centered? " << ds2.offerDouble(b, 1) << endl;
+    cout << "Offer at 2?     " << ds2.offerDouble(b, 2) << endl;
+    cout << endl;
+    cout << "Take centered?  " << ds2.takeDouble(b, 1) << endl;
+    cout << "Take at 2?      " << ds2.takeDouble(b, 2) << endl;
     
     //playParallelCubeful(s1, s1, ds2, ds1, 1000, 1, 10);
     
