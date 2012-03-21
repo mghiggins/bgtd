@@ -56,6 +56,13 @@ double marketWindowJanowski::redoublePoint() const
     return (l+cubeLifeIndex)/(w+l+0.5*cubeLifeIndex);
 }
 
+double marketWindowJanowski::tooGoodPoint() const
+{
+    double l=L();
+    double w=W();
+    return (l+1)/(w+l+0.5*cubeLifeIndex);
+}
+
 double marketWindowJanowski::equity( double probWin, int cube, bool ownsCube ) const
 {
     if( probWin < takePoint() ) return -cube;
