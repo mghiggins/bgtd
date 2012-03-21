@@ -81,6 +81,7 @@ public:
     // doubleCube doubles the value.
     
     int getCube() const { return cube; };
+    int getCubeOwner() const { return cubeOwner; };
     void doubleCube() { cube *= 2; };
     
 private:
