@@ -1901,7 +1901,30 @@ void testCubefulMoney()
     cout << "Take centered?  " << ds2.takeDouble(b, 1) << endl;
     cout << "Take at 2?      " << ds2.takeDouble(b, 2) << endl;
     */
-    playParallelCubeful(s1, s1, ds2, ds1, 10, 1, 10);
+    //playParallelCubeful(s1, s1, ds2, ds1, 1000, 1, 10);
+    
+    game g( &s1, &s1, 8, &ds2, &ds2 );
+    g.verbose = true;
+    g.getBoard().print();
+    
+    while( !g.gameOver() )
+    {
+        g.step();
+        if( !g.gameOver() )
+        {
+            if( g.getCube() == 1 )
+                cout << "Cube = 1 centered\n";
+            else if( g.getCubeOwner() == 0 )
+                cout << "Cube = " << g.getCube() << " : owned by white\n";
+            else
+                cout << "Cube = " << g.getCube() << " : owned by black\n";
+            cout << endl;
+            if( g.turn() == 1 )
+                cout << s1.boardProbabilities(g.getBoard()) << endl;
+            else
+                cout << ds2.boardProbabilities(g.getBoard()) << endl;
+        }
+    }
 }
 
 vector<int> pntsMatch;
