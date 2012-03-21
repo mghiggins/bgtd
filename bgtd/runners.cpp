@@ -1791,7 +1791,7 @@ runStats playParallelCubeful( strategy& s1, strategy& s2, doublestrat& ds1, doub
     for( int bkt=0; bkt<nBuckets; bkt++ )
     {
         if( nBuckets > 1 )
-            cout << bkt+1 << "; " << ppg/count << endl;
+            cout << bkt+1 << "; " << ppg/count << "; " << avgCube/count << endl;
         
         // run each game in its own thread
         
@@ -1876,10 +1876,10 @@ void testCubefulMoney()
     //doublestratjanowski ds1( s1, 0. );
     doublestratdeadcube ds1(s1);
     doublestratjanowski ds2( s1, 0.65 );
-    
+    /*
     //board b(referenceBoard(3));
     board b;
-    b.setFromJosephID("NPDLAAAKBALJBLAAAAAA");
+    b.setFromJosephID("NIBOIHADAEHAMPIDABDA");
     //b.setPerspective(1);
     b.print();
     
@@ -1900,21 +1900,8 @@ void testCubefulMoney()
     cout << endl;
     cout << "Take centered?  " << ds2.takeDouble(b, 1) << endl;
     cout << "Take at 2?      " << ds2.takeDouble(b, 2) << endl;
-    
-    //playParallelCubeful(s1, s1, ds2, ds1, 1000, 1, 10);
-    
-    /*
-    board b;
-    marketWindow w1( ds1.getMarketWindow(b) );
-    marketWindow w2( ds2.getMarketWindow(b) );
-    
-    cout << w1.probWin << "," << w1.takePoint << "," << w1.cashPoint << endl;
-    cout << w2.probWin << "," << w2.takePoint << "," << w2.cashPoint << endl;
     */
-    
-    //game g(&s1,&s1,2,&ds2,&ds2);
-    //g.stepToEnd();
-    
+    playParallelCubeful(s1, s1, ds2, ds1, 10, 1, 10);
 }
 
 vector<int> pntsMatch;
