@@ -91,7 +91,7 @@ bool doublestratjanowski::offerDouble( const board& b, int cube )
     // if that's equal to 1 then we've passed the cash point - always double (we
     // already checked at the start if it's too good to double).
     
-    if( equityNoDouble >= 1 ) return true;
+    if( equityNoDouble >= cube ) return true;
     
     // equity if we double is the one where the opponent holds the cube
     
