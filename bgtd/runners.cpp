@@ -1897,7 +1897,7 @@ void testCubefulMoney()
     strategytdmult s1( "benchmark", "player33" );
     //doublestratjanowski ds1( s1, 0. );
     doublestratdeadcube ds1(s1);
-    doublestratjanowski ds2( s1, 0.65 );
+    doublestratjanowski ds2( s1, 0.7 );
     /*
     //board b(referenceBoard(3));
     board b;
@@ -1923,9 +1923,19 @@ void testCubefulMoney()
     cout << "Take centered?  " << ds2.takeDouble(b, 1) << endl;
     cout << "Take at 2?      " << ds2.takeDouble(b, 2) << endl;
     */
-    playParallelCubeful(s1, s1, ds2, ds1, 100000, 1, 100);
+    playParallelCubeful(s1, s1, ds2, ds2, 1000, 1, 10);
+    
     /*
-    game g( &s1, &s1, 8, &ds2, &ds2 );
+    board b0( "AAAAACCCCDAA@AAAAAABBCA<>@=@" );
+    marketWindowJanowski window(ds2.boardProbabilities(b0),0.8);
+    cout << window.probs << endl;
+    cout << window.redoublePoint() << endl;
+    cout << ds2.offerDouble(b0, 16) << endl;
+    
+    return;
+    */
+    /*
+    game g( &s1, &s1, 91, &ds2, &ds2 );
     g.verbose = true;
     g.getBoard().print();
     
@@ -1934,6 +1944,7 @@ void testCubefulMoney()
         g.step();
         if( !g.gameOver() )
         {
+            cout << g.getBoard().repr() << endl;
             if( g.getCube() == 1 )
                 cout << "Cube = 1 centered\n";
             else if( g.getCubeOwner() == 0 )
