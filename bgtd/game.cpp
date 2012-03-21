@@ -150,12 +150,12 @@ void game::step()
     
     brd.setPerspective(trn); // make sure the board is from the appropriate perspective when checking double stuff
     
-    if( nSteps > 0 and cube < 64 and doublerPlayer and ( cubeOwner == -1 or cubeOwner == trn ) and doublerPlayer->offerDouble(brd,cubeOwner==-1) )
+    if( nSteps > 0 and cube < 64 and doublerPlayer and ( cubeOwner == -1 or cubeOwner == trn ) and doublerPlayer->offerDouble(brd,cube) )
     {
         // if there's no opponent doubler specified, by arbitrary convention the opponent always takes.
         // Otherwise, check the doubling strategy.
         
-        if( !doublerOpponent or doublerOpponent->takeDouble(brd,cubeOwner==-1) )
+        if( !doublerOpponent or doublerOpponent->takeDouble(brd,cube) )
         {
             doubleCube();
             cubeOwner = 1 - trn;
