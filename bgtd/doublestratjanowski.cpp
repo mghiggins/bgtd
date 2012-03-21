@@ -73,10 +73,7 @@ double marketWindowJanowski::equity( double probWin, int cube, bool ownsCube ) c
 
 bool doublestratjanowski::offerDouble( const board& b, int cube )
 {
-    // double if cubeful equity is in (0,1). Cubeful equity for cube in the middle is approximated with a piecewise 
-    // linear fn: -L -> -1 for prob [0,TP], -1 -> +1 in [TP,CP], and +1 to +W in [CP,1].
-    // Cubeful equity when opponent owns the cube is approximated as piecewise linear as well: -L -> -1 in [0,TP]
-    // and -1 -> W in [TP,1]. Cubeful equity when player owns the cube is -L -> +1 in [0,CP] and +1 -> W in [CP,1].
+    // double if cubeful equity is in (0,1).
     
     marketWindowJanowski window( boardProbabilities(b), cubeLifeIndex );
     
@@ -84,13 +81,18 @@ bool doublestratjanowski::offerDouble( const board& b, int cube )
     
     double equityDouble = window.equity( window.probs.probWin, 2*cube, false );
     
+    // ... but he might pass, so min that with 1*cube
+    
+    if( equityDouble > cube ) equityDouble = cube;
+    
     // equity if we don't double is the one where we own the cube at its current value
     
     double equityNoDouble = window.equity( window.probs.probWin, cube, true );
     
-    // we double if it's better to do so from an equity perspective
+    // we double if it's better to do so from an equity perspective. Add a wee threshold
+    // so that we don't double when they're equal (since that probably means too good).
     
-    return equityDouble > equityNoDouble;
+    return equityDouble > equityNoDouble + 1e-6;
 }
 
 bool doublestratjanowski::takeDouble( const board& b, int cube )
