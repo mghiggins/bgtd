@@ -73,6 +73,8 @@ double marketWindowJanowski::equity( double probWin, int cube, bool ownsCube ) c
 
 bool doublestratjanowski::offerDouble( const board& b, int cube )
 {
+    // get the board probabilities assuming this player owns the dice
+    
     marketWindowJanowski window( boardProbabilities(b), cubeLifeIndex );
     
     // if it's too good to double, it means the equity if we never offer the
@@ -104,7 +106,9 @@ bool doublestratjanowski::offerDouble( const board& b, int cube )
 
 bool doublestratjanowski::takeDouble( const board& b, int cube )
 {
-    marketWindowJanowski window( boardProbabilities(b), cubeLifeIndex );
+    // get the board probabilities assuming the opponent holds the dice - can go directly to the strategy for that
+    
+    marketWindowJanowski window( strat.boardProbabilities(b), cubeLifeIndex );
     
     // once the player takes the cube he owns it and can't get doubled again (unless he redoubles). We need to calculate the cubeful equity
     // post-take, and we take if that's > -1.
