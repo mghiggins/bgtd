@@ -56,13 +56,6 @@ double marketWindowJanowski::redoublePoint() const
     return (l+cubeLifeIndex)/(w+l+0.5*cubeLifeIndex);
 }
 
-double marketWindowJanowski::tooGoodPoint() const
-{
-    double l=L();
-    double w=W();
-    return (l+1)/(w+l+0.5*cubeLifeIndex);
-}
-
 double marketWindowJanowski::equity( double probWin, int cube, bool ownsCube ) const
 {
     if( probWin < takePoint() ) return -cube;
@@ -80,9 +73,12 @@ double marketWindowJanowski::equity( double probWin, int cube, bool ownsCube ) c
 
 bool doublestratjanowski::offerDouble( const board& b, int cube )
 {
-    // double if cubeful equity is in (0,1).
-    
     marketWindowJanowski window( boardProbabilities(b), cubeLifeIndex );
+    
+    // if it's too good to double, it means the equity if we never offer the
+    // cube is greater than the +1 we get from cash.
+    
+    if( window.probs.equity() > 1 ) return false;
     
     // equity if we double is always the one where the opponent holds the cube
     
@@ -97,9 +93,10 @@ bool doublestratjanowski::offerDouble( const board& b, int cube )
     double equityNoDouble = window.equity( window.probs.probWin, cube, true );
     
     // we double if it's better to do so from an equity perspective. Add a wee threshold
-    // so that we don't double when they're equal (since that probably means too good).
+    // so that we do double when they're equal (since that probably means we're past the
+    // cash point).
     
-    return equityDouble > equityNoDouble + 1e-6;
+    return equityDouble > equityNoDouble - 1e-6;
 }
 
 bool doublestratjanowski::takeDouble( const board& b, int cube )

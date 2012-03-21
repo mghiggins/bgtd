@@ -1872,27 +1872,14 @@ runStats playParallelCubeful( strategy& s1, strategy& s2, doublestrat& ds1, doub
 
 void testCubefulMoney()
 {
-    strategyPubEval s0;
-    board b0;
-    b0.setChecker(4, 2);
-    b0.setChecker(5, 4);
-    b0.setChecker(7, 2);
-    b0.print();
-    
-    hash_map<string,int> ctx;
-    ctx["isRace"] = false;
-    cout << s0.boardValue(b0,&ctx) << endl;
-    
-    return;
-    
-    strategytdmult s1( "benchmark", "player32" );
+    strategytdmult s1( "benchmark", "player33" );
     //doublestratjanowski ds1( s1, 0. );
     doublestratdeadcube ds1(s1);
     doublestratjanowski ds2( s1, 0.65 );
     
     //board b(referenceBoard(3));
     board b;
-    b.setFromJosephID("ONLGBDABAABNLPABAAAA");
+    b.setFromJosephID("NPDLAAAKBALJBLAAAAAA");
     //b.setPerspective(1);
     b.print();
     
@@ -1904,7 +1891,6 @@ void testCubefulMoney()
     cout << "Cash point  = " << window.cashPoint() << endl;
     cout << "Init double = " << window.initialDoublePoint() << endl;
     cout << "Redouble    = " << window.redoublePoint() << endl;
-    cout << "Too Good    = " << window.tooGoodPoint() << endl;
     cout << "Equity      = " << window.equity(window.probs.probWin, 1, true) << endl;
     cout << "Equity2o    = " << window.equity(window.probs.probWin, 2, false) << endl;
     cout << "Equity2p    = " << window.equity(window.probs.probWin, 2, true) << endl;

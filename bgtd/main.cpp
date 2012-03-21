@@ -83,11 +83,11 @@ int main( int argc, char * argv [] )
     //playEscapes();
     //createBenchmarks();
     //trainBenchmarks();
-    testBenchmark();
+    //testBenchmark();
     //test4();
     //testDoubleHittingShots();
     //testMatchEquity();
-    //testCubefulMoney();
+    testCubefulMoney();
     //testMatch();
 }
 

@@ -39,7 +39,6 @@ public:
     double cashPoint() const;
     double initialDoublePoint() const;
     double redoublePoint() const;
-    double tooGoodPoint() const;
     double equity( double probWin, int cube, bool ownsCube ) const;
 };
 
