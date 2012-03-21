@@ -23,7 +23,6 @@
 		C05308A9141D96E70069D85F /* mersenne.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C05308A7141D96E70069D85F /* mersenne.cpp */; };
 		C07E426E14C533B700C748F6 /* strategytdorigbg.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C07E426D14C533B700C748F6 /* strategytdorigbg.cpp */; };
 		C08514761511FF6E0091C368 /* match.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C08514751511FF6E0091C368 /* match.cpp */; };
-		C0854321151A338500E6EE95 /* strategypimm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C0854320151A338500E6EE95 /* strategypimm.cpp */; };
 		C087737F15137BDB005A8CE4 /* doublestratmatch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C087737E15137BDB005A8CE4 /* doublestratmatch.cpp */; };
 		C087738215137D43005A8CE4 /* matchequitytable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C087738115137D43005A8CE4 /* matchequitytable.cpp */; };
 		C08926FE144F5EC100D8F606 /* bearofffns.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C08926FD144F5EC100D8F606 /* bearofffns.cpp */; };
@@ -84,8 +83,6 @@
 		C07E426D14C533B700C748F6 /* strategytdorigbg.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strategytdorigbg.cpp; sourceTree = "<group>"; };
 		C08514731511FF500091C368 /* match.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = match.h; sourceTree = "<group>"; };
 		C08514751511FF6E0091C368 /* match.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = match.cpp; sourceTree = "<group>"; };
-		C085431F151A330100E6EE95 /* strategypimm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = strategypimm.h; sourceTree = "<group>"; };
-		C0854320151A338500E6EE95 /* strategypimm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strategypimm.cpp; sourceTree = "<group>"; };
 		C087737C15137BCE005A8CE4 /* doublestratmatch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = doublestratmatch.h; sourceTree = "<group>"; };
 		C087737E15137BDB005A8CE4 /* doublestratmatch.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = doublestratmatch.cpp; sourceTree = "<group>"; };
 		C087738015137D35005A8CE4 /* matchequitytable.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = matchequitytable.h; sourceTree = "<group>"; };
@@ -198,8 +195,6 @@
 				C0202DE313E373BB00F00B48 /* strategypubeval.cpp */,
 				C0E87BCF13ECD2060006CC15 /* strategyhuman.h */,
 				C0E87BD113ECD2770006CC15 /* strategyhuman.cpp */,
-				C085431F151A330100E6EE95 /* strategypimm.h */,
-				C0854320151A338500E6EE95 /* strategypimm.cpp */,
 			);
 			path = bgtd;
 			sourceTree = "<group>";
@@ -277,7 +272,6 @@
 				C08514761511FF6E0091C368 /* match.cpp in Sources */,
 				C087737F15137BDB005A8CE4 /* doublestratmatch.cpp in Sources */,
 				C087738215137D43005A8CE4 /* matchequitytable.cpp in Sources */,
-				C0854321151A338500E6EE95 /* strategypimm.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
