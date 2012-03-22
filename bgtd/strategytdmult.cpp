@@ -118,6 +118,7 @@ void strategytdmult::setup()
     
     alpha = 0.1;
     beta  = 0.1;
+    learning = false;
     
     // load the bearoff dbs - hardcode the bearoff parameters and file location for now.
     // Two bearoff dbs: one for the distribution of steps to take off the last checker,
