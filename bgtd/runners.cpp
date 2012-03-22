@@ -2015,17 +2015,24 @@ void testMatch()
     //doublestratdeadcube ds2(s);
     //doublestratnodouble ds2;
     
+    /*
+    vector<stateData> singleData( loadCrawfordFirstDoubleStateProbDb("/Users/mghiggins/bgtdres/benchdb/matcheq_postC_single.txt") );
+    vector<stateData> data( loadCrawfordFirstDoubleStateProbDb("/Users/mghiggins/bgtdres/benchdb/matcheq_postC.txt") );
+    
     board b;
-    b.setFromJosephID( "CGNPIBEBBAJIPDJIABAD" );
+    //b.setFromJosephID( "LGGNMAABCEJIGHMMBBCA" );
     b.print();
     
     game g(&s,&s,1,&ds1,&ds1);
     g.setBoard(b);
     
-    match m(5,&s,&s,1,&ds1,&ds1);
+    int nn=5;
+    int mm=8;
+    
+    match m(mm+2,&s,&s,1,&ds1,&ds1);
     m.setGame(&g);
-    m.setPlayerScore(0);
-    m.setOpponentScore(0);
+    m.setPlayerScore(m.getTarget()-nn);
+    m.setOpponentScore(m.getTarget()-mm);
     
     ds1.setMatch(&m);
     
@@ -2034,14 +2041,40 @@ void testMatch()
     cout << probs << endl;
     b.setPerspective(0);
     
-    interpMEdata data( ds1.equityInterpFn(probs, 0, 1, 0) );
-    cout << data.takePoint << "," << data.cashPoint << endl;
-    cout << data.takeME << "," << data.cashME << endl;
+    int cube=1;
     
-    cout << ds1.offerDouble(b, 1) << endl;
-    cout << ds1.takeDouble(b, 1) << endl;
+    interpMEdata dataTake( ds1.equityInterpFn(probs, 0, cube, 1) );
+    cout << dataTake.takePoint << ": " << dataTake.takeME << endl;
+    interpMEdata dataCash( ds1.equityInterpFn(probs, 0, cube, 0) );
+    cout << dataCash.cashPoint << ": " << dataCash.cashME << endl;
     
-    /*
+    try 
+    {
+        interpMEdata dataTakeA( matchEquityInterpData( nn, mm, cube, false, 0.1365, singleData, data, false ) );
+        cout << dataTakeA.takePoint << ": " << dataTakeA.takeME << endl;
+        interpMEdata dataCashA( matchEquityInterpData( nn, mm, cube, true, 0.1365, singleData, data, false ) );
+        cout << dataCashA.cashPoint << ": " << dataCashA.cashME << endl;
+    }
+    catch( const string& s )
+    {
+        cout << "Exception: " << s << endl;
+    }
+    catch( std::exception& e )
+    {
+        cout << "Exception: " << e.what() << endl;
+    }
+    
+    return;
+    
+    cout << ds1.offerDouble(b, cube) << endl;
+    cout << ds1.takeDouble(b, cube) << endl;
+    
+    marketWindowJanowski window( ds2.boardProbabilities(b), ds2.getCubeLifeIndex() );
+    cout << window.takePoint() << "," << window.initialDoublePoint() << "," << window.redoublePoint() << "," << window.cashPoint() << endl;
+    cout << ds2.offerDouble(b, cube) << endl;
+    cout << ds2.takeDouble(b, cube) << endl;
+    */
+    
     matchequitytable MET( ds1.getMET() );
     
     int n=10000;
@@ -2091,5 +2124,5 @@ void testMatch()
 
     ppm /= n;
     cout << "Average player match equity = " << ppm << endl;
-    */
+    
 }
