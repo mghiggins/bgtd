@@ -109,14 +109,14 @@ interpMEdata doublestratmatch::equityInterpFn( const gameProbabilities& probs, i
         m = mOverride;
     
     // figure out the match equities on different kinds of wins and losses if we
-    // do take
+    // do take/cash
     
-    double singleWinME  = MET.matchEquity(n-2*cube, m);
-    double gammonWinME  = MET.matchEquity(n-4*cube, m);
-    double bgWinME      = MET.matchEquity(n-6*cube, m);
-    double singleLossME = MET.matchEquity(n, m-2*cube);
-    double gammonLossME = MET.matchEquity(n, m-4*cube);
-    double bgLossME     = MET.matchEquity(n, m-6*cube);
+    double singleWinME  = MET.matchEquity(n-1*cube, m);
+    double gammonWinME  = MET.matchEquity(n-2*cube, m);
+    double bgWinME      = MET.matchEquity(n-3*cube, m);
+    double singleLossME = MET.matchEquity(n, m-1*cube);
+    double gammonLossME = MET.matchEquity(n, m-2*cube);
+    double bgLossME     = MET.matchEquity(n, m-3*cube);
     
     // we'll get equity as a fn of prob of win by assuming that the ratios of gammon and backgammon
     // probs to the relevant winning/losing prob stay fixed.
