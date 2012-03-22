@@ -26,12 +26,13 @@ match::match( int target, strategy * strat0, strategy * strat1, int seed, double
     score0 = 0;
     score1 = 0;
     currentGame = 0; // flag that we're not currently in a game
+    ownsGamePtr = true;
 }
 
 match::~match()
 {
     delete rng;
-    delete currentGame;
+    if( ownsGamePtr and currentGame ) delete currentGame;
 }
 
 void match::step()
@@ -45,6 +46,7 @@ void match::step()
         if( score0 >= target or score1 >= target ) return;
         
         currentGame = new game( strat0, strat1, ds0, ds1, rng );
+        ownsGamePtr = true;
     }
     else if( currentGame->gameOver() )
     {
@@ -57,7 +59,7 @@ void match::step()
         
         // destroy the current game and set the pointer to 0 as a flag that we're in between games
         
-        delete currentGame;
+        if( ownsGamePtr ) delete currentGame;
         currentGame = 0;
     }
     else
@@ -101,3 +103,20 @@ game& match::getGame()
     return *currentGame;
 }
 
+void match::setGame( game * newGame )
+{
+    currentGame = newGame;
+    ownsGamePtr = false;
+}
+
+void match::setPlayerScore( int newScore )
+{
+    if( newScore < 0 or newScore >= target ) throw string( "Cannot set the score below zero or at or past the target" );
+    score0 = newScore;
+}
+
+void match::setOpponentScore( int newScore )
+{
+    if( newScore < 0 or newScore >= target ) throw string( "Cannot set the score below zero or at or past the target" );
+    score1 = newScore;
+}

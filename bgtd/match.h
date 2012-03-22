@@ -62,11 +62,22 @@ public:
     bool inGame() const { return currentGame != 0; };
     game& getGame();
     
+    // setGame sets the game pointer for the match. We assume the match
+    // does not own the game pointer in this case.
+    
+    void setGame( game * newGame );
+    
     // playerScore and opponentScore return score0 and score1
     
     int getTarget() const { return target; };
     int playerScore() const { return score0; };
     int opponentScore() const { return score1; };
+    
+    // setPlayerScore and setOpponentScore let you set the scores. Usually done
+    // just for debugging purposes.
+    
+    void setPlayerScore( int newScore );
+    void setOpponentScore( int newScore );
     
 private:
     int target;
@@ -80,6 +91,7 @@ private:
     
     CRandomMersenne * rng;
     game * currentGame;
+    bool ownsGamePtr;
 };
 
 #endif
