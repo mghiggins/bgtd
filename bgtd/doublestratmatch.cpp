@@ -31,22 +31,58 @@ doublestratmatch::doublestratmatch( strategyprob& strat, const matchequitytable&
 
 bool doublestratmatch::offerDouble( const board& b, int cube )
 {
-    // get the various game probabilities
+    // get the various game probabilities. For this we want game probabilities
+    // before the dice are thrown. The strategy's boardProbabilities returns the
+    // game probs *after* the dice are thrown, so we need to flip the board around,
+    // get the probs, then flip their perspective back.
     
-    gameProbabilities probs( strat.boardProbabilities(b) );
+    board fb(b);
+    fb.setPerspective(1-b.perspective());
+    gameProbabilities probs( strat.boardProbabilities(fb).flippedProbs() );
     
-    // get the match equity for this cube level and for a doubled cube
+    // if the cubeless equity is greater than the equity we'd get if the
+    // opponent passed on a double, it's too good to double (since we ignore
+    // the value from owning the cube).
+    
+    int n = b.perspective() == 0 ? currMatch->getTarget() - currMatch->playerScore() : currMatch->getTarget() - currMatch->opponentScore();
+    int m = b.perspective() == 0 ? currMatch->getTarget() - currMatch->opponentScore() : currMatch->getTarget() - currMatch->playerScore();
+    
+    double singleWinME  = MET.matchEquity(n-1*cube, m);
+    double gammonWinME  = MET.matchEquity(n-2*cube, m);
+    double bgWinME      = MET.matchEquity(n-3*cube, m);
+    double singleLossME = MET.matchEquity(n, m-1*cube);
+    double gammonLossME = MET.matchEquity(n, m-2*cube);
+    double bgLossME     = MET.matchEquity(n, m-3*cube);
+    
+    double cubelessME = ( probs.probWin - probs.probGammonWin ) * singleWinME + ( probs.probGammonWin - probs.probBgWin ) * gammonWinME + probs.probBgWin * bgWinME
+                      + ( 1 - probs.probWin - probs.probGammonLoss ) * singleLossME + ( probs.probGammonLoss - probs.probBgLoss ) * gammonLossME + probs.probBgLoss * bgLossME;
+    double cashME = singleWinME;
+    if( cubelessME > cashME ) return false; // too good to double
+    
+    // get the match equity for this cube level and for a doubled cube. Current cube this player
+    // owns the cube; doubled the opponent owns it.
     
     interpMEdata data1( equityInterpFn( probs, b.perspective(), cube, b.perspective() ) );
-    interpMEdata data2( equityInterpFn( probs, b.perspective(), 2*cube, b.perspective() ) );
+    interpMEdata data2( equityInterpFn( probs, b.perspective(), 2*cube, 1-b.perspective() ) );
     
-    // double if that equity is larger
+    // double if that equity is larger. Leave a little threshold, since we want to double
+    // if we're past the cash point.
     
-    return data2(probs.probWin) > data1(probs.probWin);
+    double equityDouble   = data2(probs.probWin);
+    double equityNoDouble = data1(probs.probWin);
+    
+    // the doubled equity is never more than the pass equity
+    
+    if( equityDouble > singleWinME ) equityDouble = singleWinME;
+    
+    return equityDouble > equityNoDouble - 1e-6;
 }
 
 bool doublestratmatch::takeDouble( const board& b, int cube )
 {
+    // need probabilities when the opponent holds the dice; that's what the strategy's
+    // boardProbabilities returns so just use that.
+    
     gameProbabilities probs( strat.boardProbabilities(b) );
     interpMEdata data( equityInterpFn( probs, b.perspective(), cube, 1-b.perspective() ) );
     
