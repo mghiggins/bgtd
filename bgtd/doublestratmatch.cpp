@@ -124,16 +124,21 @@ interpMEdata doublestratmatch::equityInterpFn( const gameProbabilities& probs, i
     double W = probs.probWin == 0 ? 1 : ( ( probs.probWin - probs.probGammonWin ) * singleWinME + ( probs.probGammonWin - probs.probBgWin ) * gammonWinME + probs.probBgWin * bgWinME ) / probs.probWin;
     double L = 1-probs.probWin == 0 ? 1 : -( ( 1 - probs.probWin - probs.probGammonLoss ) * singleLossME + ( probs.probGammonLoss - probs.probBgLoss ) * gammonLossME + probs.probBgLoss * bgLossME ) / ( 1 - probs.probWin );
     
-    // if the cube is centered or the player here owns the cube, the upper end of the
+    // if the cube is centered or the player here owns the cube and still can double, the upper end of the
     // range is the cash point; otherwise the cash point is 100% prob and cash equity
     // is the appropriately-weighted win equity
     
     double cashPoint, cashME;
     
-    if( cube == 1 or perspective == cubeOwner )
+    if( ( cube == 1 or perspective == cubeOwner ) and n-cube > 0 )
     {
         cashME = MET.matchEquity(n-cube, m);
-        cashPoint = ( cashME + L ) / ( W + L );
+        
+        // need to get the match equity fn for a state where the cube is doubled and owned by the 
+        // opponent; find where that matches the cash match equity.
+        
+        interpMEdata data2( equityInterpFn( probs, perspective, cube*2, 1-perspective ) );
+        cashPoint = data2.solve( cashME );
     }
     else
     {
@@ -141,16 +146,21 @@ interpMEdata doublestratmatch::equityInterpFn( const gameProbabilities& probs, i
         cashME    = W;
     }
     
-    // if the cube is centered or the opponent owns the cubve, the lower end of the range is
+    // if the cube is centered or the opponent owns the cube and can still double, the lower end of the range is
     // the take point; otherwise the take point is 0% prob and take equity is the 
     // appropriately-weighted loss equity
     
     double takePoint, takeME;
     
-    if( cube == 1 or perspective != cubeOwner )
+    if( ( cube == 1 or perspective != cubeOwner ) and m-cube>0 )
     {
         takeME = MET.matchEquity(n, m-cube);
-        takePoint = ( takeME + L ) / ( W + L );
+        
+        // find the prob such that the match equity equals the take equity in a state 
+        // where the cube is doubled and the player owns it
+        
+        interpMEdata data2( equityInterpFn( probs, perspective, cube*2, perspective ) );
+        takePoint = data2.solve( takeME );
     }
     else
     {
