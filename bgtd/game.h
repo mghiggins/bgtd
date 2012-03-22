@@ -82,6 +82,7 @@ public:
     
     int getCube() const { return cube; };
     int getCubeOwner() const { return cubeOwner; };
+    int getCubedOutPlayer() const { return cubedOutPlayer; };
     void doubleCube() { cube *= 2; };
     
 private:
