@@ -1762,7 +1762,10 @@ public:
             pntsCubeful[i] = s;
         else
             pntsCubeful[i] = -s;
-        scoresCubeful[i] = s/g.getCube();
+        if( g.getCubedOutPlayer() == -1 )
+            scoresCubeful[i] = s/g.getCube();
+        else
+            scoresCubeful[i] = -1; // flag that we cashed out
         cubesCubeful[i] = g.getCube();
         stepsCubeful[i] = g.nSteps;
     }
@@ -1784,7 +1787,7 @@ runStats playParallelCubeful( strategy& s1, strategy& s2, doublestrat& ds1, doub
     if( n % nBuckets != 0 ) throw string( "n must be a multiple of nBuckets" );
     
     long nRuns = n / nBuckets;
-    double ppg=0, w0=0, q=0, avgSteps=0, avgCube=0, ns=0, ng=0, nb=0;
+    double ppg=0, w0=0, q=0, avgSteps=0, avgCube=0, ns=0, ng=0, nb=0, nc=0;
     double avgAvgPpg=0, avgPpgSq=0;
     int count=0;
     
@@ -1818,11 +1821,19 @@ runStats playParallelCubeful( strategy& s1, strategy& s2, doublestrat& ds1, doub
             
             ppg += p;
             subAvgPpg += p;
-            q += score;
             if( p > 0 ) w0 += 1;
-            if( score == 1 ) ns += 1;
-            if( score == 2 ) ng += 1;
-            if( score == 3 ) nb += 1;
+            if( score == -1 )
+            {
+                q += 1;
+                nc += 1;
+            }
+            else
+            {
+                q += score;
+                if( score == 1 ) ns += 1;
+                if( score == 2 ) ng += 1;
+                if( score == 3 ) nb += 1;
+            }
             avgSteps += stepsCubeful[i];
             avgCube  += cubesCubeful[i];
             count++;
@@ -1853,6 +1864,7 @@ runStats playParallelCubeful( strategy& s1, strategy& s2, doublestrat& ds1, doub
     ppg /= n;
     w0  /= n;
     q   /= n;
+    nc  /= n;
     ns  /= n;
     ng  /= n;
     nb  /= n;
@@ -1862,6 +1874,7 @@ runStats playParallelCubeful( strategy& s1, strategy& s2, doublestrat& ds1, doub
     cout << "Average ppg        = " << ppg << endl;
     cout << "Prob of P1 winning = " << w0 * 100 << endl;
     cout << "Average score      = " << q << endl;
+    cout << "Frac cashed        = " << nc << endl;
     cout << "Frac single        = " << ns << endl;
     cout << "Frac gammon        = " << ng << endl;
     cout << "Frac backgammon    = " << nb << endl;
@@ -1895,8 +1908,9 @@ runStats playParallelCubeful( strategy& s1, strategy& s2, doublestrat& ds1, doub
 void testCubefulMoney()
 {
     strategytdmult s1( "benchmark", "player33" );
+    s1.learning=false;
     //doublestratjanowski ds1( s1, 0. );
-    doublestratdeadcube ds1(s1);
+    doublestratjanowski ds1( s1, 0.7 );
     doublestratjanowski ds2( s1, 0.7 );
     /*
     //board b(referenceBoard(3));
@@ -1923,7 +1937,7 @@ void testCubefulMoney()
     cout << "Take centered?  " << ds2.takeDouble(b, 1) << endl;
     cout << "Take at 2?      " << ds2.takeDouble(b, 2) << endl;
     */
-    playParallelCubeful(s1, s1, ds2, ds2, 1000, 1, 10);
+    playParallelCubeful(s1, s1, ds1, ds2, 100000, 1, 100);
     
     /*
     board b0( "AAAAACCCCDAA@AAAAAABBCA<>@=@" );
