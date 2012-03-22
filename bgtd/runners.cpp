@@ -2011,18 +2011,46 @@ void testMatch()
     
     strategytdmult s( "benchmark", "player33" );
     doublestratmatch ds1(s,"/Users/mghiggins/bgtdres/benchdb/MET.txt");
-    //doublestratjanowski ds2(s,0.7);
+    doublestratjanowski ds2(s,0.7);
     //doublestratdeadcube ds2(s);
-    doublestratnodouble ds2;
+    //doublestratnodouble ds2;
     
+    board b;
+    b.setFromJosephID( "CGNPIBEBBAJIPDJIABAD" );
+    b.print();
+    
+    game g(&s,&s,1,&ds1,&ds1);
+    g.setBoard(b);
+    
+    match m(5,&s,&s,1,&ds1,&ds1);
+    m.setGame(&g);
+    m.setPlayerScore(0);
+    m.setOpponentScore(0);
+    
+    ds1.setMatch(&m);
+    
+    b.setPerspective(1);
+    gameProbabilities probs( s.boardProbabilities(b).flippedProbs() );
+    cout << probs << endl;
+    b.setPerspective(0);
+    
+    interpMEdata data( ds1.equityInterpFn(probs, 0, 1, 0) );
+    cout << data.takePoint << "," << data.cashPoint << endl;
+    cout << data.takeME << "," << data.cashME << endl;
+    
+    cout << ds1.offerDouble(b, 1) << endl;
+    cout << ds1.takeDouble(b, 1) << endl;
+    
+    /*
     matchequitytable MET( ds1.getMET() );
     
-    int n=1000;
-    int nBuckets=10;
+    int n=10000;
+    int nBuckets=100;
     int target=3;
     if( n % nBuckets != 0 ) throw string( "nRuns must be a multiple of nBuckets" );
     
     int nRuns = n / nBuckets;
+    int count=0;
     double ppm=0;
     
     bool runParallel=true;
@@ -2030,11 +2058,7 @@ void testMatch()
     for( int bkt=0; bkt<nBuckets; bkt++ )
     {
         if( nBuckets > 1 )
-        {
-            cout << bkt+1 << " ";
-            if( !runParallel ) cout << endl;
-            cout.flush();
-        }
+            cout << bkt+1 << "; " << ppm/count << endl;
         
         // run each match in its own thread
         
@@ -2058,10 +2082,14 @@ void testMatch()
         }
         
         for( int i=0; i<nRuns; i++ )
+        {
             ppm += pntsMatch.at(i);
+            count++;
+        }
     }
     if( nBuckets > 1 ) cout << endl;
 
     ppm /= n;
     cout << "Average player match equity = " << ppm << endl;
+    */
 }
