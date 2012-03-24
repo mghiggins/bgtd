@@ -2011,7 +2011,7 @@ void testMatch()
     
     strategytdmult s( "benchmark", "player33" );
     doublestratmatch ds1(s,"/Users/mghiggins/bgtdres/benchdb/MET.txt");
-    doublestratjanowski ds2(s,0.7);
+    doublestratjanowski ds2(s,1.);
     //doublestratdeadcube ds2(s);
     //doublestratnodouble ds2;
     
@@ -2078,20 +2078,22 @@ void testMatch()
     matchequitytable MET( ds1.getMET() );
     
     int n=10000;
-    int nBuckets=100;
-    int target=3;
+    int nBuckets=n/100;
+    int target=23;
     if( n % nBuckets != 0 ) throw string( "nRuns must be a multiple of nBuckets" );
     
     int nRuns = n / nBuckets;
     int count=0;
-    double ppm=0;
+    double ppm=0, winFrac=0;
     
     bool runParallel=true;
+    
+    cout << nBuckets << " buckets to process\n";
     
     for( int bkt=0; bkt<nBuckets; bkt++ )
     {
         if( nBuckets > 1 )
-            cout << bkt+1 << "; " << ppm/count << endl;
+            cout << bkt+1 << "; " << ppm/count << "; " << winFrac/count << endl;
         
         // run each match in its own thread
         
@@ -2117,12 +2119,127 @@ void testMatch()
         for( int i=0; i<nRuns; i++ )
         {
             ppm += pntsMatch.at(i);
+            if( pntsMatch.at(i) > 0 ) winFrac++;
             count++;
         }
     }
     if( nBuckets > 1 ) cout << endl;
 
     ppm /= n;
+    winFrac /= n;
     cout << "Average player match equity = " << ppm << endl;
+    cout << "Odds of win                 = " << winFrac*100 << endl;
     
+}
+
+vector< vector<double> > jumpVolResults;
+
+class workerJumpVol
+{
+public:
+    workerJumpVol( int i, int initSeed, strategyprob& strat, bool doTwoStep ) : i(i), initSeed(initSeed), strat(strat), doTwoStep(doTwoStep) {};
+    
+    void operator()()
+    {
+        game g(&strat,&strat,i+initSeed);
+        double prob, newProb;
+        bool doingCalc=false, startCalc=false, isLow;
+        
+        vector<double> dProbs;
+        
+        while( !g.gameOver() )
+        {
+            g.step();
+            if( g.turn() == 0 )
+            {
+                // get game probabilities before the dice are thrown
+                
+                board b(g.getBoard());
+                b.setPerspective(1);
+                gameProbabilities probs( strat.boardProbabilities(b).flippedProbs() );
+                
+                if( doingCalc )
+                {
+                    newProb = probs.probWin;
+                    dProbs.push_back(newProb-prob);
+                }
+                
+                prob = probs.probWin;
+                
+                if( ( prob > 0.2 and prob < 0.35 ) or ( prob > 0.65 and prob < 0.8 ) )
+                {
+                    if( doTwoStep and !startCalc )
+                    {
+                        startCalc = true;
+                        isLow = prob < 0.5;
+                    }
+                    else
+                    {
+                        if( !doTwoStep or ( prob > 0.5 and isLow ) or ( prob < 0.5 and !isLow ) )
+                            doingCalc = true;
+                    }
+                }
+                else if( doingCalc )
+                    startCalc = doingCalc = false;
+            }
+        }
+        
+        jumpVolResults.at(i) = dProbs;
+    }
+    
+private:
+    int i;
+    int initSeed;
+    strategyprob& strat;
+    bool doTwoStep;
+};
+
+void estimateJumpVol()
+{
+    using namespace boost;
+    
+    // run cubeless games and calculate moves in prob across 2 plies if 
+    // the game goes from a take-ish sort of game to a cash-ish sort of game
+    
+    strategytdmult strat("benchmark","player33");
+    
+    int n=100000;
+    int nRuns=500;
+    int nBuckets=n/nRuns;
+    
+    double avgAbsJump=0, avgJumpSq=0, avgJump4=0, jump;
+    jumpVolResults.resize(nRuns);
+    int count=0;
+    int i, j;
+    
+    for( int bkt=0; bkt<nBuckets; bkt++ )
+    {
+        if( bkt > 0 ) cout << bkt << ": " << avgAbsJump/count << "; " << sqrt(avgJumpSq/count) << "; " << avgJump4/count / pow( avgJumpSq/count, 2 ) << "; " << count << endl;
+        
+        for( i=0; i<nRuns; i++ ) jumpVolResults.at(i).resize(0);
+        
+        thread_group ts;
+        for( i=0; i<nRuns; i++ ) ts.create_thread( workerJumpVol(i,1+bkt*nRuns,strat,false) );
+        ts.join_all();
+        
+        for( i=0; i<nRuns; i++ )
+        {
+            for( j=0; j<jumpVolResults.at(i).size(); j++ )
+            {
+                count++;
+                jump = jumpVolResults.at(i).at(j);
+                avgAbsJump += fabs( jump );
+                avgJumpSq += jump*jump;
+                avgJump4 += pow(jump,4);
+            }
+        }
+    }
+    
+    avgAbsJump /= count;
+    avgJump4 /= count;
+    avgJumpSq /= count;
+    cout << "Average absolute jump size = " << avgAbsJump << endl;
+    cout << "Kurtosis normalized        = " << avgJump4/avgJumpSq/avgJumpSq << endl;
+    cout << "Jump std dev               = " << sqrt( avgJumpSq ) << endl;
+    cout << "Number of points           = " << count << endl;
 }
