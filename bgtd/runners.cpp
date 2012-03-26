@@ -2137,13 +2137,13 @@ vector< vector<double> > jumpVolResults;
 class workerJumpVol
 {
 public:
-    workerJumpVol( int i, int initSeed, strategyprob& strat, bool doTwoStep ) : i(i), initSeed(initSeed), strat(strat), doTwoStep(doTwoStep) {};
+    workerJumpVol( int i, int initSeed, strategytdmult& strat, bool doTwoStep, const string& evalName ) : i(i), initSeed(initSeed), strat(strat), doTwoStep(doTwoStep), evalName(evalName) {};
     
     void operator()()
     {
         game g(&strat,&strat,i+initSeed);
         double prob, newProb;
-        bool doingCalc=false, startCalc=false, isLow;
+        bool doingCalc=false, startCalc=false, isLow, isGood;
         
         vector<double> dProbs;
         
@@ -2170,8 +2170,23 @@ public:
                 {
                     if( doTwoStep and !startCalc )
                     {
-                        startCalc = true;
-                        isLow = prob < 0.5;
+                        // check whether it's filtered in based on evaluator game state
+                        isGood = false;
+                        if( evalName == "" )
+                            isGood = true;
+                        else
+                        {
+                            string eval( strat.evaluator(b) );
+                            if( evalName == "race" and ( eval == "race" or eval == "bearoff" ) )
+                                isGood = true;
+                            if( evalName == "contact" and ( eval == "contact" or eval == "crashed" ) )
+                                isGood = true;
+                        }
+                        if( isGood )
+                        {
+                            startCalc = true;
+                            isLow = prob < 0.5;
+                        }
                     }
                     else
                     {
@@ -2190,8 +2205,9 @@ public:
 private:
     int i;
     int initSeed;
-    strategyprob& strat;
+    strategytdmult& strat;
     bool doTwoStep;
+    string evalName;
 };
 
 void estimateJumpVol()
@@ -2206,6 +2222,8 @@ void estimateJumpVol()
     int n=100000;
     int nRuns=500;
     int nBuckets=n/nRuns;
+    bool doTwoStep=true;
+    string evalName="contact";
     
     double avgAbsJump=0, avgJumpSq=0, avgJump4=0, jump;
     jumpVolResults.resize(nRuns);
@@ -2219,7 +2237,7 @@ void estimateJumpVol()
         for( i=0; i<nRuns; i++ ) jumpVolResults.at(i).resize(0);
         
         thread_group ts;
-        for( i=0; i<nRuns; i++ ) ts.create_thread( workerJumpVol(i,1+bkt*nRuns,strat,false) );
+        for( i=0; i<nRuns; i++ ) ts.create_thread( workerJumpVol(i,1+bkt*nRuns,strat,doTwoStep,evalName) );
         ts.join_all();
         
         for( i=0; i<nRuns; i++ )
