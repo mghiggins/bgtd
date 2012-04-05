@@ -56,7 +56,7 @@ void testBenchmark();
 
 void testMatchEquity();
 
-runStats playParallelCubeful( strategy& s1, strategy& s2, doublestrat& ds1, doublestrat& ds2, long n, long initSeed, int nBuckets );
+runStats playParallelCubeful( strategy& s1, strategy& s2, long n, long initSeed, int nBuckets );
 void testCubefulMoney();
 void estimateJumpVol();
 

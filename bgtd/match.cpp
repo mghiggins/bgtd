@@ -19,8 +19,8 @@
 #include "match.h"
 
 
-match::match( int target, strategy * strat0, strategy * strat1, int seed, doublestrat* ds0, doublestrat* ds1 )
-: target(target), strat0(strat0), strat1(strat1), ds0(ds0), ds1(ds1)
+match::match( int target, strategy * strat0, strategy * strat1, int seed )
+: target(target), strat0(strat0), strat1(strat1)
 {
     rng = new CRandomMersenne(seed);
     score0 = 0;
@@ -45,7 +45,7 @@ void match::step()
         
         if( score0 >= target or score1 >= target ) return;
         
-        currentGame = new game( strat0, strat1, ds0, ds1, rng );
+        currentGame = new game( strat0, strat1, rng );
         ownsGamePtr = true;
     }
     else if( currentGame->gameOver() )

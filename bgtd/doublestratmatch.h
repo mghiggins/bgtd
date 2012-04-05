@@ -30,17 +30,17 @@ class doublestratmatch : public doublestrat
     // doubling strategy for match play
     
 public:
-    // constructor: a reference to the match that we're playing; a strategy
-    // used to estimate probabilities; and a file name pointing to the match equity table.
+    // constructors: a file name pointing to the match equity table or an MET object directly
     
-    doublestratmatch( strategyprob& strat, const string& METFileName );
-    doublestratmatch( strategyprob& strat, const matchequitytable& MET );
+    doublestratmatch( const string& METFileName );
+    doublestratmatch( const matchequitytable& MET );
     virtual ~doublestratmatch() {};
     
     void setMatch( const match * currMatch ) { this->currMatch = currMatch; };
     
-    virtual bool offerDouble( const board& b, int cube );
-    virtual bool takeDouble( const board& b, int cube );
+    virtual bool offerDouble( strategyprob& strat, const board& b, int cube );
+    virtual bool takeDouble( strategyprob& strat, const board& b, int cube );
+    virtual double equity( strategyprob& strat, const board& b, int cube, bool ownsCube, bool holdsDice );
     
     matchequitytable getMET() const { return MET; };
     
@@ -51,7 +51,6 @@ public:
     
 private:
     const match * currMatch;
-    strategyprob& strat;
     matchequitytable MET;
 };
 

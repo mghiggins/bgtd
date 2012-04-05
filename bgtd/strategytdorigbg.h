@@ -28,9 +28,9 @@ class strategytdorigbg : public strategytdoriggam
     // prob of gammon loss (incl backgammon); prob of gammon win (incl backgammon);
     // prob of backgammon loss; and prob of backgammon win.
 public:
-    strategytdorigbg();
-    strategytdorigbg( int nMiddle );
-    strategytdorigbg( const string& subPath, const string& filePrefix );
+    strategytdorigbg( doublestrat * ds=0 );
+    strategytdorigbg( int nMiddle, doublestrat * ds=0 );
+    strategytdorigbg( const string& subPath, const string& filePrefix, doublestrat * ds=0 );
     virtual ~strategytdorigbg() {};
     
     virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ); 

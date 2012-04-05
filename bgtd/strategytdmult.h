@@ -31,9 +31,9 @@ class strategytdmult : public strategytdbase
     // and no input for whose turn it is.
     
 public:
-    strategytdmult();
-    strategytdmult( int nMiddle, bool useShotProbInput=true, bool usePrimesInput=true, bool useExtendedBearoffInputs=true );
-    strategytdmult( const string& path, const string& filePrefix );
+    strategytdmult( doublestrat * ds=0 );
+    strategytdmult( int nMiddle, bool useShotProbInput=true, bool usePrimesInput=true, bool useExtendedBearoffInputs=true, doublestrat * ds=0 );
+    strategytdmult( const string& path, const string& filePrefix, doublestrat * ds=0 );
     virtual ~strategytdmult() {};
     
     virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ); 

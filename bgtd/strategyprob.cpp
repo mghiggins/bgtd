@@ -91,3 +91,26 @@ double strategyprob::boardValue( const board& brd, const hash_map<string,int>* c
 { 
     return boardValueFromProbs( boardProbabilities( brd, context ) ); 
 }
+
+double strategyprob::equityCubeless( const board& brd, bool holdsDice )
+{
+    gameProbabilities probs;
+    if( holdsDice )
+    {
+        board fb(brd);
+        fb.setPerspective(1-brd.perspective());
+        probs = boardProbabilities(fb).flippedProbs();
+    }
+    else
+        probs = boardProbabilities(brd);
+    
+    return boardValueFromProbs(probs);
+}
+
+double strategyprob::equityCubeful( const board& brd, int cube, bool ownsCube, bool holdsDice )
+{
+    if( ds )
+        return ds->equity( *this, brd, cube, ownsCube, holdsDice );
+    else
+        return equityCubeless( brd, holdsDice );
+}

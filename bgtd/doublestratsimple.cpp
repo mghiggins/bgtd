@@ -19,25 +19,14 @@
 
 #include "doublestratsimple.h"
 
-bool doublestratdeadcube::offerDouble( const board& b, int cube )
+double doublestratdeadcube::equity( strategyprob& strat, const board& b, int cube, bool ownsCube, bool holdsDice )
 {
-    gameProbabilities probs( boardProbabilities( b ) );
-    
-    double equity = probs.equity();
-    return equity > 0 and equity < 1;
+    gameProbabilities probs( boardProbabilities( strat, b, holdsDice ) );
+    return probs.equity();
 }
 
-bool doublestratdeadcube::takeDouble( const board& b, int cube )
+double doublestratnodouble::equity( strategyprob& strat, const board& b, int cube, bool ownsCube, bool holdsDice )
 {
-    gameProbabilities probs( boardProbabilities( b ) );
-    double equity = probs.equity();
-    return 2 * equity > -1;
-}
-
-gameProbabilities doublestratdeadcube::boardProbabilities( const board& b )
-{
-    board fb(b);
-    fb.setPerspective(1-b.perspective());
-    gameProbabilities probs( strat.boardProbabilities(fb) );
-    return probs.flippedProbs();
+    gameProbabilities probs( boardProbabilities( strat, b, holdsDice ) );
+    return probs.equity();
 }

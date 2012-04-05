@@ -19,6 +19,7 @@
 #ifndef bgtd_strategyprob_h
 #define bgtd_strategyprob_h
 
+#include "doublestrat.h"
 #include "strategy.h"
 
 class gameProbabilities
@@ -56,10 +57,11 @@ class strategyprob : public strategy
     // point we also assume that boardValue represents an equity.
     
 public:
-    strategyprob() {};
+    strategyprob( doublestrat * ds=0 ) : ds(ds) {};
     virtual ~strategyprob() {};
     
-    // any derived class must implement boardProbabilities
+    // any derived class must implement boardProbabilities. Represents probabilities assuming the player
+    // has finished their move, so assuming the opponent holds the dice.
     
     virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ) = 0;
     
@@ -70,6 +72,21 @@ public:
     // overide boardValue so it returns the value from probs
     
     virtual double boardValue( const board& brd, const hash_map<string,int>* context=0 );
+    
+    // get doubling decisions from the underlying doubling strategy. Never double and always take
+    // if the doubling strategy isn't defined.
+    
+    virtual bool offerDouble( const board& brd, int cube ) { if(ds) return ds->offerDouble(*this, brd, cube); else return false; };
+    virtual bool takeDouble( const board& brd, int cube ) { if(ds) return ds->takeDouble(*this, brd, cube); else return false; };
+    
+    // equity - cubeless and cubeful
+    
+    virtual double equityCubeless( const board& brd, bool holdsDice );
+    virtual double equityCubeful( const board& brd, int cube, bool ownsCube, bool holdsDice );
+    void setDoublingStrategy( doublestrat * dsNew ) { ds=dsNew; };
+
+protected:
+    doublestrat * ds;
 };
 
 #endif

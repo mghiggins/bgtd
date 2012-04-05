@@ -34,7 +34,6 @@ game::game( strategy * strat0, strategy * strat1, int seed )
     nSteps = 0;
     trn = 0;
     
-    doubler0 = doubler1 = 0;
     cube = 1;
     cubedOutPlayer = -1;
     cubeOwner = -1;
@@ -50,7 +49,6 @@ game::game( strategy * strat0, strategy * strat1, CRandomMersenne * rng )
     nSteps = 0;
     trn = 0;
     
-    doubler0 = doubler1 = 0;
     cube = 1;
     cubedOutPlayer = -1;
     cubeOwner = -1;
@@ -64,45 +62,9 @@ game::game( const game& srcGame )
     verbose  = srcGame.verbose;
     nSteps   = srcGame.nSteps;
     trn      = srcGame.trn;
-    doubler0 = srcGame.doubler0;
-    doubler1 = srcGame.doubler1;
     cube     = srcGame.cube;
     cubedOutPlayer = srcGame.cubedOutPlayer;
     cubeOwner      = srcGame.cubeOwner;
-}
-
-game::game( strategy * strat0, strategy * strat1, int seed, doublestrat * doubler0, doublestrat * doubler1 )
-{
-    this->strat0 = strat0;
-    this->strat1 = strat1;
-    rng = new CRandomMersenne(seed);
-    myRng = true;
-    verbose = false;
-    nSteps = 0;
-    trn = 0;
-    
-    this->doubler0 = doubler0;
-    this->doubler1 = doubler1;
-    cube = 1;
-    cubedOutPlayer = -1;
-    cubeOwner = -1;
-}
-
-game::game( strategy * strat0, strategy * strat1, doublestrat * doubler0, doublestrat * doubler1, CRandomMersenne * rng )
-{
-    this->strat0 = strat0;
-    this->strat1 = strat1;
-    this->rng = rng;
-    myRng   = false;
-    verbose = false;
-    nSteps  = 0;
-    trn     = 0;
-    
-    this->doubler0 = doubler0;
-    this->doubler1 = doubler1;
-    cube = 1;
-    cubedOutPlayer = -1;
-    cubeOwner = -1;
 }
 
 game::~game()
@@ -131,26 +93,25 @@ void game::step()
 {
     // check for a double
     
-    doublestrat * doublerPlayer;
-    doublestrat * doublerOpponent;
+    strategy * doublerPlayer;
+    strategy * doublerOpponent;
     if( trn == 0 )
     {
-        doublerPlayer   = doubler0;
-        doublerOpponent = doubler1;
+        doublerPlayer   = strat0;
+        doublerOpponent = strat1;
     }
     else
     {
-        doublerPlayer   = doubler1;
-        doublerOpponent = doubler0;
+        doublerPlayer   = strat1;
+        doublerOpponent = strat0;
     }
     
-    // if they haven't specified a player doubler, it'll never offer a double. Otherwise, check.
     // Can only double if player has the cube or it's in the middle. Also can't double before the
     // first roll. Also can't double if the cube's already at 64.
     
     brd.setPerspective(trn); // make sure the board is from the appropriate perspective when checking double stuff
     
-    if( nSteps > 0 and cube < 64 and doublerPlayer and ( cubeOwner == -1 or cubeOwner == trn ) and doublerPlayer->offerDouble(brd,cube) )
+    if( nSteps > 0 and cube < 64  and ( cubeOwner == -1 or cubeOwner == trn ) and doublerPlayer->offerDouble(brd,cube) )
     {
         if( verbose )
             cout << "DOUBLE: Player " << trn << " offers cube to player " << 1-trn << " at level " << 2*cube << endl;

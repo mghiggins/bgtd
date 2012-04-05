@@ -33,8 +33,8 @@ struct boardAndVal
 bool boardAndValCompare( const boardAndVal& v1, const boardAndVal& v2 );
 bool boardAndValCompare( const boardAndVal& v1, const boardAndVal& v2 ) { return v1.zeroPlyVal > v2.zeroPlyVal; }
 
-strategyply::strategyply( int nPlies, int nMoveFilter, double equityCutoff, strategyprob& baseStrat, strategyprob& filterStrat )
- : nPlies(nPlies), nMoveFilter(nMoveFilter), equityCutoff( equityCutoff), baseStrat( baseStrat ), filterStrat( filterStrat )
+strategyply::strategyply( int nPlies, int nMoveFilter, double equityCutoff, strategyprob& baseStrat, strategyprob& filterStrat, doublestrat * ds )
+ : nPlies(nPlies), nMoveFilter(nMoveFilter), equityCutoff( equityCutoff), baseStrat( baseStrat ), filterStrat( filterStrat ), strategyprob( ds )
 {
     maxCacheSize = 10000;
 }

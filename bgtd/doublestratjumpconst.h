@@ -20,23 +20,19 @@ class doublestratjumpconst : public doublestrat
     // can be used.
     
 public:
-    doublestratjumpconst( strategyprob& strat, double jumpVol, bool useLinear ) : strat(strat), jumpVol(jumpVol), useLinear(useLinear) {};
+    doublestratjumpconst( double jumpVol, bool useLinear ) : jumpVol(jumpVol), useLinear(useLinear) {};
     virtual ~doublestratjumpconst() {};
-    
-    virtual bool offerDouble( const board& b, int cube );
-    virtual bool takeDouble( const board& b, int cube );
     
     double getJumpVol() const { return jumpVol; };
     void setJumpVol( double newVol ) { if( newVol < 0 ) throw string( "Jump volatility cannot be negative" ); jumpVol=newVol; };
     
-    double equity( const board& b, int cube, bool ownsCube, bool holdsDice );
-    double equityLinear( const board& b, int cube, bool ownsCube, bool holdsDice );
-    double equityNonlinear( const board& b, int cube, bool ownsCube, bool holdsDice );
+    virtual double equity( strategyprob& strat, const board& b, int cube, bool ownsCube, bool holdsDice );
+    double equityLinear( strategyprob& strat, const board& b, int cube, bool ownsCube, bool holdsDice );
+    double equityNonlinear( strategyprob& strat, const board& b, int cube, bool ownsCube, bool holdsDice );
     
     bool useLinear;
     
 private:
-    strategyprob& strat;
     double jumpVol;
 };
 

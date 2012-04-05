@@ -31,19 +31,15 @@ class doublestratjanowski : public doublestrat
     // interpolating linearly between the live and dead cube limits.
     
 public:
-    doublestratjanowski( strategyprob& strat, double cubeLifeIndex ) : strat(strat), cubeLifeIndex(cubeLifeIndex) {};
+    doublestratjanowski( double cubeLifeIndex ) : cubeLifeIndex(cubeLifeIndex) {};
     virtual ~doublestratjanowski() {};
-    
-    virtual bool offerDouble( const board& b, int cube );
-    virtual bool takeDouble( const board& b, int cube );
     
     double getCubeLifeIndex() const { return cubeLifeIndex; };
     void setCubeLifeIndex( double newIndex ) { if( newIndex < 0 or newIndex > 1 ) throw string( "cube life index must be in [0,1]" ); cubeLifeIndex=newIndex; };
     
-    double equity( const board& b, int cube, bool ownsCube, bool holdsDice );
+    virtual double equity( strategyprob& strat, const board& b, int cube, bool ownsCube, bool holdsDice );
     
 private:
-    strategyprob& strat;
     double cubeLifeIndex;
 };
 

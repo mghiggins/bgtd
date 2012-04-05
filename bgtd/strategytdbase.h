@@ -24,7 +24,7 @@
 class strategytdbase : public strategyprob
 {
 public:
-    strategytdbase() {};
+    strategytdbase( doublestrat * ds=0 ) : strategyprob(ds) {};
     virtual ~strategytdbase() {};
     
     int nMiddle;   // number of middle nodes

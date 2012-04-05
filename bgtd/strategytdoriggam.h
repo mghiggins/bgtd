@@ -29,9 +29,9 @@ class strategytdoriggam : public strategytdbase
     // player's turn to roll).
     
 public:
-    strategytdoriggam();
-    strategytdoriggam( int nMiddle );
-    strategytdoriggam( const string& subPath, const string& filePrefix );
+    strategytdoriggam( doublestrat * ds=0 );
+    strategytdoriggam( int nMiddle, doublestrat * ds=0 );
+    strategytdoriggam( const string& subPath, const string& filePrefix, doublestrat * ds=0 );
     virtual ~strategytdoriggam() {};
     
     virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ); 

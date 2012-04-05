@@ -32,8 +32,8 @@ class strategytdorig : public strategytdbase
     // assumptions are made.
     
 public:
-    strategytdorig();
-    strategytdorig( int nMiddle );
+    strategytdorig( doublestrat * ds=0 );
+    strategytdorig( int nMiddle, doublestrat * ds=0 );
     virtual ~strategytdorig();
     
     virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ); 

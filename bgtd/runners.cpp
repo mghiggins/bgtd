@@ -1751,11 +1751,11 @@ vector<int> stepsCubeful;
 class workerCubeful
 {
 public:
-    workerCubeful( long i, strategy& s1, strategy& s2, doublestrat& ds1, doublestrat& ds2, long n, long initSeed ) : i(i), s1(s1), s2(s2), ds1(ds1), ds2(ds2), n(n), initSeed(initSeed) {};
+    workerCubeful( long i, strategy& s1, strategy& s2, long n, long initSeed ) : i(i), s1(s1), s2(s2), n(n), initSeed(initSeed) {};
     
     void operator()()
     {
-        game g( &s1, &s2, (int)(i+initSeed), &ds1, &ds2 );
+        game g( &s1, &s2, (int)(i+initSeed) );
         g.setTurn( ((int) i)%2 );
         //g.setContextValue( "singleGame", 1 );
         g.stepToEnd();
@@ -1776,13 +1776,11 @@ private:
     long i;
     strategy& s1;
     strategy& s2;
-    doublestrat& ds1;
-    doublestrat& ds2;
     long n;
     long initSeed;
 };
 
-runStats playParallelCubeful( strategy& s1, strategy& s2, doublestrat& ds1, doublestrat& ds2, long n, long initSeed, int nBuckets )
+runStats playParallelCubeful( strategy& s1, strategy& s2, long n, long initSeed, int nBuckets )
 {
     using namespace boost;
     
@@ -1813,7 +1811,7 @@ runStats playParallelCubeful( strategy& s1, strategy& s2, doublestrat& ds1, doub
         }
         
         thread_group ts;
-        for( long i=0; i<nRuns; i++ ) ts.create_thread( workerCubeful( i, s1, s2, ds1, ds2, nRuns, initSeed+bkt*nRuns ) );
+        for( long i=0; i<nRuns; i++ ) ts.create_thread( workerCubeful( i, s1, s2, nRuns, initSeed+bkt*nRuns ) );
         ts.join_all();
         
         int p, score;
@@ -1912,37 +1910,13 @@ runStats playParallelCubeful( strategy& s1, strategy& s2, doublestrat& ds1, doub
 void testCubefulMoney()
 {
     strategytdmult s1( "benchmark", "player33" );
+    strategytdmult s2(s1);
     s1.learning=false;
-    //doublestratnodouble ds1;
-    //doublestratjanowski ds1( s1, 0.7 );
-    
-    //doublestratjumpconst ds1( s1, 0.1 );
-    doublestratjanowski ds2( s1, 0.7 );
-    /*
-    //board b(referenceBoard(7));
-    board b;
-    b.setFromJosephID("AONPIBABCIOAPDOAABAD");
-    b.print();
-    b.setPerspective(1);
-    cout << s1.boardProbabilities(b).flippedProbs() << endl << endl;
-    b.setPerspective(0);
-    
-    cout << ds1.equity(b, 1, false, false) << endl;
-    cout << ds2.equity(b, 1, false, false) << endl;
-    cout << ds1.offerDouble(b, 1) << endl;
-    cout << ds2.offerDouble(b, 1) << endl;
-    cout << ds1.takeDouble(b, 1) << endl;
-    cout << ds2.takeDouble(b, 1) << endl;
-    */
-    
-    
-    vector<double> xs(6);
-    xs[0] = 0.06;
-    xs[1] = 0.07;
-    xs[2] = 0.13;
-    xs[3] = 0.14;
-    xs[4] = 0.15;
-    xs[5] = 0.16;
+    doublestratjanowski ds2( 0.7 );
+    s2.setDoublingStrategy(&ds2);
+
+    vector<double> xs(1);
+    xs[0] = 0.091;
     
     vector<double> ppgs(xs.size());
     vector<double> pwins(xs.size());
@@ -1951,15 +1925,15 @@ void testCubefulMoney()
     {
         cout << "STARTING value = " << xs.at(i) << endl << endl;
         
-        //doublestratjanowski ds1( s1, xs.at(i) );
-        //doublestratjanowskistate ds1( s1, 0.7, xs.at(i) );
-        doublestratjumpconst ds1(s1,xs.at(i),false);
+        doublestratjumpconst ds1(xs.at(i),false);
+        
+        s1.setDoublingStrategy(&ds1);
 
-        int nRuns=100000;
+        int nRuns=10000;
         int nBuckets=nRuns/1000;
         int seed = 1;
-        runStats stats1 = playParallelCubeful(s1, s1, ds1, ds2, nRuns/2, seed, nBuckets);
-        runStats stats2 = playParallelCubeful(s1, s1, ds2, ds1, nRuns/2, seed, nBuckets);
+        runStats stats1 = playParallelCubeful(s1, s2, nRuns/2, seed, nBuckets);
+        runStats stats2 = playParallelCubeful(s2, s1, nRuns/2, seed, nBuckets);
         
         cout << "DONE value = " << xs.at(i) << endl << endl;
         cout << "************************************************************************\n\n\n\n\n";
@@ -1978,12 +1952,13 @@ vector<int> pntsMatch;
 class workerMatch
 {
 public:
-    workerMatch( int i, int target, strategyprob& s1, strategy& s2, const matchequitytable& MET, doublestrat& ds2, int initSeed ) : i(i), target(target), s1(s1), s2(s2), MET(MET), ds2(ds2), initSeed(initSeed) {};
+    workerMatch( int i, int target, strategyprob& s1, strategy& s2, const matchequitytable& MET, int initSeed ) : i(i), target(target), s1(s1), s2(s2), MET(MET), initSeed(initSeed) {};
     
     void operator()()
     {
-        doublestratmatch ds1( s1, MET );
-        match m( target, &s1, &s2, i+initSeed, &ds1, &ds2 );
+        doublestratmatch ds1( MET );
+        s1.setDoublingStrategy(&ds1);
+        match m( target, &s1, &s2, i+initSeed );
         ds1.setMatch(&m);
         m.stepToEnd();
         if( m.winner() == 0 )
@@ -1997,9 +1972,7 @@ private:
     int target;
     strategyprob& s1;
     strategy& s2;
-    //doublestratmatch& ds1;
     const matchequitytable& MET;
-    doublestrat& ds2;
     int initSeed;
 };
 
@@ -2007,73 +1980,12 @@ void testMatch()
 {
     using namespace boost;
     
-    strategytdmult s( "benchmark", "player33" );
-    doublestratmatch ds1(s,"/Users/mghiggins/bgtdres/benchdb/MET.txt");
-    doublestratjanowski ds2(s,1.);
-    //doublestratdeadcube ds2(s);
-    //doublestratnodouble ds2;
+    doublestratjanowski ds2(0.7);
+    strategytdmult s1( "benchmark", "player33" );
+    strategytdmult s2(s1);
+    s2.setDoublingStrategy(&ds2);
     
-    /*
-    vector<stateData> singleData( loadCrawfordFirstDoubleStateProbDb("/Users/mghiggins/bgtdres/benchdb/matcheq_postC_single.txt") );
-    vector<stateData> data( loadCrawfordFirstDoubleStateProbDb("/Users/mghiggins/bgtdres/benchdb/matcheq_postC.txt") );
-    
-    board b;
-    //b.setFromJosephID( "LGGNMAABCEJIGHMMBBCA" );
-    b.print();
-    
-    game g(&s,&s,1,&ds1,&ds1);
-    g.setBoard(b);
-    
-    int nn=5;
-    int mm=8;
-    
-    match m(mm+2,&s,&s,1,&ds1,&ds1);
-    m.setGame(&g);
-    m.setPlayerScore(m.getTarget()-nn);
-    m.setOpponentScore(m.getTarget()-mm);
-    
-    ds1.setMatch(&m);
-    
-    b.setPerspective(1);
-    gameProbabilities probs( s.boardProbabilities(b).flippedProbs() );
-    cout << probs << endl;
-    b.setPerspective(0);
-    
-    int cube=1;
-    
-    interpMEdata dataTake( ds1.equityInterpFn(probs, 0, cube, 1) );
-    cout << dataTake.takePoint << ": " << dataTake.takeME << endl;
-    interpMEdata dataCash( ds1.equityInterpFn(probs, 0, cube, 0) );
-    cout << dataCash.cashPoint << ": " << dataCash.cashME << endl;
-    
-    try 
-    {
-        interpMEdata dataTakeA( matchEquityInterpData( nn, mm, cube, false, 0.1365, singleData, data, false ) );
-        cout << dataTakeA.takePoint << ": " << dataTakeA.takeME << endl;
-        interpMEdata dataCashA( matchEquityInterpData( nn, mm, cube, true, 0.1365, singleData, data, false ) );
-        cout << dataCashA.cashPoint << ": " << dataCashA.cashME << endl;
-    }
-    catch( const string& s )
-    {
-        cout << "Exception: " << s << endl;
-    }
-    catch( std::exception& e )
-    {
-        cout << "Exception: " << e.what() << endl;
-    }
-    
-    return;
-    
-    cout << ds1.offerDouble(b, cube) << endl;
-    cout << ds1.takeDouble(b, cube) << endl;
-    
-    marketWindowJanowski window( ds2.boardProbabilities(b), ds2.getCubeLifeIndex() );
-    cout << window.takePoint() << "," << window.initialDoublePoint() << "," << window.redoublePoint() << "," << window.cashPoint() << endl;
-    cout << ds2.offerDouble(b, cube) << endl;
-    cout << ds2.takeDouble(b, cube) << endl;
-    */
-    
-    matchequitytable MET( ds1.getMET() );
+    matchequitytable MET( "/Users/mghiggins/bgtdres/benchdb/MET.txt" );
     
     int n=10000;
     int nBuckets=n/100;
@@ -2101,7 +2013,7 @@ void testMatch()
         if( runParallel )
         {
             thread_group ts;
-            for( int i=0; i<nRuns; i++ ) ts.create_thread( workerMatch( i, target, s, s, MET, ds2, 2+bkt*nRuns ) );
+            for( int i=0; i<nRuns; i++ ) ts.create_thread( workerMatch( i, target, s1, s2, MET, 2+bkt*nRuns ) );
             ts.join_all();
         }
         else
@@ -2109,7 +2021,7 @@ void testMatch()
             for( int i=0; i<nRuns; i++ )
             {
                 cout << "  Serial " << i << endl;
-                workerMatch w( i, target, s, s, MET, ds2, 2+bkt*nRuns );
+                workerMatch w( i, target, s1, s2, MET, 2+bkt*nRuns );
                 w();
             }
         }
@@ -2164,8 +2076,8 @@ public:
                 
                 prob = probs.probWin;
                 
-                //if( ( prob > 0.2 and prob < 0.35 ) or ( prob > 0.65 and prob < 0.8 ) )
-                if( prob > 0.2 and prob < 0.8 )
+                if( ( prob > 0.2 and prob < 0.35 ) or ( prob > 0.65 and prob < 0.8 ) )
+                //if( prob > 0.2 and prob < 0.8 )
                 {
                     if( doTwoStep and !startCalc )
                     {

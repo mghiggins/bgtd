@@ -35,20 +35,20 @@ vector<double> randomWeights( int nWeights, CRandomMersenne& rng )
     return weights;
 }
 
-strategytdmult::strategytdmult()
+strategytdmult::strategytdmult( doublestrat * ds ) : strategytdbase(ds)
 {
     useShotProbInput = true;
     usePrimesInput   = true;
     setupRandomWeights( 40 ); // default # of middle nodes is 40
 }
 
-strategytdmult::strategytdmult( int nMiddle, bool useShotProbInput, bool usePrimesInput, bool useExtendedBearoffInputs ) 
-  : useShotProbInput(useShotProbInput), usePrimesInput(usePrimesInput), useExtendedBearoffInputs(useExtendedBearoffInputs)
+strategytdmult::strategytdmult( int nMiddle, bool useShotProbInput, bool usePrimesInput, bool useExtendedBearoffInputs, doublestrat * ds ) 
+  : useShotProbInput(useShotProbInput), usePrimesInput(usePrimesInput), useExtendedBearoffInputs(useExtendedBearoffInputs), strategytdbase(ds)
 {
     setupRandomWeights( nMiddle );
 }
 
-strategytdmult::strategytdmult( const string& path, const string& filePrefix )
+strategytdmult::strategytdmult( const string& path, const string& filePrefix, doublestrat * ds ) : strategytdbase(ds)
 {
     loadWeights( path, filePrefix );
     setup();

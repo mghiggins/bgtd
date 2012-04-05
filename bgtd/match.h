@@ -31,7 +31,7 @@ class match
     // represents a set of games to a fixed target score
     
 public:
-    match( int target, strategy * strat0, strategy * strat1, int seed, doublestrat* ds0, doublestrat* ds1 );
+    match( int target, strategy * strat0, strategy * strat1, int seed );
     ~match();
     
     // step moves one roll forward in the current game
@@ -86,8 +86,6 @@ private:
     
     strategy * strat0;
     strategy * strat1;
-    doublestrat * ds0;
-    doublestrat * ds1;
     
     CRandomMersenne * rng;
     game * currentGame;

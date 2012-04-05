@@ -87,8 +87,8 @@ int main( int argc, char * argv [] )
     //test4();
     //testDoubleHittingShots();
     //testMatchEquity();
-    //testCubefulMoney();
+    testCubefulMoney();
     //testMatch();
-    estimateJumpVol();
+    //estimateJumpVol();
 }
 

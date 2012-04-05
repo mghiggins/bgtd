@@ -22,20 +22,23 @@
 #include "strategytd.h"
 #include "randomc.h"
 
-strategytd::strategytd()
+strategytd::strategytd( doublestrat * ds ) : strategytdbase(ds)
 {
     nMiddle = 40;
     setup();
 }
 
-strategytd::strategytd( int nMiddle )
+strategytd::strategytd( int nMiddle, doublestrat * ds ) : strategytdbase(ds)
 {
     if( nMiddle % 2 != 0 ) throw string( "nMiddle must be even" );
     this->nMiddle = nMiddle;
     setup();
 }
 
-strategytd::strategytd( const vector<double>& outputWeights, const vector< vector<double> >& middleWeights, const vector<double>& outputTraces, const vector< vector<double> >& middleTraces, double alpha, double beta, double lambda )
+strategytd::strategytd( const vector<double>& outputWeights, const vector< vector<double> >& middleWeights, 
+                        const vector<double>& outputTraces, const vector< vector<double> >& middleTraces, 
+                        double alpha, double beta, double lambda,
+                       doublestrat * ds ) : strategytdbase(ds)
 {
     nMiddle = (int) middleWeights.size();
     if( nMiddle % 2 != 0 ) throw string( "nMiddle must be even" );
@@ -63,6 +66,7 @@ strategytd::strategytd( const strategytd& otherStrat )
     beta          = otherStrat.beta;
     lambda        = otherStrat.lambda;
     learning      = otherStrat.learning;
+    ds            = otherStrat.ds;
 }
 
 strategytd::~strategytd()

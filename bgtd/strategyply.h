@@ -37,7 +37,7 @@ public:
     // (filterStrat is usually a fairly coarse strategy that gets equity correct only
     // approximately).
     
-    strategyply( int nPlies, int nMoveFilter, double equityCutoff, strategyprob& baseStrat, strategyprob& filterStrat );
+    strategyply( int nPlies, int nMoveFilter, double equityCutoff, strategyprob& baseStrat, strategyprob& filterStrat, doublestrat * ds=0 );
     virtual ~strategyply() {};
     
     int nPlies, nMoveFilter;

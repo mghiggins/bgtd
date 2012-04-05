@@ -22,19 +22,19 @@
 #include "randomc.h"
 #include "strategytdoriggam.h"
 
-strategytdoriggam::strategytdoriggam()
+strategytdoriggam::strategytdoriggam( doublestrat * ds ) : strategytdbase(ds)
 {
     nMiddle = 40; // default # of middle nodes
     setup();
 }
 
-strategytdoriggam::strategytdoriggam( int nMiddle )
+strategytdoriggam::strategytdoriggam( int nMiddle, doublestrat * ds ) : strategytdbase(ds)
 {
     this->nMiddle = nMiddle;
     setup();
 }
 
-strategytdoriggam::strategytdoriggam( const string& subPath, const string& filePrefix )
+strategytdoriggam::strategytdoriggam( const string& subPath, const string& filePrefix, doublestrat * ds ) : strategytdbase(ds)
 {
     loadWeights( subPath, filePrefix );
 }

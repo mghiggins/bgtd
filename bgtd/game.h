@@ -39,11 +39,6 @@ public:
     game( strategy * strat0, strategy * strat1, CRandomMersenne * rng );
     game( const game& srcGame );
     
-    // others that add doubling strategies for each player
-    
-    game( strategy * strat0, strategy * strat1, int seed, doublestrat * doubler0, doublestrat * doubler1 );
-    game( strategy * strat0, strategy * strat1, doublestrat * doubler0, doublestrat * doubler1, CRandomMersenne * rng );
-    
     // destructor
     
     virtual ~game();
@@ -90,9 +85,6 @@ private:
     int        trn;
     strategy * strat0;
     strategy * strat1;
-    
-    doublestrat * doubler0;
-    doublestrat * doubler1;
     
     int cube;
     int cubeOwner; // 0 or 1 if player 0 or 1 owns; -1 if the cube is in the middle

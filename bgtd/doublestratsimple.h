@@ -29,28 +29,25 @@ class doublestratdeadcube : public doublestrat
     // So doubles if the player's cubeless equity > 0 and < 1.
     
 public:
-    doublestratdeadcube( strategyprob& strat ) : strat(strat) {};
+    doublestratdeadcube() {};
     virtual ~doublestratdeadcube() {};
     
-    virtual bool offerDouble( const board& b, int cube );
-    virtual bool takeDouble( const board& b, int cube );
-    
-    gameProbabilities boardProbabilities( const board& b );
-    
-private:
-    strategyprob& strat;
+    virtual double equity( strategyprob& strat, const board& b, int cube, bool ownsCube, bool holdsDice );
 };
 
 class doublestratnodouble : public doublestrat
 {
-    // strategy that never doubles
+    // strategy that never doubles, always takes
     
 public:
     doublestratnodouble() {};
     virtual ~doublestratnodouble() {};
     
-    virtual bool offerDouble( const board& b, int cube ) { return false; };
-    virtual bool takeDouble( const board& b, int cube ) { return true; };
+    // equity returns cubeless equity
+    
+    virtual double equity( strategyprob& strat, const board& b, int cube, bool ownsCube, bool holdsDice );
+    virtual bool offerDouble( strategyprob& strat, const board& b, int cube ) { return false; };
+    virtual bool takeDouble( strategyprob& strat, const board& b, int cube ) { return true; };
 };
 
 #endif

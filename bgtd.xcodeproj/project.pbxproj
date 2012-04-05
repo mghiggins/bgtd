@@ -12,6 +12,7 @@
 		C00B7DA413D9F0FE00B3F10D /* game.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C00B7DA313D9F0FE00B3F10D /* game.cpp */; };
 		C00B7E0413DA0BA400B3F10D /* gamefns.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C00B7E0313DA0BA400B3F10D /* gamefns.cpp */; };
 		C011988B152A8CFC00311E2F /* doublestratjanowskistate.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C011988A152A8CFC00311E2F /* doublestratjanowskistate.cpp */; };
+		C01369A3152E360F00B9DCF1 /* doublestrat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C01369A2152E360F00B9DCF1 /* doublestrat.cpp */; };
 		C01674D814A0490D00D91466 /* strategyply.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C01674D714A0490D00D91466 /* strategyply.cpp */; };
 		C0202DE113E3362000F00B48 /* tests.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C0202DE013E3362000F00B48 /* tests.cpp */; };
 		C0202DE413E373BB00F00B48 /* strategypubeval.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C0202DE313E373BB00F00B48 /* strategypubeval.cpp */; };
@@ -63,6 +64,7 @@
 		C00B7E0313DA0BA400B3F10D /* gamefns.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = gamefns.cpp; sourceTree = "<group>"; };
 		C0119889152A8C7B00311E2F /* doublestratjanowskistate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = doublestratjanowskistate.h; sourceTree = "<group>"; };
 		C011988A152A8CFC00311E2F /* doublestratjanowskistate.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = doublestratjanowskistate.cpp; sourceTree = "<group>"; };
+		C01369A2152E360F00B9DCF1 /* doublestrat.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = doublestrat.cpp; sourceTree = "<group>"; };
 		C014EF7213E846A000FB152C /* strategytdbase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = strategytdbase.h; sourceTree = "<group>"; };
 		C01674D514A048F500D91466 /* strategyply.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = strategyply.h; sourceTree = "<group>"; };
 		C01674D714A0490D00D91466 /* strategyply.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strategyply.cpp; sourceTree = "<group>"; };
@@ -158,6 +160,7 @@
 				C087738015137D35005A8CE4 /* matchequitytable.h */,
 				C087738115137D43005A8CE4 /* matchequitytable.cpp */,
 				C09D65D5150C18BC00AF978A /* doublestrat.h */,
+				C01369A2152E360F00B9DCF1 /* doublestrat.cpp */,
 				C09D65D8150C1A7500AF978A /* doublestratsimple.h */,
 				C09D65D9150C1B2F00AF978A /* doublestratsimple.cpp */,
 				C09D65DB150D3F4400AF978A /* doublestratjanowski.h */,
@@ -284,6 +287,7 @@
 				C087738215137D43005A8CE4 /* matchequitytable.cpp in Sources */,
 				C07FD68D1520AA8B000A5CE5 /* doublestratjumpconst.cpp in Sources */,
 				C011988B152A8CFC00311E2F /* doublestratjanowskistate.cpp in Sources */,
+				C01369A3152E360F00B9DCF1 /* doublestrat.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

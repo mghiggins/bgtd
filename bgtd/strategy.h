@@ -60,6 +60,12 @@ public:
     virtual double boardValue( const board& brd, const hash_map<string,int>* context=0 ) = 0;
     virtual board preferredBoard( const board& oldBoard, const set<board>& possibleMoves, const hash_map<string,int>* context=0 );
     virtual hash_map<string,int> boardContext( const board& brd ) const { hash_map<string,int> empty; return empty; };
+    
+    // offerDouble and takeDouble use the underlying doubling strategy to determine cube actions.
+    // Default is to never double and always take. Refined in derived classes.
+    
+    virtual bool offerDouble( const board& brd, int cube ) { return false; };
+    virtual bool takeDouble( const board& brd, int cube ) { return true; };
 };
 
 #endif

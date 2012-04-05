@@ -31,22 +31,18 @@ class doublestratjanowskistate : public doublestrat
     // cube life index depending on game state.
     
 public:
-    doublestratjanowskistate( strategyprob& strat, double cubeLifeIndexContact, double cubeLifeIndexRace ) 
-        : strat(strat), cubeLifeIndexContact(cubeLifeIndexContact), cubeLifeIndexRace(cubeLifeIndexRace) {};
+    doublestratjanowskistate( double cubeLifeIndexContact, double cubeLifeIndexRace ) 
+        : cubeLifeIndexContact(cubeLifeIndexContact), cubeLifeIndexRace(cubeLifeIndexRace) {};
     virtual ~doublestratjanowskistate() {};
-    
-    virtual bool offerDouble( const board& b, int cube );
-    virtual bool takeDouble( const board& b, int cube );
     
     double getCubeLifeIndexContact() const { return cubeLifeIndexContact; };
     double getCubeLifeIndexRace() const { return cubeLifeIndexRace; };
     void setCubeLifeIndexContact( double newIndex ) { if( newIndex < 0 or newIndex > 1 ) throw string( "cube life index must be in [0,1]" ); cubeLifeIndexContact=newIndex; };
     void setCubeLifeIndexRace( double newIndex ) { if( newIndex < 0 or newIndex > 1 ) throw string( "cube life index must be in [0,1]" ); cubeLifeIndexRace=newIndex; };
     
-    double equity( const board& b, int cube, bool ownsCube, bool holdsDice );
+    virtual double equity( strategyprob& strat, const board& b, int cube, bool ownsCube, bool holdsDice );
     
 private:
-    strategyprob& strat;
     double cubeLifeIndexContact, cubeLifeIndexRace;
 };
 

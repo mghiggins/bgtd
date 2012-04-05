@@ -22,24 +22,37 @@
 
 #include "board.h"
 
+class strategyprob; // to avoid include cycles we include the .h file in the .cpp
+class gameProbabilities; // ditto
+
 class doublestrat
 {
-    // base class for doubling strategies.
+    // base class for doubling strategies. These are attached to regular strategies,
+    // which typically are the only objects calling their methods.
     
 public:
     doublestrat() {};
     virtual ~doublestrat() {};
     
+    // equity returns cubeful equity - abstract, so must be implemented in derived classes
+    
+    virtual double equity( strategyprob& strat, const board& b, int cube, bool ownsCube, bool holdsDice ) = 0;
+    
     // offerDouble takes a board, assuming the player holds the dice and has the opportunity
     // to double. Returns true if the player should double and false if not. cube is the value
-    // of the cube (1 if in the center).
+    // of the cube (1 if in the center). By default this checks equity at the doubled cube level.
     
-    virtual bool offerDouble( const board& b, int cube ) = 0;
+    virtual bool offerDouble( strategyprob& strat, const board& b, int cube );
     
     // takeDouble takes a board, assuming the player is being offered the cube. If it returns
-    // true the player takes; false, the player passes. 
+    // true the player takes; false, the player passes. By default this checks equity at the doubled
+    // cube level.
     
-    virtual bool takeDouble( const board& b, int cube ) = 0;
+    virtual bool takeDouble( strategyprob& strat, const board& b, int cube );
+    
+    // gameProbabilities returns the game probabilities from the right perspective
+    
+    gameProbabilities boardProbabilities( strategyprob& strat, const board& b, bool holdsDice );
 };
 
 #endif

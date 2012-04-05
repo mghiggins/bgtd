@@ -20,13 +20,13 @@
 #include "randomc.h"
 #include "strategytdorigsym.h"
 
-strategytdorigsym::strategytdorigsym()
+strategytdorigsym::strategytdorigsym( doublestrat * ds ) : strategytdbase(ds)
 {
     nMiddle = 40; // default # of middle nodes
     setup();
 }
 
-strategytdorigsym::strategytdorigsym( int nMiddle )
+strategytdorigsym::strategytdorigsym( int nMiddle, doublestrat * ds ) : strategytdbase(ds)
 {
     this->nMiddle = nMiddle;
     setup();

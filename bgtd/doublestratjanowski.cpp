@@ -18,46 +18,9 @@
 
 #include "doublestratjanowski.h"
 
-bool doublestratjanowski::offerDouble( const board& b, int cube )
+double doublestratjanowski::equity( strategyprob& strat, const board& b, int cube, bool ownsCube, bool holdsDice )
 {
-    // compare the equity after double with the equity before. The
-    // player holds the dice here.
-    
-    double equityDoubled = equity( b, 2*cube, false, true );
-    
-    // if the doubled equity is more than the cash amount, cap it there;
-    // the opponent will pass.
-    
-    if( equityDoubled > cube ) equityDoubled = cube;
-    
-    double equityNoDouble = equity( b, cube, true, true );
-    
-    return equityDoubled > equityNoDouble - 1e-6; // double if it's better from an equity perspective - leave a wee margin
-}
-
-bool doublestratjanowski::takeDouble( const board& b, int cube )
-{
-    // compare the equity in the state where the player holds the cube doubled
-    // with -1. In this case the player does not hold the dice; the opponent does.
-    
-    double equityDoubled = equity( b, 2*cube, true, false );
-    return equityDoubled > -cube; // take if we're better off being doubled than passing
-}
-
-double doublestratjanowski::equity( const board& b, int cube, bool ownsCube, bool holdsDice )
-{
-    // get the game probs from the right perspective
-    
-    gameProbabilities probs;
-    
-    if( holdsDice )
-    {
-        board fb(b);
-        fb.setPerspective(1-b.perspective());
-        probs = strat.boardProbabilities(fb).flippedProbs();
-    }
-    else
-        probs = strat.boardProbabilities(b);
+    gameProbabilities probs( boardProbabilities( strat, b, holdsDice ) );
     
     double W=probs.probWin==0 ? 1 : (probs.probWin + probs.probGammonWin + probs.probBgWin)/probs.probWin;
     double L=1-probs.probWin==0 ? 1 : (1-probs.probWin + probs.probGammonLoss + probs.probBgLoss)/(1-probs.probWin);

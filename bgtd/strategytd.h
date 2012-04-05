@@ -35,9 +35,9 @@ class strategytd : public strategytdbase
     // the perspective the same and added two input nodes to represent whose turn it is).
     
 public:
-    strategytd();
-    strategytd( int nMiddle );
-    strategytd( const vector<double>& outputWeights, const vector< vector<double> >& middleWeights, const vector<double>& outputTraces, const vector< vector<double> >& middleTraces, double alpha, double beta, double lambda );
+    strategytd( doublestrat * ds=0 );
+    strategytd( int nMiddle, doublestrat * ds=0 );
+    strategytd( const vector<double>& outputWeights, const vector< vector<double> >& middleWeights, const vector<double>& outputTraces, const vector< vector<double> >& middleTraces, double alpha, double beta, double lambda, doublestrat * ds=0 );
     strategytd( const strategytd& otherStrat );
     virtual ~strategytd();
     

@@ -32,8 +32,8 @@ class strategytdorigsym : public strategytdbase
     // for on turn or not), and the network enforces perspective-flip symmetry.
     
 public:
-    strategytdorigsym();
-    strategytdorigsym( int nMiddle );
+    strategytdorigsym( doublestrat * ds=0 );
+    strategytdorigsym( int nMiddle, doublestrat * ds=0 );
     virtual ~strategytdorigsym();
     
     virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ); 

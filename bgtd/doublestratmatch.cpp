@@ -19,26 +19,24 @@
 #include "doublestratmatch.h"
 #include "doublefns.h"
 
-doublestratmatch::doublestratmatch( strategyprob& strat, const string& METFileName )
-: strat(strat), MET(METFileName), currMatch(0)
+doublestratmatch::doublestratmatch( const string& METFileName )
+: MET(METFileName), currMatch(0)
 {
 }
 
-doublestratmatch::doublestratmatch( strategyprob& strat, const matchequitytable& MET )
-: strat(strat), MET(MET), currMatch(0)
+doublestratmatch::doublestratmatch( const matchequitytable& MET )
+: MET(MET), currMatch(0)
 {
 }
 
-bool doublestratmatch::offerDouble( const board& b, int cube )
+bool doublestratmatch::offerDouble( strategyprob& strat, const board& b, int cube )
 {
     // get the various game probabilities. For this we want game probabilities
     // before the dice are thrown. The strategy's boardProbabilities returns the
     // game probs *after* the dice are thrown, so we need to flip the board around,
     // get the probs, then flip their perspective back.
     
-    board fb(b);
-    fb.setPerspective(1-b.perspective());
-    gameProbabilities probs( strat.boardProbabilities(fb).flippedProbs() );
+    gameProbabilities probs(boardProbabilities(strat, b, true));
     
     // if the cubeless equity is greater than the equity we'd get if the
     // opponent passed on a double, it's too good to double (since we ignore
@@ -78,17 +76,25 @@ bool doublestratmatch::offerDouble( const board& b, int cube )
     return equityDouble > equityNoDouble - 1e-6;
 }
 
-bool doublestratmatch::takeDouble( const board& b, int cube )
+bool doublestratmatch::takeDouble( strategyprob& strat, const board& b, int cube )
 {
     // need probabilities when the opponent holds the dice; that's what the strategy's
     // boardProbabilities returns so just use that.
     
-    gameProbabilities probs( strat.boardProbabilities(b) );
+    gameProbabilities probs( boardProbabilities(strat,b,false) );
     interpMEdata data( equityInterpFn( probs, b.perspective(), cube, 1-b.perspective() ) );
     
     // take if the prob of win is above the take point
     
     return probs.probWin >= data.takePoint;
+}
+
+double doublestratmatch::equity( strategyprob& strat, const board& b, int cube, bool ownsCube, bool holdsDice )
+{
+    gameProbabilities probs( boardProbabilities(strat, b, holdsDice) );
+    int cubeOwner = ownsCube ? b.perspective() : 1-b.perspective();
+    interpMEdata data( equityInterpFn(probs, b.perspective(), cube, cubeOwner) );
+    return data(probs.probWin);
 }
 
 interpMEdata doublestratmatch::equityInterpFn( const gameProbabilities& probs, int perspective, int cube, int cubeOwner, int nOverride, int mOverride )
