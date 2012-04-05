@@ -39,6 +39,8 @@
 #include "doublefns.h"
 #include "doublestratsimple.h"
 #include "doublestratjanowski.h"
+#include "doublestratjanowskistate.h"
+#include "doublestratjumpconst.h"
 #include "doublestratmatch.h"
 #include "match.h"
 #include "matchequitytable.h"
@@ -1546,17 +1548,17 @@ void trainBenchmarks()
     //strategytdmult s1( "benchmark", "player24" );
     //strategytdmult s1( "", "player31_120" );
     //strategytdmult s1( 120, true, true, true, true );
-    strategytdmult s1( "", "player33b" );
+    strategytdmult s1( "", "player33d" );
     s1.learning = false;
     
-    string playerName( "player33c" );
+    string playerName( "player33e" );
     string stdName = "std" + playerName;
     cout << "Player name = " << playerName << endl;
     
     int seed = 1;
     
     double alpha;
-    double alphaMax=0.1/sqrt(10), alphaMin=0.03;
+    double alphaMax=2.5, alphaMin=0.01;
     
     vector<boardAndRolloutProbs> statesContact( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/contact-train-data" ) );
     vector<boardAndRolloutProbs> statesCrashed( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/crashed-train-data" ) );
@@ -1589,7 +1591,7 @@ void trainBenchmarks()
     
     for( int i=0; i<30000; i++ )
     {
-        if( bestLag >= 4 )
+        if( ( alpha > 0.1 and bestLag >= 2 ) or ( alpha <= 0.1 and bestLag >= 3 ) )
         {
             alpha /= sqrt(10.);
             if( alpha < alphaMin ) alpha = alphaMax;
@@ -1793,10 +1795,12 @@ runStats playParallelCubeful( strategy& s1, strategy& s2, doublestrat& ds1, doub
     
     vector<double> cubeFracs(7,0);
     
+    if( nBuckets > 1 ) cout << nBuckets << " buckets\n";
+    
     for( int bkt=0; bkt<nBuckets; bkt++ )
     {
         if( nBuckets > 1 )
-            cout << bkt+1 << "; " << ppg/count << "; " << avgCube/count << endl;
+            cout << bkt+1 << "; " << ppg/count << "; " << w0/count << "; " << avgCube/count << endl;
         
         // run each game in its own thread
         
@@ -1909,70 +1913,64 @@ void testCubefulMoney()
 {
     strategytdmult s1( "benchmark", "player33" );
     s1.learning=false;
-    //doublestratjanowski ds1( s1, 0. );
-    doublestratjanowski ds1( s1, 0.7 );
+    //doublestratnodouble ds1;
+    //doublestratjanowski ds1( s1, 0.7 );
+    
+    //doublestratjumpconst ds1( s1, 0.1 );
     doublestratjanowski ds2( s1, 0.7 );
     /*
-    //board b(referenceBoard(3));
+    //board b(referenceBoard(7));
     board b;
-    b.setFromJosephID("NIBOIHADAEHAMPIDABDA");
-    //b.setPerspective(1);
+    b.setFromJosephID("AONPIBABCIOAPDOAABAD");
     b.print();
+    b.setPerspective(1);
+    cout << s1.boardProbabilities(b).flippedProbs() << endl << endl;
+    b.setPerspective(0);
     
-    gameProbabilities probs(ds2.boardProbabilities(b));
-    cout << probs << endl << endl;
-    
-    marketWindowJanowski window(probs,0.65);
-    cout << "Take point  = " << window.takePoint() << endl;
-    cout << "Cash point  = " << window.cashPoint() << endl;
-    cout << "Init double = " << window.initialDoublePoint() << endl;
-    cout << "Redouble    = " << window.redoublePoint() << endl;
-    cout << "Equity      = " << window.equity(window.probs.probWin, 1, true) << endl;
-    cout << "Equity2o    = " << window.equity(window.probs.probWin, 2, false) << endl;
-    cout << "Equity2p    = " << window.equity(window.probs.probWin, 2, true) << endl;
-    cout << endl;
-    cout << "Offer centered? " << ds2.offerDouble(b, 1) << endl;
-    cout << "Offer at 2?     " << ds2.offerDouble(b, 2) << endl;
-    cout << endl;
-    cout << "Take centered?  " << ds2.takeDouble(b, 1) << endl;
-    cout << "Take at 2?      " << ds2.takeDouble(b, 2) << endl;
+    cout << ds1.equity(b, 1, false, false) << endl;
+    cout << ds2.equity(b, 1, false, false) << endl;
+    cout << ds1.offerDouble(b, 1) << endl;
+    cout << ds2.offerDouble(b, 1) << endl;
+    cout << ds1.takeDouble(b, 1) << endl;
+    cout << ds2.takeDouble(b, 1) << endl;
     */
-    playParallelCubeful(s1, s1, ds1, ds2, 100000, 1, 100);
     
-    /*
-    board b0( "AAAAACCCCDAA@AAAAAABBCA<>@=@" );
-    marketWindowJanowski window(ds2.boardProbabilities(b0),0.8);
-    cout << window.probs << endl;
-    cout << window.redoublePoint() << endl;
-    cout << ds2.offerDouble(b0, 16) << endl;
     
-    return;
-    */
-    /*
-    game g( &s1, &s1, 91, &ds2, &ds2 );
-    g.verbose = true;
-    g.getBoard().print();
+    vector<double> xs(6);
+    xs[0] = 0.06;
+    xs[1] = 0.07;
+    xs[2] = 0.13;
+    xs[3] = 0.14;
+    xs[4] = 0.15;
+    xs[5] = 0.16;
     
-    while( !g.gameOver() )
+    vector<double> ppgs(xs.size());
+    vector<double> pwins(xs.size());
+    
+    for( int i=0; i<xs.size(); i++ )
     {
-        g.step();
-        if( !g.gameOver() )
-        {
-            cout << g.getBoard().repr() << endl;
-            if( g.getCube() == 1 )
-                cout << "Cube = 1 centered\n";
-            else if( g.getCubeOwner() == 0 )
-                cout << "Cube = " << g.getCube() << " : owned by white\n";
-            else
-                cout << "Cube = " << g.getCube() << " : owned by black\n";
-            cout << endl;
-            if( g.turn() == 1 )
-                cout << s1.boardProbabilities(g.getBoard()) << endl;
-            else
-                cout << ds2.boardProbabilities(g.getBoard()) << endl;
-        }
+        cout << "STARTING value = " << xs.at(i) << endl << endl;
+        
+        //doublestratjanowski ds1( s1, xs.at(i) );
+        //doublestratjanowskistate ds1( s1, 0.7, xs.at(i) );
+        doublestratjumpconst ds1(s1,xs.at(i),false);
+
+        int nRuns=100000;
+        int nBuckets=nRuns/1000;
+        int seed = 1;
+        runStats stats1 = playParallelCubeful(s1, s1, ds1, ds2, nRuns/2, seed, nBuckets);
+        runStats stats2 = playParallelCubeful(s1, s1, ds2, ds1, nRuns/2, seed, nBuckets);
+        
+        cout << "DONE value = " << xs.at(i) << endl << endl;
+        cout << "************************************************************************\n\n\n\n\n";
+        
+        ppgs.at(i) = 0.5*(stats1.ppg-stats2.ppg);
+        pwins.at(i) = 0.5*(stats1.fracWin+1-stats2.fracWin);
     }
-    */
+    
+    cout << "Results:\n";
+    for( int i=0; i<xs.size(); i++ )
+        cout << xs.at(i) << ": " << ppgs.at(i) << "; " << pwins.at(i) << endl;
 }
 
 vector<int> pntsMatch;
@@ -2166,7 +2164,8 @@ public:
                 
                 prob = probs.probWin;
                 
-                if( ( prob > 0.2 and prob < 0.35 ) or ( prob > 0.65 and prob < 0.8 ) )
+                //if( ( prob > 0.2 and prob < 0.35 ) or ( prob > 0.65 and prob < 0.8 ) )
+                if( prob > 0.2 and prob < 0.8 )
                 {
                     if( doTwoStep and !startCalc )
                     {
@@ -2222,13 +2221,15 @@ void estimateJumpVol()
     int n=100000;
     int nRuns=500;
     int nBuckets=n/nRuns;
-    bool doTwoStep=true;
-    string evalName="contact";
+    bool doTwoStep=false;
+    string evalName="";
     
     double avgAbsJump=0, avgJumpSq=0, avgJump4=0, jump;
     jumpVolResults.resize(nRuns);
     int count=0;
     int i, j;
+    
+    cout << nBuckets << " buckets to process\n\n";
     
     for( int bkt=0; bkt<nBuckets; bkt++ )
     {
