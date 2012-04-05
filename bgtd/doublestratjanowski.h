@@ -23,29 +23,12 @@
 #include "doublestrat.h"
 #include "strategyprob.h"
 
-class marketWindowJanowski
-{
-    // class used to calculate cube decision points and cubeful equities in Janowski's model
-    
-public:
-    marketWindowJanowski( gameProbabilities probs, double cubeLifeIndex ) : probs(probs), cubeLifeIndex(cubeLifeIndex) {};
-    
-    gameProbabilities probs; // cubeless game probabilities when the market window was created
-    double cubeLifeIndex;   // Janowski's cube life index
-    
-    double W() const;
-    double L() const;
-    double takePoint() const;
-    double cashPoint() const;
-    double initialDoublePoint() const;
-    double redoublePoint() const;
-    double equity( double probWin, int cube, bool ownsCube ) const;
-};
-
 class doublestratjanowski : public doublestrat
 {
     // money game doubling strategy that uses the Janowski calculations, as per
     // http://www.bkgm.com/articles/Janowski/cubeformulae.pdf
+    // Everything is based on cubeful equity numbers in the different cube states,
+    // interpolating linearly between the live and dead cube limits.
     
 public:
     doublestratjanowski( strategyprob& strat, double cubeLifeIndex ) : strat(strat), cubeLifeIndex(cubeLifeIndex) {};
@@ -57,7 +40,7 @@ public:
     double getCubeLifeIndex() const { return cubeLifeIndex; };
     void setCubeLifeIndex( double newIndex ) { if( newIndex < 0 or newIndex > 1 ) throw string( "cube life index must be in [0,1]" ); cubeLifeIndex=newIndex; };
     
-    gameProbabilities boardProbabilities( const board& b );
+    double equity( const board& b, int cube, bool ownsCube, bool holdsDice );
     
 private:
     strategyprob& strat;

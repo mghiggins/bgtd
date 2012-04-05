@@ -18,112 +18,88 @@
 
 #include "doublestratjanowski.h"
 
-double marketWindowJanowski::W() const
-{
-    return probs.probWin == 0 ? 1 : ( probs.probWin + probs.probGammonWin + probs.probBgWin ) / probs.probWin;
-}
-
-double marketWindowJanowski::L() const
-{
-    return 1-probs.probWin == 0 ? 1 : ( 1-probs.probWin + probs.probGammonLoss + probs.probBgLoss ) / ( 1 - probs.probWin );
-}
-
-double marketWindowJanowski::takePoint() const
-{
-    double l=L();
-    double w=W();
-    return ( l - 0.5 ) / ( w + l + cubeLifeIndex/2. );
-}
-
-double marketWindowJanowski::cashPoint() const
-{
-    double l=L();
-    double w=W();
-    return ( l + 0.5 + 0.5*cubeLifeIndex ) / ( w + l + cubeLifeIndex/2. );
-}
-
-double marketWindowJanowski::initialDoublePoint() const
-{
-    double l=L();
-    double w=W();
-    return (l+(3-cubeLifeIndex)/(2-cubeLifeIndex)*cubeLifeIndex/2.)/(w+l+cubeLifeIndex/2.);
-}
-
-double marketWindowJanowski::redoublePoint() const
-{
-    double l=L();
-    double w=W();
-    return (l+cubeLifeIndex)/(w+l+0.5*cubeLifeIndex);
-}
-
-double marketWindowJanowski::equity( double probWin, int cube, bool ownsCube ) const
-{
-    if( probWin < takePoint() ) return -cube;
-    if( probWin > cashPoint() ) return cube;
-    double l=L();
-    double w=W();
-    
-    if( cube == 1 ) // centered
-        return 4*cube/(4-cubeLifeIndex) * ( probWin * ( w + l + 0.5*cubeLifeIndex ) - l - 0.25*cubeLifeIndex );
-    if( ownsCube )
-        return cube * ( probWin * ( w + l + 0.5*cubeLifeIndex ) - l );
-    else
-        return cube * ( probWin * ( w + l + 0.5*cubeLifeIndex ) - l - 0.5*cubeLifeIndex );
-}
-
 bool doublestratjanowski::offerDouble( const board& b, int cube )
 {
-    // get the board probabilities assuming this player owns the dice
+    // compare the equity after double with the equity before. The
+    // player holds the dice here.
     
-    marketWindowJanowski window( boardProbabilities(b), cubeLifeIndex );
+    double equityDoubled = equity( b, 2*cube, false, true );
     
-    // if it's too good to double, it means the equity if we never offer the
-    // cube is greater than the +1 we get from cashing. If we never offer the cube
-    // again, the equity is the cubeless equity.
+    // if the doubled equity is more than the cash amount, cap it there;
+    // the opponent will pass.
     
-    if( window.probs.equity() > 1 ) return false;
+    if( equityDoubled > cube ) equityDoubled = cube;
     
-    // equity if we don't double is the one where we own the cube at its current value
-    // (or it's centered for cube=1).
+    double equityNoDouble = equity( b, cube, true, true );
     
-    double equityNoDouble = window.equity( window.probs.probWin, cube, true );
-    
-    // if that's equal to 1 then we've passed the cash point - always double (we
-    // already checked at the start if it's too good to double).
-    
-    if( equityNoDouble >= cube ) return true;
-    
-    // equity if we double is the one where the opponent holds the cube
-    
-    double equityDouble = window.equity( window.probs.probWin, 2*cube, false );
-    
-    // we double if it's better to do so from an equity perspective. Add a wee threshold
-    // so that we do double when they're equal (since that probably means we're past the
-    // cash point).
-    
-    return equityDouble > equityNoDouble - 1e-6;
+    return equityDoubled > equityNoDouble - 1e-6; // double if it's better from an equity perspective - leave a wee margin
 }
 
 bool doublestratjanowski::takeDouble( const board& b, int cube )
 {
-    // get the board probabilities assuming the opponent holds the dice - can go directly to the strategy for that
+    // compare the equity in the state where the player holds the cube doubled
+    // with -1. In this case the player does not hold the dice; the opponent does.
     
-    marketWindowJanowski window( strat.boardProbabilities(b), cubeLifeIndex );
-    
-    // once the player takes the cube he owns it and can't get doubled again (unless he redoubles). We need to calculate the cubeful equity
-    // post-take, and we take if that's > -1.
-    
-    double equityDouble = window.equity( window.probs.probWin, 2, true );
-    return equityDouble > -1;
+    double equityDoubled = equity( b, 2*cube, true, false );
+    return equityDoubled > -cube; // take if we're better off being doubled than passing
 }
 
-gameProbabilities doublestratjanowski::boardProbabilities( const board& b )
+double doublestratjanowski::equity( const board& b, int cube, bool ownsCube, bool holdsDice )
 {
-    // boardProbabilities from the strategy corresponds to probabilities *after* the player
-    // has passed the dice; we need it before.
+    // get the game probs from the right perspective
     
-    board fb(b);
-    fb.setPerspective(1-b.perspective());
-    gameProbabilities probs( strat.boardProbabilities(fb) );
-    return probs.flippedProbs();
+    gameProbabilities probs;
+    
+    if( holdsDice )
+    {
+        board fb(b);
+        fb.setPerspective(1-b.perspective());
+        probs = strat.boardProbabilities(fb).flippedProbs();
+    }
+    else
+        probs = strat.boardProbabilities(b);
+    
+    double W=probs.probWin==0 ? 1 : (probs.probWin + probs.probGammonWin + probs.probBgWin)/probs.probWin;
+    double L=1-probs.probWin==0 ? 1 : (1-probs.probWin + probs.probGammonLoss + probs.probBgLoss)/(1-probs.probWin);
+    
+    // equity for the dead cube is always the same (normalized by the cube value)
+    
+    double P = probs.probWin;
+    double equityDead = P*(W+L)-L;
+    
+    // equity for the live cube depends on whether the cube is centered, we own, or the opponent owns,
+    // and whether equity is before the live cube take point or above its cash point. Piecewise linear
+    // in all sections. Equity is -L at P=0, +W at P=1, -1 at the take point, and +1 at the cash point.
+    
+    double TPlive = ( L - 0.5 ) / ( W + L + 0.5 );
+    double CPlive = ( L + 1   ) / ( W + L + 0.5 );
+    
+    double equityLive;
+    if( cube == 1 )
+    {
+        if( P < TPlive )
+            equityLive = ( P*(-1) + (TPlive-P)*(-L) ) / TPlive;
+        else if( P > CPlive )
+            equityLive = ( (P-CPlive)*W + (1-P)*1 ) / ( 1 - CPlive );
+        else
+            equityLive = ( (P-TPlive)*(1) + (CPlive-P)*(-1) ) / ( CPlive-TPlive );
+    }
+    else if( ownsCube )
+    {
+        if( P > CPlive )
+            equityLive = ( (P-CPlive)*W + (1-P)*1 ) / ( 1 - CPlive );
+        else
+            equityLive = ( P*1 + (CPlive-P)*(-L) ) / CPlive;
+    }
+    else
+    {
+        if( P < TPlive )
+            equityLive = ( P*(-1) + (TPlive-P)*(-L) ) / TPlive;
+        else
+            equityLive = ( (P-TPlive)*W + (1-P)*(-1) ) / ( 1 - TPlive );
+    }
+    
+    // the model equity is a regular linear interpolation between the live and dead cube equities.
+    
+    return cube * ( cubeLifeIndex * equityLive + ( 1 - cubeLifeIndex ) * equityDead );
 }
