@@ -36,6 +36,7 @@ public:
     strategytdmult( const string& path, const string& filePrefix, doublestrat * ds=0 );
     virtual ~strategytdmult() {};
     
+    virtual double boardValue( const board& brd, const hash_map<string,int>* context=0 );
     virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ); 
     
     string evaluator( const board& brd) const;
@@ -86,6 +87,10 @@ public:
     const vector<double>& getOutputBgWeights( const string& netName ) const;
     const vector<double>& getOutputBgLossWeights( const string& netName ) const;
     const vector< vector<double> >& getMiddleWeights( const string& netName ) const;
+    
+    // flag defining whether it optimizes play based on cubeful equity
+    
+    bool useCubefulEquity;
     
 private:
     void setup();

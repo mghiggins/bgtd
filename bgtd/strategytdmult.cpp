@@ -114,6 +114,10 @@ void strategytdmult::setup()
 {
     // sets up non-weights stuff
     
+    // by default use cubeless equity for choosing moves
+    
+    useCubefulEquity = false;
+    
     // assign sensible values for alpha and beta
     
     alpha = 0.1;
@@ -144,6 +148,28 @@ void strategytdmult::setup()
         constructBlockadeEscapeDb();
         cout << "Escape db size    = " << blockadeEscapeRolls()->size() << endl;
     }
+}
+
+double strategytdmult::boardValue( const board& brd, const hash_map<string,int>* context )
+{
+    // if the context tells it to use cubeful equity, do that, otherwise do cubeless. Need
+    // to have context values that tell it the cube level and who owns the cube.
+    
+    if( useCubefulEquity )
+    {
+        if( !context ) throw string( "No context available - needed for cube value and cube ownership parameters" );
+        
+        hash_map<string,int>::const_iterator it = context->find("cube");
+        if( it == context->end() ) throw string( "Could not find cube value context" );
+        int cube = it->second;
+        it = context->find("cubeOwner");
+        if( it == context->end() ) throw string( "Could not find cubeOwner context" );
+        bool ownsCube = it->second == brd.perspective();
+        
+        return equityCubeful( brd, cube, ownsCube, false );
+    }
+    
+    return boardValueFromProbs( boardProbabilities(brd,context) );
 }
 
 gameProbabilities strategytdmult::boardProbabilities( const board& brd, const hash_map<string,int>* context )
