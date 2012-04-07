@@ -657,7 +657,7 @@ vector< vector<benchmarkData> > loadBenchmarkData( const string& fileName, int n
     return dataSets;
 }
 
-double gnuBgBenchmarkStatisticsSerial( strategy& strat, const vector<benchmarkData>& benchmarks )
+double gnuBgBenchmarkStatisticsSerial( strategy& strat, const vector<benchmarkData>& benchmarks, hash_map<string,int> * ctx )
 {
     int i;
     bool foundBoard;
@@ -668,7 +668,7 @@ double gnuBgBenchmarkStatisticsSerial( strategy& strat, const vector<benchmarkDa
         // get the preferred move from the strategy
         
         set<board> moves( possibleMoves( it->startBoard, it->die1, it->die2 ) );
-        board stratBoard( strat.preferredBoard( it->startBoard, moves ) );
+        board stratBoard( strat.preferredBoard( it->startBoard, moves, ctx ) );
         
         // check if the strategy chose the best move
         
@@ -722,12 +722,12 @@ vector<double> parallelEquityErrors;
 class workerGnuBgBenchmarks
 {
 public:
-    workerGnuBgBenchmarks( strategy& strat, const vector< vector<benchmarkData> >& dataSet, int index )
-      : strat(strat), dataSet(dataSet), index(index) {};
+    workerGnuBgBenchmarks( strategy& strat, const vector< vector<benchmarkData> >& dataSet, int index, hash_map<string,int> * ctx )
+      : strat(strat), dataSet(dataSet), index(index), ctx(ctx) {};
     
     void operator()()
     {
-        double equityErr = gnuBgBenchmarkStatisticsSerial( strat, dataSet.at(index) );
+        double equityErr = gnuBgBenchmarkStatisticsSerial( strat, dataSet.at(index), ctx );
         parallelEquityErrors.at(index) = equityErr;
     }
     
@@ -735,9 +735,10 @@ private:
     strategy& strat;
     const vector< vector<benchmarkData> >& dataSet;
     int index;
+    hash_map<string,int> * ctx;
 };
 
-double gnuBgBenchmarkER( strategy& strat, const vector< vector<benchmarkData> >& dataSet )
+double gnuBgBenchmarkER( strategy& strat, const vector< vector<benchmarkData> >& dataSet, hash_map<string,int> * ctx )
 {
     using namespace boost;
     int nThreads = (int) dataSet.size();
@@ -747,7 +748,7 @@ double gnuBgBenchmarkER( strategy& strat, const vector< vector<benchmarkData> >&
     parallelEquityErrors.resize( nThreads );
     
     thread_group ts;
-    for( int i=0; i<nThreads; i++ ) ts.create_thread( workerGnuBgBenchmarks( strat, dataSet, i ) );
+    for( int i=0; i<nThreads; i++ ) ts.create_thread( workerGnuBgBenchmarks( strat, dataSet, i, ctx ) );
     ts.join_all();
     
     // aggregate the data
