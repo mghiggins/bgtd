@@ -70,6 +70,8 @@ public:
     void setContextValue( const string& elemName, int elemVal ) { gameContext[elemName] = elemVal; };
     int getContextValue( const string& elemName ) const;
     
+    hash_map<string,int> getContext() const { return gameContext; };
+    
     // doubling cube methods
     
     // getCube returns the current doubling cube setting (1 if it's still centered).

@@ -106,6 +106,14 @@ void game::step()
         doublerOpponent = strat0;
     }
     
+    // if this is the first step in a game, set the context parameters for the cube
+    
+    if( nSteps == 0 )
+    {
+        setContextValue( "cube", 1 );
+        setContextValue( "cubeOwner", 0 ); // irrelevant for cube==1, but let's make it 0 or 1 rather than -1 in case somewhere code assumes it's 0 or 1
+    }
+    
     // Can only double if player has the cube or it's in the middle. Also can't double before the
     // first roll. Also can't double if the cube's already at 64.
     
@@ -125,6 +133,8 @@ void game::step()
         {
             doubleCube();
             cubeOwner = 1 - trn;
+            setContextValue( "cube", cube );
+            setContextValue( "cubeOwner", cubeOwner );
             if( verbose )
                 cout << "        Player " << 1-trn << " takes the cube\n";
         }
