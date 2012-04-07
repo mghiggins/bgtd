@@ -32,7 +32,7 @@ struct runStats
 };
 
 double playParallel( strategytdbase& s1, strategy& s2, long n, long initSeed, long displayIndex, const string& fileSuffix, int nBuckets=1 );
-runStats playParallelGen( strategy& s1, strategy& s2, long n, long initSeed, int nBuckets=1 );
+runStats playParallelGen( strategy& s1, strategy& s2, long n, long initSeed, int nBuckets=1, bool varReduc=true );
 double playSerial( strategytdbase& s1, strategy& s2, long n, long initSeed, long displayIndex, const string& fileSuffix, bool returnPpg=false );
 runStats playSerialGen( strategy& s1, strategy& s2, long n, long initSeed );
 void sim6( int nMiddle, double alpha0, double beta0, const string& fileSuffix, const string& srcSuffix );
@@ -56,7 +56,7 @@ void testBenchmark();
 
 void testMatchEquity();
 
-runStats playParallelCubeful( strategy& s1, strategy& s2, long n, long initSeed, int nBuckets );
+runStats playParallelCubeful( strategy& s1, strategy& s2, long n, long initSeed, int nBuckets, bool varReduc, int bktPrintInterval );
 void testCubefulMoney();
 void estimateJumpVol();
 

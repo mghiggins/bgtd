@@ -165,46 +165,72 @@ double playParallel( strategytdbase& s1, strategy& s2, long n, long initSeed, lo
     return ppg;
 }
 
-runStats playParallelGen( strategy& s1, strategy& s2, long n, long initSeed, int nBuckets )
+runStats playParallelGen( strategy& s1, strategy& s2, long n, long initSeed, int nBuckets, bool varReduc )
 {
     using namespace boost;
     
-    if( n % nBuckets != 0 ) throw string( "n must be a multiple of nBuckets" );
+    if( varReduc )
+        if( n % (2*nBuckets) != 0 ) throw string( "n must be a multiple of 2*nBuckets" );
+    else
+        if( n % nBuckets != 0 ) throw string( "n must be a multiple of nBuckets" );
     
     long nRuns = n / nBuckets;
+    if( varReduc ) nRuns /= 2;
     double ppg=0, w0=0, q=0, avgSteps=0, ns=0, ng=0, nb=0;
+    double avgAvgPpg=0, avgPpgSq=0;
+    
+    vector<bool> orders;
+    orders.push_back(true);
+    if( varReduc ) orders.push_back(false);
 
     for( int bkt=0; bkt<nBuckets; bkt++ )
     {
         if( nBuckets > 1 ) cout << bkt+1 << " ";
         cout.flush();
         
-        // run each game in its own thread
+        double subAvgPpg=0;
         
-        if( points.size() < nRuns ) 
+        for( vector<bool>::iterator it=orders.begin(); it!=orders.end(); it++ )
         {
-            points.resize(nRuns);
-            steps.resize(nRuns);
-        }
-        
-        thread_group ts;
-        for( long i=0; i<nRuns; i++ ) ts.create_thread( worker( i, s1, s2, nRuns, initSeed+bkt*nRuns ) );
-        ts.join_all();
-        
-        int p, ap;
-        for( long i=0; i<nRuns; i++ ) 
-        {
-            p  = points[i];
-            ap = abs( p );
+            // run each game in its own thread
             
-            ppg += p;
-            q += ap;
-            if( p > 0 ) w0 += 1;
-            if( ap == 1 ) ns += 1;
-            if( ap == 2 ) ng += 1;
-            if( ap == 3 ) nb += 1;
-            avgSteps += steps[i];
+            if( points.size() < nRuns ) 
+            {
+                points.resize(nRuns);
+                steps.resize(nRuns);
+            }
+            
+            thread_group ts;
+            for( long i=0; i<nRuns; i++ )
+            {
+                if( (*it) )
+                    ts.create_thread( worker( i, s1, s2, nRuns, initSeed+bkt*nRuns ) );   
+                else
+                    ts.create_thread( worker( i, s2, s1, nRuns, initSeed+bkt*nRuns ) );   
+            }
+            ts.join_all();
+            
+            int p, ap;
+            for( long i=0; i<nRuns; i++ ) 
+            {
+                p  = points[i];
+                if( !(*it) ) p *= -1;
+                ap = abs( p );
+                
+                ppg += p;
+                subAvgPpg += p;
+                q += ap;
+                if( p > 0 ) w0 += 1;
+                if( ap == 1 ) ns += 1;
+                if( ap == 2 ) ng += 1;
+                if( ap == 3 ) nb += 1;
+                avgSteps += steps[i];
+            }
         }
+        
+        subAvgPpg /= n/nBuckets;
+        avgAvgPpg += subAvgPpg;
+        avgPpgSq  += subAvgPpg * subAvgPpg;
     }
     if( nBuckets > 1 ) cout << endl;
     
@@ -223,6 +249,16 @@ runStats playParallelGen( strategy& s1, strategy& s2, long n, long initSeed, int
     cout << "Frac gammon        = " << ng << endl;
     cout << "Frac backgammon    = " << nb << endl;
     cout << "Average steps/game = " << avgSteps << endl;
+    
+    if( nBuckets > 2 )
+    {
+        avgAvgPpg /= nBuckets;
+        avgPpgSq  /= nBuckets;
+        
+        cout << "Std dev of bkt ppg = " << sqrt( avgPpgSq - avgAvgPpg*avgAvgPpg ) << endl;
+        cout << "Std err of ppg     = " << sqrt( ( avgPpgSq - avgAvgPpg*avgAvgPpg ) / ( nBuckets - 1 ) ) << endl << endl;
+    }
+
     cout << endl;
     
     runStats stats;
@@ -1679,21 +1715,29 @@ void testBenchmark()
     //s2.learning = false;
     //strategyPubEval s2;
     
-    strategyPubEval s1;
+    //strategyPubEval s1;
+    strategytdmult s1( "benchmark", "player34" );
+    doublestratjanowski ds(0.7);
+    s1.setDoublingStrategy(&ds);
+    s1.useCubefulEquity = true;
     
     //dispBoards(s1);
     
     //playParallelGen(s1, s2, 10000, 1, 50);
     //return;
     
+    hash_map<string,int> ctx;
+    ctx[ "cube" ] = 2;
+    ctx[ "cubeOwner" ] = 1;
+    
     int nThreads=16;
     vector< vector<benchmarkData> > dataSetContact( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/contact.bm", nThreads ) );
     vector< vector<benchmarkData> > dataSetCrashed( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/crashed.bm", nThreads ) );
     vector< vector<benchmarkData> > dataSetRace( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/race.bm", nThreads ) );
     
-    gnuBgBenchmarkER( s1, dataSetContact );
-    gnuBgBenchmarkER( s1, dataSetCrashed );
-    gnuBgBenchmarkER( s1, dataSetRace );
+    gnuBgBenchmarkER( s1, dataSetContact, &ctx );
+    gnuBgBenchmarkER( s1, dataSetCrashed, &ctx );
+    gnuBgBenchmarkER( s1, dataSetRace, &ctx );
     
     //playParallelGen( s1, s2, 40000, 1, 40);
     //playParallelGen( s1, s3, 40000, 1, 40);
@@ -1780,13 +1824,17 @@ private:
     long initSeed;
 };
 
-runStats playParallelCubeful( strategy& s1, strategy& s2, long n, long initSeed, int nBuckets )
+runStats playParallelCubeful( strategy& s1, strategy& s2, long n, long initSeed, int nBuckets, bool varReduc, int bktPrintInterval )
 {
     using namespace boost;
     
-    if( n % nBuckets != 0 ) throw string( "n must be a multiple of nBuckets" );
+    if( varReduc )
+        if( n % (2*nBuckets) != 0 ) throw string( "n must be a multiple of nBuckets*2" );
+    else
+        if( n % nBuckets != 0 ) throw string( "n must be a multiple of nBuckets" );
     
     long nRuns = n / nBuckets;
+    if( varReduc ) nRuns /= 2;
     double ppg=0, w0=0, q=0, avgSteps=0, avgCube=0, ns=0, ng=0, nb=0, nc=0;
     double avgAvgPpg=0, avgPpgSq=0;
     int count=0;
@@ -1795,67 +1843,82 @@ runStats playParallelCubeful( strategy& s1, strategy& s2, long n, long initSeed,
     
     if( nBuckets > 1 ) cout << nBuckets << " buckets\n";
     
+    vector<bool> orders;
+    orders.push_back(true);
+    if( varReduc )
+        orders.push_back(false);
+    
     for( int bkt=0; bkt<nBuckets; bkt++ )
     {
-        if( nBuckets > 1 )
+        if( nBuckets > 1 and (bkt+1)%bktPrintInterval == 0 )
             cout << bkt+1 << "; " << ppg/count << "; " << w0/count << "; " << avgCube/count << endl;
         
-        // run each game in its own thread
-        
-        if( pntsCubeful.size() < nRuns ) 
-        {
-            pntsCubeful.resize(nRuns);
-            scoresCubeful.resize(nRuns);
-            cubesCubeful.resize(nRuns);
-            stepsCubeful.resize(nRuns);
-        }
-        
-        thread_group ts;
-        for( long i=0; i<nRuns; i++ ) ts.create_thread( workerCubeful( i, s1, s2, nRuns, initSeed+bkt*nRuns ) );
-        ts.join_all();
-        
-        int p, score;
         double subAvgPpg=0;
-        for( long i=0; i<nRuns; i++ ) 
+        for( vector<bool>::iterator it=orders.begin(); it != orders.end(); it++ )
         {
-            p  = pntsCubeful[i];
-            score = scoresCubeful[i];
+            // run each game in its own thread
             
-            ppg += p;
-            subAvgPpg += p;
-            if( p > 0 ) w0 += 1;
-            if( score == -1 )
+            if( pntsCubeful.size() < nRuns ) 
             {
-                q += 1;
-                nc += 1;
+                pntsCubeful.resize(nRuns);
+                scoresCubeful.resize(nRuns);
+                cubesCubeful.resize(nRuns);
+                stepsCubeful.resize(nRuns);
             }
-            else
-            {
-                q += score;
-                if( score == 1 ) ns += 1;
-                if( score == 2 ) ng += 1;
-                if( score == 3 ) nb += 1;
-            }
-            avgSteps += stepsCubeful[i];
-            avgCube  += cubesCubeful[i];
-            count++;
             
-            if( cubesCubeful[i] == 1 )
-                cubeFracs[0] ++;
-            else if( cubesCubeful[i] == 2 )
-                cubeFracs[1] ++;
-            else if( cubesCubeful[i] == 4 )
-                cubeFracs[2] ++;
-            else if( cubesCubeful[i] == 8 )
-                cubeFracs[3] ++;
-            else if( cubesCubeful[i] == 16 )
-                cubeFracs[4] ++;
-            else if( cubesCubeful[i] == 32 )
-                cubeFracs[5] ++;
-            else if( cubesCubeful[i] == 64 )
-                cubeFracs[6] ++;
-            else
-                throw string( "Invalid cube value" );
+            thread_group ts;
+            for( long i=0; i<nRuns; i++ ) 
+            {
+                if( (*it) )
+                    ts.create_thread( workerCubeful( i, s1, s2, nRuns, initSeed+bkt*nRuns ) );
+                else
+                    ts.create_thread( workerCubeful( i, s2, s1, nRuns, initSeed+bkt*nRuns ) );
+            }
+            ts.join_all();
+            
+            int p, score;
+            for( long i=0; i<nRuns; i++ ) 
+            {
+                p  = pntsCubeful[i];
+                score = scoresCubeful[i];
+                if( !(*it) ) p *= -1; // flipped perspective
+                
+                ppg += p;
+                subAvgPpg += p;
+                if( p > 0 ) w0 += 1;
+                if( score == -1 )
+                {
+                    q += 1;
+                    nc += 1;
+                }
+                else
+                {
+                    q += score;
+                    if( score == 1 ) ns += 1;
+                    if( score == 2 ) ng += 1;
+                    if( score == 3 ) nb += 1;
+                }
+                avgSteps += stepsCubeful[i];
+                avgCube  += cubesCubeful[i];
+                count++;
+                
+                if( cubesCubeful[i] == 1 )
+                    cubeFracs[0] ++;
+                else if( cubesCubeful[i] == 2 )
+                    cubeFracs[1] ++;
+                else if( cubesCubeful[i] == 4 )
+                    cubeFracs[2] ++;
+                else if( cubesCubeful[i] == 8 )
+                    cubeFracs[3] ++;
+                else if( cubesCubeful[i] == 16 )
+                    cubeFracs[4] ++;
+                else if( cubesCubeful[i] == 32 )
+                    cubeFracs[5] ++;
+                else if( cubesCubeful[i] == 64 )
+                    cubeFracs[6] ++;
+                else
+                    throw string( "Invalid cube value" );
+            }
         }
         subAvgPpg /= n/nBuckets;
         avgAvgPpg += subAvgPpg;
@@ -1909,42 +1972,22 @@ runStats playParallelCubeful( strategy& s1, strategy& s2, long n, long initSeed,
 
 void testCubefulMoney()
 {
-    strategytdmult s1( "benchmark", "player33" );
-    strategytdmult s2(s1);
-    s1.learning=false;
-    doublestratjanowski ds2( 0.7 );
-    s2.setDoublingStrategy(&ds2);
-
-    vector<double> xs(1);
-    xs[0] = 0.091;
+    strategytdmult s1( "benchmark", "player34" );
+    strategytdmult s2( "benchmark", "player34" );
+    //strategyPubEval s2;
+    doublestratjanowski ds( 0.7 );
+    //doublestratjanowski ds2( 0.7 );
+    //doublestratjumpconst ds( 0.091, false );
+    s1.setDoublingStrategy(&ds);
+    s2.setDoublingStrategy(&ds);
+    s1.useCubefulEquity = true;
+    s2.useCubefulEquity = false;
     
-    vector<double> ppgs(xs.size());
-    vector<double> pwins(xs.size());
+    int nRuns = 100000;
+    int nBuckets = nRuns/1000;
+    int seed = 1;
     
-    for( int i=0; i<xs.size(); i++ )
-    {
-        cout << "STARTING value = " << xs.at(i) << endl << endl;
-        
-        doublestratjumpconst ds1(xs.at(i),false);
-        
-        s1.setDoublingStrategy(&ds1);
-
-        int nRuns=10000;
-        int nBuckets=nRuns/1000;
-        int seed = 1;
-        runStats stats1 = playParallelCubeful(s1, s2, nRuns/2, seed, nBuckets);
-        runStats stats2 = playParallelCubeful(s2, s1, nRuns/2, seed, nBuckets);
-        
-        cout << "DONE value = " << xs.at(i) << endl << endl;
-        cout << "************************************************************************\n\n\n\n\n";
-        
-        ppgs.at(i) = 0.5*(stats1.ppg-stats2.ppg);
-        pwins.at(i) = 0.5*(stats1.fracWin+1-stats2.fracWin);
-    }
-    
-    cout << "Results:\n";
-    for( int i=0; i<xs.size(); i++ )
-        cout << xs.at(i) << ": " << ppgs.at(i) << "; " << pwins.at(i) << endl;
+    playParallelCubeful( s1, s2, nRuns, seed, nBuckets, true, 25 );
 }
 
 vector<int> pntsMatch;
