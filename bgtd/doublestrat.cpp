@@ -23,7 +23,7 @@ bool doublestrat::offerDouble( strategyprob& strat, const board& b, int cube )
     
     double equityNoDouble = equity( strat, b, cube, true, true );
     
-    return equityDoubled > equityNoDouble - 1e-6; // double if it's better from an equity perspective - leave a wee margin
+    return equityDoubled > equityNoDouble + 1e-6; // double if it's better from an equity perspective - leave a wee margin
 }
 
 bool doublestrat::takeDouble( strategyprob& strat, const board& b, int cube )
