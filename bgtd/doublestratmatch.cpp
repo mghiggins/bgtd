@@ -19,13 +19,13 @@
 #include "doublestratmatch.h"
 #include "doublefns.h"
 
-doublestratmatch::doublestratmatch( const string& METFileName )
-: MET(METFileName), currMatch(0)
+doublestratmatch::doublestratmatch( const string& METFileName, double cubeLifeIndex )
+: MET(METFileName), currMatch(0), cubeLifeIndex(cubeLifeIndex)
 {
 }
 
-doublestratmatch::doublestratmatch( const matchequitytable& MET )
-: MET(MET), currMatch(0)
+doublestratmatch::doublestratmatch( const matchequitytable& MET, double cubeLifeIndex )
+: MET(MET), currMatch(0), cubeLifeIndex(cubeLifeIndex)
 {
 }
 
@@ -38,42 +38,34 @@ bool doublestratmatch::offerDouble( strategyprob& strat, const board& b, int cub
     
     gameProbabilities probs(boardProbabilities(strat, b, true));
     
-    // if the cubeless equity is greater than the equity we'd get if the
-    // opponent passed on a double, it's too good to double (since we ignore
-    // the value from owning the cube).
+    // calculate the dead cube equity - assuming there's no value to holding the cube
+    
+    interpMEdata deadME1( equityInterpFn( probs, b.perspective(), cube, b.perspective(), true ) );
+    interpMEdata deadME2( equityInterpFn( probs, b.perspective(), 2*cube, 1-b.perspective(), true ) );
+    
+    // get the live cube match equity for this cube level and for a doubled cube. Current cube this player
+    // owns the cube; doubled the opponent owns it.
+    
+    interpMEdata liveME1( equityInterpFn( probs, b.perspective(), cube, b.perspective(), false ) );
+    interpMEdata liveME2( equityInterpFn( probs, b.perspective(), 2*cube, 1-b.perspective(), false ) );
+    
+    // double if that equity is larger.
+    
+    double equityDouble   = cubeLifeIndex * liveME2(probs.probWin) + ( 1 - cubeLifeIndex ) * deadME2(probs.probWin);
+    double equityNoDouble = cubeLifeIndex * liveME1(probs.probWin) + ( 1 - cubeLifeIndex ) * deadME1(probs.probWin);
+    
+    // the doubled equity is never more than the pass equity
     
     int n = b.perspective() == 0 ? currMatch->getTarget() - currMatch->playerScore() : currMatch->getTarget() - currMatch->opponentScore();
     int m = b.perspective() == 0 ? currMatch->getTarget() - currMatch->opponentScore() : currMatch->getTarget() - currMatch->playerScore();
     
-    double singleWinME  = MET.matchEquity(n-1*cube, m);
-    double gammonWinME  = MET.matchEquity(n-2*cube, m);
-    double bgWinME      = MET.matchEquity(n-3*cube, m);
-    double singleLossME = MET.matchEquity(n, m-1*cube);
-    double gammonLossME = MET.matchEquity(n, m-2*cube);
-    double bgLossME     = MET.matchEquity(n, m-3*cube);
-    
-    double cubelessME = ( probs.probWin - probs.probGammonWin ) * singleWinME + ( probs.probGammonWin - probs.probBgWin ) * gammonWinME + probs.probBgWin * bgWinME
-                      + ( 1 - probs.probWin - probs.probGammonLoss ) * singleLossME + ( probs.probGammonLoss - probs.probBgLoss ) * gammonLossME + probs.probBgLoss * bgLossME;
-    double cashME = singleWinME;
-    if( cubelessME > cashME ) return false; // too good to double
-    
-    // get the match equity for this cube level and for a doubled cube. Current cube this player
-    // owns the cube; doubled the opponent owns it.
-    
-    interpMEdata data1( equityInterpFn( probs, b.perspective(), cube, b.perspective() ) );
-    interpMEdata data2( equityInterpFn( probs, b.perspective(), 2*cube, 1-b.perspective() ) );
-    
-    // double if that equity is larger. Leave a little threshold, since we want to double
-    // if we're past the cash point.
-    
-    double equityDouble   = data2(probs.probWin);
-    double equityNoDouble = data1(probs.probWin);
-    
-    // the doubled equity is never more than the pass equity
+    double singleWinME( MET.matchEquity(n-cube, m) );
     
     if( equityDouble > singleWinME ) equityDouble = singleWinME;
     
-    return equityDouble > equityNoDouble - 1e-6;
+    // Leave a little threshold
+    
+    return equityDouble > equityNoDouble + 1e-6;
 }
 
 bool doublestratmatch::takeDouble( strategyprob& strat, const board& b, int cube )
@@ -82,22 +74,35 @@ bool doublestratmatch::takeDouble( strategyprob& strat, const board& b, int cube
     // boardProbabilities returns so just use that.
     
     gameProbabilities probs( boardProbabilities(strat,b,false) );
-    interpMEdata data( equityInterpFn( probs, b.perspective(), cube, 1-b.perspective() ) );
     
-    // take if the prob of win is above the take point
+    // calculate the equity at the doubled cube level assuming the player holds the dice
     
-    return probs.probWin >= data.takePoint;
+    interpMEdata deadME( equityInterpFn( probs, b.perspective(), 2*cube, b.perspective(), true ) );
+    interpMEdata liveME( equityInterpFn( probs, b.perspective(), 2*cube, b.perspective(), false ) );
+    
+    double equityDouble = cubeLifeIndex*liveME(probs.probWin) + (1-cubeLifeIndex)*deadME(probs.probWin);
+    
+    // calculate the equity we'd give up if we passed
+    
+    int n = b.perspective() == 0 ? currMatch->getTarget() - currMatch->playerScore() : currMatch->getTarget() - currMatch->opponentScore();
+    int m = b.perspective() == 0 ? currMatch->getTarget() - currMatch->opponentScore() : currMatch->getTarget() - currMatch->playerScore();
+    
+    double singleLossME( MET.matchEquity(n, m-cube) );
+
+    return equityDouble > singleLossME;
 }
 
 double doublestratmatch::equity( strategyprob& strat, const board& b, int cube, bool ownsCube, bool holdsDice )
 {
     gameProbabilities probs( boardProbabilities(strat, b, holdsDice) );
     int cubeOwner = ownsCube ? b.perspective() : 1-b.perspective();
-    interpMEdata data( equityInterpFn(probs, b.perspective(), cube, cubeOwner) );
-    return data(probs.probWin);
+    interpMEdata deadME( equityInterpFn(probs, b.perspective(), cube, cubeOwner,true) );
+    interpMEdata liveME( equityInterpFn(probs, b.perspective(), cube, cubeOwner,false) );
+    
+    return cubeLifeIndex*liveME(probs.probWin) + (1-cubeLifeIndex)*deadME(probs.probWin);
 }
 
-interpMEdata doublestratmatch::equityInterpFn( const gameProbabilities& probs, int perspective, int cube, int cubeOwner, int nOverride, int mOverride )
+interpMEdata doublestratmatch::equityInterpFn( const gameProbabilities& probs, int perspective, int cube, int cubeOwner, bool isDead, int nOverride, int mOverride )
 {
     if( currMatch == 0 ) throw string( "Set the match first" );
     
@@ -130,6 +135,9 @@ interpMEdata doublestratmatch::equityInterpFn( const gameProbabilities& probs, i
     double W = probs.probWin == 0 ? 1 : ( ( probs.probWin - probs.probGammonWin ) * singleWinME + ( probs.probGammonWin - probs.probBgWin ) * gammonWinME + probs.probBgWin * bgWinME ) / probs.probWin;
     double L = 1-probs.probWin == 0 ? 1 : -( ( 1 - probs.probWin - probs.probGammonLoss ) * singleLossME + ( probs.probGammonLoss - probs.probBgLoss ) * gammonLossME + probs.probBgLoss * bgLossME ) / ( 1 - probs.probWin );
     
+    if( isDead )
+        return interpMEdata( 0, 1, -L, W, W, L );
+    
     // if the cube is centered or the player here owns the cube and still can double, the upper end of the
     // range is the cash point; otherwise the cash point is 100% prob and cash equity
     // is the appropriately-weighted win equity
@@ -143,7 +151,7 @@ interpMEdata doublestratmatch::equityInterpFn( const gameProbabilities& probs, i
         // need to get the match equity fn for a state where the cube is doubled and owned by the 
         // opponent; find where that matches the cash match equity.
         
-        interpMEdata data2( equityInterpFn( probs, perspective, cube*2, 1-perspective ) );
+        interpMEdata data2( equityInterpFn( probs, perspective, cube*2, 1-perspective, W, L ) );
         cashPoint = data2.solve( cashME );
     }
     else
@@ -165,7 +173,7 @@ interpMEdata doublestratmatch::equityInterpFn( const gameProbabilities& probs, i
         // find the prob such that the match equity equals the take equity in a state 
         // where the cube is doubled and the player owns it
         
-        interpMEdata data2( equityInterpFn( probs, perspective, cube*2, perspective ) );
+        interpMEdata data2( equityInterpFn( probs, perspective, cube*2, perspective, W, L ) );
         takePoint = data2.solve( takeME );
     }
     else
@@ -174,5 +182,5 @@ interpMEdata doublestratmatch::equityInterpFn( const gameProbabilities& probs, i
         takeME    = -L;
     }
     
-    return interpMEdata( takePoint, cashPoint, takeME, cashME );
+    return interpMEdata( takePoint, cashPoint, takeME, cashME, W, L );
 }

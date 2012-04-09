@@ -27,13 +27,14 @@
 
 class doublestratmatch : public doublestrat
 {
-    // doubling strategy for match play
+    // doubling strategy for match play. Follows a Janowski approach of
+    // linearly interpolating between live and dead cube limits.
     
 public:
     // constructors: a file name pointing to the match equity table or an MET object directly
     
-    doublestratmatch( const string& METFileName );
-    doublestratmatch( const matchequitytable& MET );
+    doublestratmatch( const string& METFileName, double cubeLifeIndex );
+    doublestratmatch( const matchequitytable& MET, double cubeLifeIndex );
     virtual ~doublestratmatch() {};
     
     void setMatch( const match * currMatch ) { this->currMatch = currMatch; };
@@ -47,11 +48,12 @@ public:
     // equityInterpFn returns data defining a linear interpolation of match equity vs
     // probability of win, which we use for both take and offer calcs
     
-    interpMEdata equityInterpFn( const gameProbabilities& probs, int perspective, int cube, int cubeOwner, int nOverride=0, int mOverride=0 );
+    interpMEdata equityInterpFn( const gameProbabilities& probs, int perspective, int cube, int cubeOwner, bool isDead, int nOverride=0, int mOverride=0 );
     
 private:
     const match * currMatch;
     matchequitytable MET;
+    double cubeLifeIndex;
 };
 
 #endif
