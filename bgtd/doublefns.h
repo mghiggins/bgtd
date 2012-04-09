@@ -75,14 +75,14 @@ double matchEquity( int n, int m, double gamProb, const vector<stateData>& singl
 class interpMEdata
 {
 public:
-    interpMEdata( double takePoint, double cashPoint, double takeME, double cashME ) : takePoint(takePoint), cashPoint(cashPoint), takeME(takeME), cashME(cashME) {};
+    interpMEdata( double takePoint, double cashPoint, double takeME, double cashME, double W, double L ) : takePoint(takePoint), cashPoint(cashPoint), takeME(takeME), cashME(cashME), W(W), L(L) {};
     
     // operator() interpolates a match equity given a probability of (any) win
     
     double operator()( double probWin )
     {
-        if( probWin < takePoint ) return takeME;
-        if( probWin > cashPoint ) return cashME;
+        if( probWin < takePoint ) return ( probWin * takeME - ( takePoint - probWin ) * L ) / takePoint;
+        if( probWin > cashPoint ) return ( ( probWin - cashPoint ) * W + ( 1 - probWin ) * cashME ) / ( 1 - cashPoint );
         
         return ( ( probWin - takePoint ) * cashME + ( cashPoint - probWin ) * takeME ) / ( cashPoint - takePoint );
     }
@@ -92,13 +92,17 @@ public:
     
     double solve( double ME )
     {
-        if( ME < takeME or ME > cashME ) throw string( "Cannot interpolate outside [ME(take point),ME(cash point)] range" );
+        //if( ME < takeME or ME > cashME ) throw string( "Cannot interpolate outside [ME(take point),ME(cash point)] range" );
         
-        return ( ( ME - takeME ) * cashPoint + ( cashME - ME ) * takePoint ) / ( cashME - takeME );
+        double P = ( ( ME - takeME ) * cashPoint + ( cashME - ME ) * takePoint ) / ( cashME - takeME );
+        if( P < 0 ) P = 0;
+        if( P > 1 ) P = 1;
+        return P;
     }
     
     double takePoint, cashPoint;
     double takeME, cashME;
+    double W, L;
 };
 
 // matchEquityInterpData returns the data that defines match equity for a given cube level as a function of 

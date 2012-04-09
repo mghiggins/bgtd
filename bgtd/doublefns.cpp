@@ -338,9 +338,14 @@ interpMEdata matchEquityInterpData( int n, int m, int cube, bool playersCube, do
     
     int cmax=4; // because we don't call this for m<3
     while( cmax < m ) cmax *= 2;
-    if( cube == cmax ) return interpMEdata( 0, 1, -1, 1 );
+    if( cube == cmax ) return interpMEdata( 0, 1, -1, 1, 1, 1 );
     
-    double takePoint, cashPoint, takeME, cashME;
+    double takePoint, cashPoint, takeME, cashME, W, L;
+    
+    // get the amount we win conditioned on a win (W) and the amount we lose conditioned on a loss (L)
+    
+    W = matchEquity( n-cube, m, gamProb, singleData, data, useCache ) * ( 1 - 2*gamProb ) + matchEquity( n-2*cube, m, gamProb, singleData, data, useCache ) * 2 * gamProb;
+    L = -1 * ( matchEquity( n, m-cube, gamProb, singleData, data, useCache ) * ( 1 - 2*gamProb ) + matchEquity( n, m-2*cube, gamProb, singleData, data, useCache ) * 2 * gamProb );
     
     // if it's the player's cube, take point is zero and equity depends on the single vs gammon loss;
     // otherwise calculate the take point.
@@ -348,7 +353,7 @@ interpMEdata matchEquityInterpData( int n, int m, int cube, bool playersCube, do
     if( playersCube and cube != 1 )
     {
         takePoint = 0;
-        takeME    = 2 * gamProb * matchEquity( n, m-2*cube, gamProb, singleData, data, useCache ) + ( 1 - 2*gamProb ) * matchEquity( n, m-cube, gamProb, singleData, data, useCache );
+        takeME    = -L;
     }
     else
     {
@@ -364,7 +369,7 @@ interpMEdata matchEquityInterpData( int n, int m, int cube, bool playersCube, do
     if( !playersCube and cube != 1 )
     {
         cashPoint = 1;
-        cashME    = 2 * gamProb * matchEquity( n-2*cube, m, gamProb, singleData, data, useCache ) + ( 1 - 2*gamProb ) * matchEquity( n-cube, m, gamProb, singleData, data, useCache );
+        cashME    = W;
     }
     else
     {
@@ -374,7 +379,7 @@ interpMEdata matchEquityInterpData( int n, int m, int cube, bool playersCube, do
         cashPoint = interp2.solve(cashME);
     }
     
-    return interpMEdata(takePoint,cashPoint,takeME,cashME);
+    return interpMEdata(takePoint,cashPoint,takeME,cashME,W,L);
 }
 
 double matchEquityBI( int n, int m, double gamProb, const vector<stateData>& singleData, const vector<stateData>& data, double sigma, int nP, int nT, double timeMultiple )
