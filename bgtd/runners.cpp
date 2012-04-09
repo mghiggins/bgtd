@@ -1995,15 +1995,41 @@ vector<int> pntsMatch;
 class workerMatch
 {
 public:
-    workerMatch( int i, int target, strategyprob& s1, strategy& s2, const matchequitytable& MET, int initSeed ) : i(i), target(target), s1(s1), s2(s2), MET(MET), initSeed(initSeed) {};
+    workerMatch( int i, bool flip, int target, strategytdmult& s1, strategytdmult& s2, const matchequitytable& MET, int initSeed, double cubeLifeIndex ) : i(i), flip(flip), target(target), s1(s1), s2(s2), MET(MET), initSeed(initSeed), cubeLifeIndex(cubeLifeIndex) {};
     
     void operator()()
     {
-        doublestratmatch ds1( MET );
-        s1.setDoublingStrategy(&ds1);
+        doublestratmatch dsm( MET, cubeLifeIndex );
+        
+        doublestratmatch dsj( MET, 0.7 );
+        if( flip )
+        {
+            s1.setDoublingStrategy(&dsm);
+            s2.setDoublingStrategy(&dsj);
+        }
+        else
+        {
+            s1.setDoublingStrategy(&dsj);
+            s2.setDoublingStrategy(&dsm);
+        }
+        
+        //s1.setDoublingStrategy(&dsm);
+        //s2.setDoublingStrategy(&dsm);
+        s1.useCubefulEquity = true;
+        s2.useCubefulEquity = true;
         match m( target, &s1, &s2, i+initSeed );
-        ds1.setMatch(&m);
-        m.stepToEnd();
+        dsm.setMatch(&m);
+        dsj.setMatch(&m);
+        try
+        {
+            m.stepToEnd();
+        }
+        catch( const string& e )
+        {
+            cout << "Exception: " << e << endl;
+            throw string( "done" );
+        }
+        
         if( m.winner() == 0 )
             pntsMatch.at(i) = 1;
         else
@@ -2012,77 +2038,120 @@ public:
     
 private:
     int i;
+    bool flip;
     int target;
-    strategyprob& s1;
-    strategy& s2;
+    strategytdmult s1; // need a separate instance, not a reference; otherwise we try to set different doubling strategy pointers onto the same strategy instance in multiple threads
+    strategytdmult s2; // ditto
     const matchequitytable& MET;
     int initSeed;
+    double cubeLifeIndex;
 };
 
 void testMatch()
 {
     using namespace boost;
     
-    doublestratjanowski ds2(0.7);
-    strategytdmult s1( "benchmark", "player33" );
+    strategytdmult s1( "benchmark", "player34" );
     strategytdmult s2(s1);
-    s2.setDoublingStrategy(&ds2);
     
     matchequitytable MET( "/Users/mghiggins/bgtdres/benchdb/MET.txt" );
     
-    int n=10000;
-    int nBuckets=n/100;
-    int target=23;
-    if( n % nBuckets != 0 ) throw string( "nRuns must be a multiple of nBuckets" );
+    int n=40000;
+    int nBuckets=n/1000;
+    if( n % (nBuckets*2) != 0 ) throw string( "nRuns must be a multiple of nBuckets*2" );
     
-    int nRuns = n / nBuckets;
-    int count=0;
-    double ppm=0, winFrac=0;
-    
+    int nRuns = n / nBuckets / 2;
     bool runParallel=true;
     
     cout << nBuckets << " buckets to process\n";
     
-    for( int bkt=0; bkt<nBuckets; bkt++ )
+    vector<bool> orders(2);
+    orders[0] = true;
+    orders[1] = false;
+    
+    vector<double> xs(4);
+    xs[0] = 0.4;
+    xs[1] = 0.45;
+    xs[2] = 0.5;
+    xs[3] = 0.55;
+    
+    vector<int> targets(4);
+    targets[0] = 3;
+    targets[1] = 5;
+    targets[2] = 7;
+    targets[3] = 9;
+    
+    for( int targetIndex=0; targetIndex<targets.size(); targetIndex++ )
     {
-        if( nBuckets > 1 )
-            cout << bkt+1 << "; " << ppm/count << "; " << winFrac/count << endl;
-        
-        // run each match in its own thread
-        
-        if( pntsMatch.size() < nRuns ) 
-            pntsMatch.resize(nRuns);
-        
-        if( runParallel )
+        for( int xind=0; xind<xs.size(); xind++ )
         {
-            thread_group ts;
-            for( int i=0; i<nRuns; i++ ) ts.create_thread( workerMatch( i, target, s1, s2, MET, 2+bkt*nRuns ) );
-            ts.join_all();
-        }
-        else
-        {
-            for( int i=0; i<nRuns; i++ )
+            cout << "Length = " << targets.at(targetIndex) << "; cube life index = " << xs.at(xind ) << endl;
+            
+            int count=0;
+            double ppm=0, winFrac=0;
+            double avgAvgPpm=0, avgPpmSq = 0;
+            
+            for( int bkt=0; bkt<nBuckets; bkt++ )
             {
-                cout << "  Serial " << i << endl;
-                workerMatch w( i, target, s1, s2, MET, 2+bkt*nRuns );
-                w();
+                if( nBuckets > 1 and (bkt+1)%5 == 0 )
+                    cout << bkt+1 << "; " << ppm/count << "; " << winFrac/count << endl;
+                
+                double subAvgPpm = 0;
+                
+                for( vector<bool>::const_iterator it=orders.begin(); it!=orders.end(); it++ )
+                {
+                    // run each match in its own thread
+                    
+                    if( pntsMatch.size() < nRuns ) 
+                        pntsMatch.resize(nRuns);
+                    
+                    if( runParallel )
+                    {
+                        thread_group ts;
+                        for( int i=0; i<nRuns; i++ ) 
+                            ts.create_thread( workerMatch( i, (*it), targets.at(targetIndex), s1, s2, MET, 2+bkt*nRuns, xs.at(xind) ) );
+                        ts.join_all();
+                    }
+                    else
+                    {
+                        for( int i=0; i<nRuns; i++ )
+                        {
+                            cout << "  Serial " << i << endl;
+                            workerMatch w( i, (*it), targets.at(targetIndex), s1, s2, MET, 2+bkt*nRuns, xs.at(xind) );
+                            w();
+                        }
+                    }
+                    
+                    for( int i=0; i<nRuns; i++ )
+                    {
+                        double p=pntsMatch.at(i);
+                        if( !(*it) ) p *= -1;
+                        ppm += p;
+                        if( p > 0 ) winFrac++;
+                        subAvgPpm += p;
+                        count++;
+                    }
+                }
+                
+                subAvgPpm /= n/nBuckets;
+                avgAvgPpm += subAvgPpm;
+                avgPpmSq += subAvgPpm * subAvgPpm;
             }
-        }
-        
-        for( int i=0; i<nRuns; i++ )
-        {
-            ppm += pntsMatch.at(i);
-            if( pntsMatch.at(i) > 0 ) winFrac++;
-            count++;
+            if( nBuckets > 1 ) cout << endl;
+
+            ppm /= n;
+            winFrac /= n;
+            cout << "Match length    = " << targets.at(targetIndex) << endl;
+            cout << "Cube life index = " << xs.at(xind) << endl;
+            cout << "Average player match equity = " << ppm << endl;
+            cout << "Odds of win                 = " << winFrac*100 << endl;
+            
+            avgAvgPpm /= nBuckets;
+            avgPpmSq  /= nBuckets;
+            double stdErrAvgPpm = sqrt( ( avgPpmSq - avgAvgPpm*avgAvgPpm ) / ( nBuckets - 1 ) );
+            cout << "Std err on avg ppm          = " << stdErrAvgPpm << endl;
         }
     }
-    if( nBuckets > 1 ) cout << endl;
-
-    ppm /= n;
-    winFrac /= n;
-    cout << "Average player match equity = " << ppm << endl;
-    cout << "Odds of win                 = " << winFrac*100 << endl;
-    
 }
 
 vector< vector<double> > jumpVolResults;
