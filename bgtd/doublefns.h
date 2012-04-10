@@ -92,7 +92,7 @@ public:
     
     double solve( double ME )
     {
-        //if( ME < takeME or ME > cashME ) throw string( "Cannot interpolate outside [ME(take point),ME(cash point)] range" );
+        if( ME < takeME-1e-4 or ME > cashME+1e-4 ) throw string( "Cannot interpolate outside [ME(take point),ME(cash point)] range" );
         
         double P = ( ( ME - takeME ) * cashPoint + ( cashME - ME ) * takePoint ) / ( cashME - takeME );
         if( P < 0 ) P = 0;
