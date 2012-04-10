@@ -1991,6 +1991,7 @@ void testCubefulMoney()
 }
 
 vector<int> pntsMatch;
+vector<int> gamesMatch;
 
 class workerMatch
 {
@@ -2002,6 +2003,7 @@ public:
         doublestratmatch dsm( MET, cubeLifeIndex );
         
         doublestratmatch dsj( MET, 0.7 );
+        //doublestratjanowski dsj(cubeLifeIndex);
         if( flip )
         {
             s1.setDoublingStrategy(&dsm);
@@ -2013,8 +2015,6 @@ public:
             s2.setDoublingStrategy(&dsm);
         }
         
-        //s1.setDoublingStrategy(&dsm);
-        //s2.setDoublingStrategy(&dsm);
         s1.useCubefulEquity = true;
         s2.useCubefulEquity = true;
         match m( target, &s1, &s2, i+initSeed );
@@ -2034,6 +2034,7 @@ public:
             pntsMatch.at(i) = 1;
         else
             pntsMatch.at(i) = -1;
+        gamesMatch.at(i) = m.nGames;
     }
     
 private:
@@ -2059,6 +2060,7 @@ void testMatch()
     int n=40000;
     int nBuckets=n/1000;
     if( n % (nBuckets*2) != 0 ) throw string( "nRuns must be a multiple of nBuckets*2" );
+    int seed=2;
     
     int nRuns = n / nBuckets / 2;
     bool runParallel=true;
@@ -2069,11 +2071,12 @@ void testMatch()
     orders[0] = true;
     orders[1] = false;
     
-    vector<double> xs(4);
-    xs[0] = 0.4;
-    xs[1] = 0.45;
-    xs[2] = 0.5;
-    xs[3] = 0.55;
+    vector<double> xs(5);
+    xs[0] = 0.5;
+    xs[1] = 0.6;
+    //xs[2] = 0.7;
+    xs[2] = 0.8;
+    xs[3] = 0.9;
     
     vector<int> targets(4);
     targets[0] = 3;
@@ -2088,13 +2091,13 @@ void testMatch()
             cout << "Length = " << targets.at(targetIndex) << "; cube life index = " << xs.at(xind ) << endl;
             
             int count=0;
-            double ppm=0, winFrac=0;
+            double ppm=0, winFrac=0, avgGames=0;
             double avgAvgPpm=0, avgPpmSq = 0;
             
             for( int bkt=0; bkt<nBuckets; bkt++ )
             {
                 if( nBuckets > 1 and (bkt+1)%5 == 0 )
-                    cout << bkt+1 << "; " << ppm/count << "; " << winFrac/count << endl;
+                    cout << bkt+1 << "; " << ppm/count << "; " << winFrac/count<< "; " << avgGames/count << endl;
                 
                 double subAvgPpm = 0;
                 
@@ -2103,13 +2106,16 @@ void testMatch()
                     // run each match in its own thread
                     
                     if( pntsMatch.size() < nRuns ) 
+                    {
                         pntsMatch.resize(nRuns);
+                        gamesMatch.resize(nRuns);
+                    }
                     
                     if( runParallel )
                     {
                         thread_group ts;
                         for( int i=0; i<nRuns; i++ ) 
-                            ts.create_thread( workerMatch( i, (*it), targets.at(targetIndex), s1, s2, MET, 2+bkt*nRuns, xs.at(xind) ) );
+                            ts.create_thread( workerMatch( i, (*it), targets.at(targetIndex), s1, s2, MET, seed+bkt*nRuns, xs.at(xind) ) );
                         ts.join_all();
                     }
                     else
@@ -2117,7 +2123,7 @@ void testMatch()
                         for( int i=0; i<nRuns; i++ )
                         {
                             cout << "  Serial " << i << endl;
-                            workerMatch w( i, (*it), targets.at(targetIndex), s1, s2, MET, 2+bkt*nRuns, xs.at(xind) );
+                            workerMatch w( i, (*it), targets.at(targetIndex), s1, s2, MET, seed+bkt*nRuns, xs.at(xind) );
                             w();
                         }
                     }
@@ -2129,6 +2135,7 @@ void testMatch()
                         ppm += p;
                         if( p > 0 ) winFrac++;
                         subAvgPpm += p;
+                        avgGames += gamesMatch.at(i);
                         count++;
                     }
                 }
@@ -2141,10 +2148,12 @@ void testMatch()
 
             ppm /= n;
             winFrac /= n;
+            avgGames /= n;
             cout << "Match length    = " << targets.at(targetIndex) << endl;
             cout << "Cube life index = " << xs.at(xind) << endl;
             cout << "Average player match equity = " << ppm << endl;
             cout << "Odds of win                 = " << winFrac*100 << endl;
+            cout << "Average # of games          = " << avgGames << endl;
             
             avgAvgPpm /= nBuckets;
             avgPpmSq  /= nBuckets;
