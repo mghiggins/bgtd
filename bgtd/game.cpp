@@ -37,6 +37,7 @@ game::game( strategy * strat0, strategy * strat1, int seed )
     cube = 1;
     cubedOutPlayer = -1;
     cubeOwner = -1;
+    canDouble = true;
 }
 
 game::game( strategy * strat0, strategy * strat1, CRandomMersenne * rng )
@@ -52,6 +53,7 @@ game::game( strategy * strat0, strategy * strat1, CRandomMersenne * rng )
     cube = 1;
     cubedOutPlayer = -1;
     cubeOwner = -1;
+    canDouble = true;
 }
 
 game::game( const game& srcGame )
@@ -65,6 +67,7 @@ game::game( const game& srcGame )
     cube     = srcGame.cube;
     cubedOutPlayer = srcGame.cubedOutPlayer;
     cubeOwner      = srcGame.cubeOwner;
+    canDouble = srcGame.canDouble;
 }
 
 game::~game()
@@ -115,11 +118,11 @@ void game::step()
     }
     
     // Can only double if player has the cube or it's in the middle. Also can't double before the
-    // first roll. Also can't double if the cube's already at 64.
+    // first roll. Also can't double if the cube's already at 64. Also if canDouble is false.
     
     brd.setPerspective(trn); // make sure the board is from the appropriate perspective when checking double stuff
     
-    if( nSteps > 0 and cube < 64  and ( cubeOwner == -1 or cubeOwner == trn ) and doublerPlayer->offerDouble(brd,cube) )
+    if( canDouble and nSteps > 0 and cube < 64  and ( cubeOwner == -1 or cubeOwner == trn ) and doublerPlayer->offerDouble(brd,cube) )
     {
         if( verbose )
             cout << "DOUBLE: Player " << trn << " offers cube to player " << 1-trn << " at level " << 2*cube << endl;

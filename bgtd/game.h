@@ -82,6 +82,11 @@ public:
     int getCubedOutPlayer() const { return cubedOutPlayer; };
     void doubleCube() { cube *= 2; };
     
+    // canDouble defaults to true; if set to false, no doubling is allowed during the game
+    // (eg a Crawford game).
+    
+    bool canDouble;
+    
 private:
     board      brd;
     int        trn;

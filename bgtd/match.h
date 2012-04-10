@@ -79,6 +79,14 @@ public:
     void setPlayerScore( int newScore );
     void setOpponentScore( int newScore );
     
+    // nGames represents how many games have been played in the match
+    
+    int nGames;
+    
+    // doneCrawford is true if the Crawford game is over, false otherwise
+    
+    bool doneCrawford;
+    
 private:
     int target;
     int score0;

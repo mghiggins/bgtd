@@ -27,6 +27,8 @@ match::match( int target, strategy * strat0, strategy * strat1, int seed )
     score1 = 0;
     currentGame = 0; // flag that we're not currently in a game
     ownsGamePtr = true;
+    nGames = 0;
+    doneCrawford = false;
 }
 
 match::~match()
@@ -47,9 +49,23 @@ void match::step()
         
         currentGame = new game( strat0, strat1, rng );
         ownsGamePtr = true;
+        
+        // if this is the Crawford game, tell the game that no doubling is allowed
+        
+        if( target-score0 == 1 or target-score1 == 1 )
+            currentGame->canDouble = false;
     }
     else if( currentGame->gameOver() )
     {
+        // increment the games count
+        
+        nGames ++;
+        
+        // if this was the Crawford game, note that it's done
+        
+        if( target-score0 == 1 or target-score1 == 1 )
+            doneCrawford = true;
+        
         // record the score
         
         if( currentGame->winner() == 0 )
