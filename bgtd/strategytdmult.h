@@ -78,6 +78,9 @@ public:
     bool useShotProbInput;
     bool usePrimesInput;
     bool useExtendedBearoffInputs;
+    bool useExpandedContactNetworks;
+    
+    void expandContactNetworks(); // temp - used to add new contact networks
     
     // interface to weights
     

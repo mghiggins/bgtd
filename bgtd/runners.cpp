@@ -1584,17 +1584,19 @@ void trainBenchmarks()
     //strategytdmult s1( "benchmark", "player24" );
     //strategytdmult s1( "", "player31_120" );
     //strategytdmult s1( 120, true, true, true, true );
-    strategytdmult s1( "", "player33d" );
-    s1.learning = false;
+    strategytdmult s1( "benchmark", "player34" );
     
-    string playerName( "player33e" );
+    cout << s1.useExpandedContactNetworks << endl;
+    return;
+    
+    string playerName( "player34a" );
     string stdName = "std" + playerName;
     cout << "Player name = " << playerName << endl;
     
     int seed = 1;
     
     double alpha;
-    double alphaMax=2.5, alphaMin=0.01;
+    double alphaMax=1, alphaMin=0.01;
     
     vector<boardAndRolloutProbs> statesContact( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/contact-train-data" ) );
     vector<boardAndRolloutProbs> statesCrashed( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/crashed-train-data" ) );
@@ -1630,7 +1632,7 @@ void trainBenchmarks()
         if( ( alpha > 0.1 and bestLag >= 2 ) or ( alpha <= 0.1 and bestLag >= 3 ) )
         {
             alpha /= sqrt(10.);
-            if( alpha < alphaMin ) alpha = alphaMax;
+            if( alpha < alphaMin-1e-6 ) alpha = alphaMax;
             cout << "alpha changed to " << alpha << endl;
             bestLag = 0;
         }
@@ -1701,25 +1703,9 @@ void testBenchmark()
 {
     // plot GNUbg benchmark error rate against reference player game performance
     
-    //strategytdoriggam s1( "benchmark", "gam_stdgam_80_0.1_0.1" );
-    //strategytdmult s1( "benchmark", "player2" );
-    //strategytdorigbg s1( "benchmark", "bg_stdbg_40_0.1_0.1" );
-    //strategytdmult s2( "benchmark", "player31" );
-    //strategytdorigbg s2( "benchmark", "benchmark2" );
-    //s1.learning = s2.learning = false;
-    //strategytdmult s1( "", "player33b" );
-    //strategytdmult s1( "benchmark", "player32" );
-    //s1.learning = false;
-    //strategytdorigbg s2( "benchmark", "benchmark2" );
-    //strategytdmult s2( "benchmark", "player32" );
-    //s2.learning = false;
-    //strategyPubEval s2;
-    
-    //strategyPubEval s1;
-    strategytdmult s1( "benchmark", "player34" );
-    doublestratjanowski ds(0.7);
-    s1.setDoublingStrategy(&ds);
-    s1.useCubefulEquity = true;
+    strategytdmult s0( "benchmark", "player34" );
+    strategytdmult sf( "benchmark", "player32q" );
+    strategyply s1(1,8,0.1,s0,sf);
     
     //dispBoards(s1);
     
@@ -1727,8 +1713,8 @@ void testBenchmark()
     //return;
     
     hash_map<string,int> ctx;
-    ctx[ "cube" ] = 2;
-    ctx[ "cubeOwner" ] = 1;
+    //ctx[ "cube" ] = 2;
+    //ctx[ "cubeOwner" ] = 1;
     
     int nThreads=16;
     vector< vector<benchmarkData> > dataSetContact( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/contact.bm", nThreads ) );
@@ -2301,3 +2287,371 @@ void estimateJumpVol()
     cout << "Jump std dev               = " << sqrt( avgJumpSq ) << endl;
     cout << "Number of points           = " << count << endl;
 }
+
+void testContactClustering()
+{
+    // set up the strategy we'll use for the training
+    
+    strategytdmult strat( "benchmark", "player34" );
+    
+    // tries to identify what input features lead to poor performance vs GNUbg contact benchmark set
+    
+    int nTrain=1000;
+    int nTest=10000;
+    int seedTrain=4;
+    int seedTest=2;
+    double equityThreshold=100e-3;
+    int nMiddle=10;
+
+    vector< vector<benchmarkData> > dataSetContact( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/contact.bm", 1 ) );
+    const vector<benchmarkData>& data(dataSetContact.at(0));
+    int nData=(int)data.size();
+    
+    // generate the training data. For each element in the training set, calculate the benchmark error as well as strategy
+    // inputs.
+    
+    CRandomMersenne trainRng(seedTrain);
+    vector<int> trainIndexes(nTrain);
+    vector<double> equityErrors(nTrain);
+    vector< vector<double> > trainInputs(nTrain);
+    
+    int i, j, index, bestIndex;
+    bool foundIndex, foundBoard;
+    double fracWorst=0;
+    
+    cout << "Gathering training data\n";
+    
+    for( i=0; i<nTrain; i++ )
+    {
+        // get the random index - make sure we don't duplicate
+        
+        while( true )
+        {
+            index = trainRng.IRandom(0,nData);
+            foundIndex = false;
+            for( j=0; j<trainIndexes.size(); j++ )
+            {
+                if( trainIndexes[j] == index )
+                {
+                    foundIndex = true;
+                    break;
+                }
+            }
+            if( !foundIndex )
+                break;
+        }
+        
+        trainIndexes[i] = index;
+        
+        // get the element
+        
+        const benchmarkData& elem( data.at(index) );
+        
+        // calculate the optimal move
+        
+        set<board> moves( possibleMoves(elem.startBoard, elem.die1, elem.die2 ) );
+        board bestMove( strat.preferredBoard(elem.startBoard, moves) );
+        
+        // calculate the equity error
+        
+        if( bestMove.equalsFlipped( elem.bestBoard ) )
+        {
+            equityErrors[i] = 0;
+            bestIndex = 0;
+        }
+        else
+        {
+            foundBoard = false;
+            for( j=0; j<elem.otherBoards.size(); j++ )
+                if( elem.otherBoards.at(j).equalsFlipped( bestMove ) )
+                {
+                    foundBoard = true;
+                    equityErrors[i] = elem.bestEquity - elem.otherEquities[j];
+                    bestIndex = j+1;
+                    break;
+                }
+            if( !foundBoard )
+            {
+                equityErrors[i] = elem.bestEquity - elem.otherEquities[elem.otherEquities.size()-1];
+                fracWorst++;
+                bestIndex = (int)elem.otherBoards.size() + 1;
+                //cout << i << ": Best equity = " << elem.bestEquity << "; worst equity = " << elem.otherEquities[elem.otherEquities.size()-1] << endl;
+            }
+        }
+        
+        // track the network inputs
+        
+        trainInputs[i] = strat.getInputValues( elem.startBoard, "contact" );
+        
+        if( true and equityErrors[i] > equityThreshold )
+        {
+            cout << "Starting board:\n";
+            elem.startBoard.print();
+            cout << "Roll: ( " << elem.die1 << ", " << elem.die2 << " )\n";
+            cout << endl;
+            board bestBoard( elem.bestBoard );
+            bestBoard.setPerspective(1);
+            cout << "Best move:   " << moveDiff( elem.startBoard, bestBoard ) << endl;
+            cout << "Chosen move: " << moveDiff( elem.startBoard, bestMove ) << endl;
+            if( bestIndex <= elem.otherBoards.size() )
+                cout << "  Found at index " << bestIndex << endl;
+            else
+                cout << "  Not found\n";
+            cout << "Equity merr: " << equityErrors[i]*1e3 << endl;
+            strat.useExpandedContactNetworks = true;
+            cout << "Network name = " << strat.evaluator(elem.startBoard) << endl;
+            strat.useExpandedContactNetworks = false;
+            cout << endl << endl;
+        }
+    }
+    
+    // calculate some stats
+    
+    double avgErr=0;
+    double avgErrSq=0;
+    double fracZero=0;
+    double fracGt=0, avgGt=0;
+    for( i=0; i<nTrain; i++ )
+    {
+        avgErr += equityErrors[i];
+        avgErrSq += equityErrors[i]*equityErrors[i];
+        if( equityErrors[i] == 0 ) fracZero ++;
+        if( equityErrors[i] > equityThreshold ) 
+        {
+            fracGt ++;
+            avgGt += equityErrors[i];
+        }
+    }
+    avgErr /= nTrain;
+    avgErrSq /= nTrain;
+    fracZero /= nTrain;
+    fracGt /= nTrain;
+    fracWorst /= nTrain;
+    avgGt /= nTrain;
+    
+    cout << "Average equity milli-error = " << avgErr * 1e3 << endl;
+    cout << "Std dev = " << sqrt(avgErrSq-avgErr*avgErr)*1e3 << endl;
+    cout << "Fraction zero = " << fracZero * 100 << "%\n";
+    cout << "Fraction > " << equityThreshold*1e3 << " = " << fracGt * 100 << "%\n";
+    cout << "Cont > " << equityThreshold*1e3 << " = " << avgGt * 1e3 << endl;
+    cout << "Fraction worst = " << fracWorst * 100 << "%\n";
+    
+    return;
+    
+    double alpha=0.1;
+    int nSteps=3000;
+    int nInputs=(int)trainInputs[0].size();
+    CRandomMersenne rngWeights(1);
+    double sum, estOut, trueOut, bit, bit2;
+    int k, l, count1, count1Right, count0, count0Right;
+    
+    // train a neural network to find errors
+    
+    double midWeight;
+    vector<double> middleWeights(nMiddle+1);
+    vector< vector<double> > inputWeights(nMiddle);
+    for( i=0; i<nMiddle; i++ ) inputWeights.at(i).resize(nInputs+1);
+    
+    // initialize to random weights
+    
+    for( i=0; i<nMiddle; i++ )
+    {
+        middleWeights.at(i) = rngWeights.IRandom(-100, 100)/1000.;
+        for( j=0; j<nInputs+1; j++ )
+            inputWeights.at(i).at(j) = rngWeights.IRandom(-100, 100)/1000.;
+    }
+    middleWeights.at(nMiddle) = rngWeights.IRandom(-100, 100)/1000.;
+    
+    // train the network
+    
+    for( i=0; i<nSteps; i++ )
+    {
+        if( i > 0 and i%1000 == 0 and alpha > 0.00101 )
+        {
+            alpha /= sqrt(10);
+            cout << "Epoch " << i << ": alpha changed to " << alpha << endl;
+        }
+        
+        for( j=0; j<nTrain; j++ )
+        {
+            // get the estimated output based on the weights
+            
+            vector<double> middles(nMiddle);
+            
+            vector<double>& inputs( trainInputs.at(j) );
+            for( k=0; k<nMiddle; k++ )
+            {
+                sum=0;
+                for( l=0; l<nInputs; l++ ) sum += inputWeights[k][l] * inputs[l];
+                sum += inputWeights[k][nInputs];
+                middles[k] = 1./(1+exp(-sum));
+            }
+            
+            sum=0;
+            for( l=0; l<nMiddle; l++ ) sum += middleWeights[l] * middles[l];
+            sum += middleWeights[nMiddle];
+            
+            estOut = 1./(1+exp(-sum));
+            trueOut = equityErrors[j] > equityThreshold ? 1 : 0;
+            
+            // adjust all the weights
+            
+            bit = alpha * ( trueOut - estOut ) * estOut * ( 1 - estOut );
+            for( k=0; k<nMiddle; k++ ) 
+            {
+                midWeight = middleWeights[k];
+                middleWeights[k] += bit * middles[k];
+                bit2 = bit * middles[k] * ( 1 - middles[k] ) * midWeight;
+                for( l=0; l<nInputs; l++ )
+                    inputWeights[k][l] += bit2 * inputs[l];
+                inputWeights[k][nInputs] += bit2;
+            }
+            middleWeights[nInputs] += bit;
+        }
+        
+        // every so often check the performance
+        
+        if( i % 250 == 0 or i == nSteps-1 )
+        {
+            count0 = count1 = count0Right = count1Right = 0;
+            for( j=0; j<nTrain; j++ )
+            {
+                vector<double> middles(nMiddle);
+                
+                vector<double>& inputs( trainInputs.at(j) );
+                for( k=0; k<nMiddle; k++ )
+                {
+                    sum=0;
+                    for( l=0; l<nInputs; l++ ) sum += inputWeights[k][l] * inputs[l];
+                    sum += inputWeights[k][nInputs];
+                    middles[k] = 1./(1+exp(-sum));
+                }
+                
+                sum=0;
+                for( l=0; l<nMiddle; l++ ) sum += middleWeights[l] * middles[l];
+                sum += middleWeights[nMiddle];
+                
+                estOut = 1./(1+exp(-sum));
+                trueOut = equityErrors[j] > equityThreshold ? 1 : 0;
+                
+                if( trueOut == 1 )
+                {
+                    count1 ++;
+                    if( estOut > 0.5 ) count1Right ++;
+                }
+                else
+                {
+                    count0 ++;
+                    if( estOut <= 0.5 ) count0Right ++;
+                }
+            }
+            cout << "Step " << i+1 << endl;
+            cout << "   +1: " << count1Right << " of " << count1 << endl;
+            cout << "    0: " << count0Right << " of " << count0 << endl;
+            cout << endl;
+        }
+    }
+    
+    // generate the testing samples
+    
+    cout << "Testing data\n";
+    
+    CRandomMersenne testRng(seedTest);
+    vector<int> testIndexes(nTrain);
+    
+    count1 = count0 = count1Right = count0Right = 0;
+    double equityError;
+    
+    for( i=0; i<nTest; i++ )
+    {
+        // get the random index - make sure we don't duplicate with other testing indexes or training data
+        
+        while( true )
+        {
+            index = testRng.IRandom(0,nData);
+            foundIndex = false;
+            for( j=0; j<testIndexes.size(); j++ )
+            {
+                if( testIndexes[j] == index )
+                {
+                    foundIndex = true;
+                    break;
+                }
+            }
+            for( j=0; j<nTrain; j++ )
+            {
+                if( trainIndexes[j] == index )
+                {
+                    foundIndex = true;
+                    break;
+                }
+            }
+            if( !foundIndex )
+                break;
+        }
+        
+        testIndexes[i] = index;
+        
+        // get the element
+        
+        const benchmarkData& elem( data.at(index) );
+        
+        // calculate the optimal move
+        
+        set<board> moves( possibleMoves(elem.startBoard, elem.die1, elem.die2 ) );
+        board bestMove( strat.preferredBoard(elem.startBoard, moves) );
+        
+        // calculate the equity error
+        
+        if( bestMove.equalsFlipped( elem.bestBoard ) )
+            equityError = 0;
+        else
+        {
+            foundBoard = false;
+            for( j=0; j<elem.otherBoards.size(); j++ )
+                if( elem.otherBoards.at(j).equalsFlipped( bestMove ) )
+                {
+                    foundBoard = true;
+                    equityError = elem.bestEquity - elem.otherEquities[j];
+                    break;
+                }
+            if( !foundBoard )
+                equityError = elem.bestEquity - elem.otherEquities[elem.otherEquities.size()-1];
+        }
+        
+        // calculate the neural net estimate of whether this exceeds the threshold and compare to the true result
+        
+        vector<double> middles(nMiddle);
+        vector<double> inputs( strat.getInputValues(elem.startBoard, "contact") );
+        
+        for( k=0; k<nMiddle; k++ )
+        {
+            sum=0;
+            for( l=0; l<nInputs; l++ ) sum += inputWeights[k][l] * inputs[l];
+            sum += inputWeights[k][nInputs];
+            middles[k] = 1./(1+exp(-sum));
+        }
+        
+        sum=0;
+        for( l=0; l<nMiddle; l++ ) sum += middleWeights[l] * middles[l];
+        sum += middleWeights[nMiddle];
+        
+        estOut = 1./(1+exp(-sum));
+        trueOut = equityError > equityThreshold ? 1 : 0;
+        
+        if( trueOut == 1 )
+        {
+            count1 ++;
+            if( estOut > 0.5 ) count1Right ++;
+        }
+        else
+        {
+            count0 ++;
+            if( estOut <= 0.5 ) count0Right ++;
+        }
+    }
+    cout << "+1: " << count1Right << " of " << count1 << endl;
+    cout << " 0: " << count0Right << " of " << count0 << endl;
+    cout << endl;
+}
+

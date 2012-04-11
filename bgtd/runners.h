@@ -62,4 +62,6 @@ void estimateJumpVol();
 
 void testMatch();
 
+void testContactClustering();
+
 #endif
