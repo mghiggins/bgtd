@@ -2057,32 +2057,38 @@ void testMatch()
     
     matchequitytable MET( "/Users/mghiggins/bgtdres/benchdb/MET.txt" );
     
-    int n=40000;
+    int n=120000;
     int nBuckets=n/1000;
     if( n % (nBuckets*2) != 0 ) throw string( "nRuns must be a multiple of nBuckets*2" );
     int seed=2;
     
-    int nRuns = n / nBuckets / 2;
+    bool varReduc=true;
+    
+    int nRuns = n / nBuckets;
+    if( varReduc ) nRuns/=2;
     bool runParallel=true;
     
     cout << nBuckets << " buckets to process\n";
     
-    vector<bool> orders(2);
-    orders[0] = true;
-    orders[1] = false;
+    vector<bool> orders;
+    orders.push_back(true);
+    if( varReduc ) orders.push_back(false);
     
-    vector<double> xs(5);
-    xs[0] = 0.5;
-    xs[1] = 0.6;
-    //xs[2] = 0.7;
-    xs[2] = 0.8;
-    xs[3] = 0.9;
+    vector<double> xs;
+    xs.push_back(0.6);
+    xs.push_back(0.625);
+    xs.push_back(0.65);
+    xs.push_back(0.675);
+    xs.push_back(0.725);
+    xs.push_back(0.75);
+    xs.push_back(0.775);
+    xs.push_back(0.8);
     
-    vector<int> targets(4);
-    targets[0] = 3;
-    targets[1] = 5;
-    targets[2] = 7;
-    targets[3] = 9;
+    vector<int> targets;
+    targets.push_back(3);
+    targets.push_back(5);
+    targets.push_back(7);
+    //targets.push_back(9);
     
     for( int targetIndex=0; targetIndex<targets.size(); targetIndex++ )
     {
@@ -2096,8 +2102,8 @@ void testMatch()
             
             for( int bkt=0; bkt<nBuckets; bkt++ )
             {
-                if( nBuckets > 1 and (bkt+1)%5 == 0 )
-                    cout << bkt+1 << "; " << ppm/count << "; " << winFrac/count<< "; " << avgGames/count << endl;
+                if( nBuckets > 1 and bkt%10 == 0 )
+                    cout << bkt+1 << "; " << ppm/count << "; " << avgGames/count << endl;
                 
                 double subAvgPpm = 0;
                 
