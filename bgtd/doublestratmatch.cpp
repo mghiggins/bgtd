@@ -32,11 +32,15 @@ doublestratmatch::doublestratmatch( const matchequitytable& MET, double cubeLife
 
 bool doublestratmatch::offerDouble( strategyprob& strat, const board& b, int cube )
 {
-    // automatic double case: if the opponent is definitely going to win the match on a win
-    // the player should double.
+    // no double allowed if the player can already win at this level
     
     int n = b.perspective() == 0 ? currMatch->getTarget() - currMatch->playerScore() : currMatch->getTarget() - currMatch->opponentScore();
     int m = b.perspective() == 0 ? currMatch->getTarget() - currMatch->opponentScore() : currMatch->getTarget() - currMatch->playerScore();
+    
+    if( n-cube<=0 ) return false;
+    
+    // automatic double case: if the opponent is definitely going to win the match on a win
+    // the player should double.
     
     if( m-cube<=0 and n-cube>0 ) return true;
     
