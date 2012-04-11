@@ -29,6 +29,7 @@ match::match( int target, strategy * strat0, strategy * strat1, int seed )
     ownsGamePtr = true;
     nGames = 0;
     doneCrawford = false;
+    verbose = false;
 }
 
 match::~match()
@@ -47,13 +48,27 @@ void match::step()
         
         if( score0 >= target or score1 >= target ) return;
         
+        if( verbose )
+        {
+            cout << endl;
+            cout << "***********\n";
+            cout << "New game: current score " << score0 << " vs " << score1 << " to " << target << endl;
+            cout << "***********\n";
+            cout << endl;
+        }
+        
         currentGame = new game( strat0, strat1, rng );
+        currentGame->verbose = verbose;
         ownsGamePtr = true;
         
         // if this is the Crawford game, tell the game that no doubling is allowed
         
         if( target-score0 == 1 or target-score1 == 1 )
+        {
+            if( verbose )
+                cout << "Crawford game\n\n";
             currentGame->canDouble = false;
+        }
     }
     else if( currentGame->gameOver() )
     {
@@ -72,6 +87,20 @@ void match::step()
             score0 += currentGame->winnerScore();
         else
             score1 += currentGame->winnerScore();
+        
+        if( verbose and ( score0 >= target or score1 >= target ) )
+        {
+            cout << endl;
+            cout << "***********\n";
+            cout << "Match over\n";
+            cout << "Winner: player ";
+            if( score0 >= target )
+                cout << "0\n";
+            else
+                cout << "1\n";
+            cout << "Final score:  " << score0 << " vs " << score1 << " to " << target << endl;
+            cout << "Games played: " << nGames << endl;
+        }
         
         // destroy the current game and set the pointer to 0 as a flag that we're in between games
         

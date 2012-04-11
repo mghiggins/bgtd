@@ -87,6 +87,10 @@ public:
     
     bool doneCrawford;
     
+    // verbose=true means it prints out game and match state - defaults to false
+    
+    bool verbose;
+    
 private:
     int target;
     int score0;
