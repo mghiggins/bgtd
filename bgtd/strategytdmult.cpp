@@ -39,17 +39,20 @@ strategytdmult::strategytdmult( doublestrat * ds ) : strategytdbase(ds)
 {
     useShotProbInput = true;
     usePrimesInput   = true;
+    useExtendedBearoffInputs = true;
+    useExpandedContactNetworks = true;
     setupRandomWeights( 40 ); // default # of middle nodes is 40
 }
 
 strategytdmult::strategytdmult( int nMiddle, bool useShotProbInput, bool usePrimesInput, bool useExtendedBearoffInputs, doublestrat * ds ) 
-  : useShotProbInput(useShotProbInput), usePrimesInput(usePrimesInput), useExtendedBearoffInputs(useExtendedBearoffInputs), strategytdbase(ds)
+  : useShotProbInput(useShotProbInput), usePrimesInput(usePrimesInput), useExtendedBearoffInputs(useExtendedBearoffInputs), useExpandedContactNetworks(false), strategytdbase(ds)
 {
     setupRandomWeights( nMiddle );
 }
 
 strategytdmult::strategytdmult( const string& path, const string& filePrefix, doublestrat * ds ) : strategytdbase(ds)
 {
+    useExpandedContactNetworks = false;
     loadWeights( path, filePrefix );
     setup();
 }
@@ -89,6 +92,11 @@ void strategytdmult::setupRandomWeights( int nMiddle )
     nets[0] = "contact";
     nets[1] = "crashed";
     nets[2] = "race";
+    if( useExpandedContactNetworks )
+    {
+        nets.push_back( "contact_allother" );
+        nets.push_back( "contact_hardhome" );
+    }
     
     int i, nInput;
     
@@ -617,6 +625,8 @@ string strategytdmult::evaluator( const board& brd ) const
                 break;
     }
     
+    int i;
+    
     if( playerBack > opponentBack )
     {
         // check if it's crashed
@@ -624,7 +634,78 @@ string strategytdmult::evaluator( const board& brd ) const
         if( isCrashed( brd.bornIn(), brd.checker(0), brd.checker(1) ) ) return crashedName;
         if( isCrashed( brd.otherBornIn(), brd.otherChecker(23), brd.otherChecker(22) ) ) return crashedName;
         
-        // not crashed, therefore contact
+        // check expanded contact network list
+        
+        if( useExpandedContactNetworks )
+        {
+            // contact_allother is used when all a player's checkers are on the other side of the board
+            
+            bool foundOne=false;
+            for( i=0; i<12; i++ )
+                if( brd.checker(i) > 0 )
+                {
+                    foundOne = true;
+                    break;
+                }
+            if( !foundOne ) return "contact_allother";
+            
+            // ditto for the opponent
+            
+            foundOne = false;
+            for( i=12; i<24; i++ )
+                if( brd.otherChecker(i) > 0 )
+                {
+                    foundOne = true;
+                    break;
+                }
+            if( !foundOne ) return "contact_allother";
+            
+            // contact_hardhome is used when either the player has >= 3 points covered in his home
+            // board and there's at least one opponent behind them; or when the opponent has
+            // at least two points covered in the player's home board.
+            
+            int pointCount;
+            
+            int oppBack=-1;
+            for( i=0; i<3; i++ )
+                if( brd.otherChecker(i) > 0 )
+                    oppBack = i;
+            if( oppBack>-1 or brd.otherHit() > 0 )
+            {
+                pointCount=0;
+                for( i=oppBack+1; i<6; i++ )
+                    if( brd.checker(i) > 1 )
+                        pointCount++;
+                if( pointCount >= 3 ) return "contact_hardhome";
+            }
+            pointCount=0;
+            for( i=0; i<6; i++ )
+                if( brd.otherChecker(i) > 1 )
+                    pointCount++;
+            if( pointCount >= 2 ) return "contact_hardhome";
+            
+            // ditto for opponent
+            
+            int playerBack=-1;
+            for( i=23; i>=21; i-- )
+                if( brd.checker(i) > 0 )
+                    playerBack = i;
+            if( playerBack>-1 or brd.hit() > 0 )
+            {
+                pointCount=0;
+                for( i=playerBack-1; i>=19; i-- )
+                    if( brd.otherChecker(i) > 1 )
+                        pointCount++;
+                if( pointCount >= 3 ) return "contact_hardhome";
+            }
+            pointCount=0;
+            for( i=23; i>=19; i-- )
+                if( brd.checker(i) > 1 )
+                    pointCount++;
+            if( pointCount >= 2 ) return "contact_hardhome";
+        }
+        
+        // not crashed or custom contact, therefore contact
         
         return contactName;
     }
@@ -636,8 +717,6 @@ string strategytdmult::evaluator( const board& brd ) const
     if( brd.bornIn() < 15 - bearoffNCheckers or brd.otherBornIn() < 15 - bearoffNCheckers ) return raceName;
     
     // if there are any checkers on spots past the largest spot we use for the bearoff db, need to use the race network
-    
-    int i;
     
     for( i=bearoffNPnts; i<24; i++ )
         if( brd.checker(i) > 0 ) return raceName;
@@ -1108,6 +1187,12 @@ void strategytdmult::loadWeights( const string& subPath, const string& filePrefi
             outputBgWeights[ netName ] = bgWeights;
             outputBgLossWeights[ netName ] = bgLossWeights;
             middleWeights[ netName ]       = midWeights;
+            
+            // if this net name starts with "contact" but has other stuff too, it means we're using
+            // expanded contact networks
+            
+            if( strncmp( netName.c_str(), "contact", strlen("contact") ) == 0 and netName.size() > 7 )
+                useExpandedContactNetworks = true;
         }
     }
 }
@@ -1150,4 +1235,23 @@ const vector< vector<double> >& strategytdmult::getMiddleWeights( const string& 
     hash_map< string, vector< vector<double> > >::const_iterator it=middleWeights.find(netName);
     if( it == middleWeights.end() ) throw string( "Could not find network name" );
     return it->second;
+}
+
+void strategytdmult::expandContactNetworks()
+{
+    vector<string> newNets;
+    newNets.push_back( "contact_allother" );
+    newNets.push_back( "contact_hardhome" );
+    
+    for( int i=0; i<newNets.size(); i++ )
+    {
+        outputProbWeights[newNets[i]] = outputProbWeights["contact"];
+        outputGammonWeights[newNets[i]] = outputGammonWeights["contact"];
+        outputGammonLossWeights[newNets[i]] = outputGammonLossWeights["contact"];
+        outputBgWeights[newNets[i]] = outputBgWeights["contact"];
+        outputBgLossWeights[newNets[i]] = outputBgLossWeights["contact"];
+        middleWeights[newNets[i]] = middleWeights["contact"];
+    }
+    
+    useExpandedContactNetworks = true;
 }
