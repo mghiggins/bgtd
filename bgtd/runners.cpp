@@ -1581,13 +1581,16 @@ void createBenchmarks()
 
 void trainBenchmarks()
 {
+    bool trainCrashed=true;
+    bool trainRace=false;
+    
     //strategytdmult s1( "benchmark", "player24" );
     //strategytdmult s1( "", "player31_120" );
     //strategytdmult s1( 120, true, true, true, true );
     strategytdmult s1( "benchmark", "player34" );
     
-    cout << s1.useExpandedContactNetworks << endl;
-    return;
+    cout << s1.useBarInputs << endl;
+    s1.addBarInputs();
     
     string playerName( "player34a" );
     string stdName = "std" + playerName;
@@ -1598,25 +1601,32 @@ void trainBenchmarks()
     double alpha;
     double alphaMax=1, alphaMin=0.01;
     
-    vector<boardAndRolloutProbs> statesContact( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/contact-train-data" ) );
-    vector<boardAndRolloutProbs> statesCrashed( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/crashed-train-data" ) );
-    vector<boardAndRolloutProbs> statesRace( gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/race-train-data" ) );
+    vector<boardAndRolloutProbs> statesContact, statesCrashed, statesRace;
+    
+    statesContact = gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/contact-train-data" );
+    if( trainCrashed ) statesCrashed = gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/crashed-train-data" );
+    if( trainRace) statesRace = gnuBgBenchmarkStates( "/Users/mghiggins/bgtdres/benchdb/race-train-data" );
     
     int nThreads=16;
-    vector< vector<benchmarkData> > dataSetContact( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/contact.bm", nThreads ) );
-    vector< vector<benchmarkData> > dataSetCrashed( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/crashed.bm", nThreads ) );
-    vector< vector<benchmarkData> > dataSetRace( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/race.bm", nThreads ) );
+    vector< vector<benchmarkData> > dataSetContact, dataSetCrashed, dataSetRace;
+    dataSetContact = loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/contact.bm", nThreads );
+    if( trainCrashed ) dataSetCrashed = loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/crashed.bm", nThreads );
+    if( trainRace ) dataSetRace = loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/race.bm", nThreads );
     
     cout << "Starting stats:\n";
-    double minContactER = gnuBgBenchmarkER( s1, dataSetContact );
-    double minCrashedER = gnuBgBenchmarkER( s1, dataSetCrashed );
-    double minRaceER    = gnuBgBenchmarkER( s1, dataSetRace );
+    double minContactER, minCrashedER, minRaceER;
+    minContactER = gnuBgBenchmarkER( s1, dataSetContact );
+    if( trainCrashed ) minCrashedER = gnuBgBenchmarkER( s1, dataSetCrashed );
+    if( trainRace ) minRaceER = gnuBgBenchmarkER( s1, dataSetRace );
     cout << endl;
     s1.writeWeights( playerName ); // write the initial set of weights as the best ones; we'll overwrite network by network later
     
     string fileName = "/Users/mghiggins/bgtdres/sl_comparison_results_" + playerName + ".csv";
     ofstream fr( fileName.c_str(), fstream::trunc );
-    fr << 0 << "," << minContactER << "," << minCrashedER << "," << minRaceER << endl;
+    fr << 0 << "," << minContactER;
+    if( trainCrashed ) fr << "," << minCrashedER;
+    if( trainRace ) fr << "," << minRaceER;
+    fr << endl;
     fr.close();
     
     double contactER, crashedER, raceER;
@@ -1643,16 +1653,19 @@ void trainBenchmarks()
         s1.alpha = s1.beta = alpha;
         
         trainMultGnuBg( s1, statesContact, seed );
-        trainMultGnuBg( s1, statesCrashed, seed );
-        trainMultGnuBg( s1, statesRace, seed );
+        if( trainCrashed ) trainMultGnuBg( s1, statesCrashed, seed );
+        if( trainRace ) trainMultGnuBg( s1, statesRace, seed );
         
         contactER = gnuBgBenchmarkER( s1, dataSetContact );
-        crashedER = gnuBgBenchmarkER( s1, dataSetCrashed );
-        raceER    = gnuBgBenchmarkER( s1, dataSetRace );
+        if( trainCrashed ) crashedER = gnuBgBenchmarkER( s1, dataSetCrashed );
+        if( trainRace ) raceER = gnuBgBenchmarkER( s1, dataSetRace );
         cout << endl;
         
         fr.open( fileName.c_str(), fstream::app );
-        fr << i+1 << "," << contactER << "," << crashedER << "," << raceER << endl;
+        fr << i+1 << "," << contactER;
+        if( trainCrashed ) fr << "," << crashedER;
+        if( trainRace ) fr << "," << raceER;
+        fr << endl;
         fr.close();
         
         s1.writeWeights( stdName );
@@ -1663,27 +1676,36 @@ void trainBenchmarks()
             minContactER = contactER;
             minContactInd = i;
             s1.writeWeights( playerName, "contact" );
+            // also write crashed & race weights if we're not training those so we have a full set
+            if( !trainCrashed ) s1.writeWeights( playerName, "crashed" );
+            if( !trainRace ) s1.writeWeights( playerName, "race" );
         }
         else
             cout << "Previous best contact ER " << minContactER << " at index " << minContactInd + 1 << endl;
-        if( crashedER < minCrashedER )
+        if( trainCrashed )
         {
-            cout << "**** Best crashed ER " << crashedER << " vs previous best " << minCrashedER << endl;
-            minCrashedER = crashedER;
-            minCrashedInd = i;
-            s1.writeWeights( playerName, "crashed" );
+            if( crashedER < minCrashedER )
+            {
+                cout << "**** Best crashed ER " << crashedER << " vs previous best " << minCrashedER << endl;
+                minCrashedER = crashedER;
+                minCrashedInd = i;
+                s1.writeWeights( playerName, "crashed" );
+            }
+            else
+                cout << "Previous best crashed ER " << minCrashedER << " at index " << minCrashedInd + 1 << endl;
         }
-        else
-            cout << "Previous best crashed ER " << minCrashedER << " at index " << minCrashedInd + 1 << endl;
-        if( raceER < minRaceER )
+        if( trainRace )
         {
-            cout << "**** Best race ER " << raceER << " vs previous best " << minRaceER << endl;
-            minRaceER = raceER;
-            minRaceInd = i;
-            s1.writeWeights( playerName, "race" );
+            if( raceER < minRaceER )
+            {
+                cout << "**** Best race ER " << raceER << " vs previous best " << minRaceER << endl;
+                minRaceER = raceER;
+                minRaceInd = i;
+                s1.writeWeights( playerName, "race" );
+            }
+            else
+                cout << "Previous best race ER " << minRaceER << " at index " << minRaceInd + 1 << endl;
         }
-        else
-            cout << "Previous best race ER " << minRaceER << " at index " << minRaceInd + 1 << endl;
         
         if( contactER > lastContactER )
         {
@@ -2293,12 +2315,28 @@ void testContactClustering()
     // set up the strategy we'll use for the training
     
     strategytdmult strat( "benchmark", "player34" );
+    /*
+    board b0("AAAABBAAAAAAAA@BCCACCCA::AAC");
+    set<board> moves( possibleMoves(b0,6,2) );
+    //board b = strat.preferredBoard(b0, moves);
+    board b(b0);
+    b.print();
+    vector<double> inps( strat.getInputValues(b, "contact") );
+    int NI = inps.size();
+    cout << "Hitting prob opp    = " << inps[NI-6] << endl;
+    cout << "Hitting prob player = " << inps[NI-5] << endl;
+    cout << "Escape far player   = " << inps[NI-4] << endl;
+    cout << "Escape close player = " << inps[NI-3] << endl;
+    cout << "Escape far opp      = " << inps[NI-2] << endl;
+    cout << "Escape close opp    = " << inps[NI-1] << endl;
     
+    return;
+    */
     // tries to identify what input features lead to poor performance vs GNUbg contact benchmark set
     
     int nTrain=1000;
     int nTest=10000;
-    int seedTrain=4;
+    int seedTrain=5;
     int seedTest=2;
     double equityThreshold=100e-3;
     int nMiddle=10;
@@ -2387,6 +2425,7 @@ void testContactClustering()
         {
             cout << "Starting board:\n";
             elem.startBoard.print();
+            cout << elem.startBoard.repr() << endl;
             cout << "Roll: ( " << elem.die1 << ", " << elem.die2 << " )\n";
             cout << endl;
             board bestBoard( elem.bestBoard );
@@ -2398,9 +2437,6 @@ void testContactClustering()
             else
                 cout << "  Not found\n";
             cout << "Equity merr: " << equityErrors[i]*1e3 << endl;
-            strat.useExpandedContactNetworks = true;
-            cout << "Network name = " << strat.evaluator(elem.startBoard) << endl;
-            strat.useExpandedContactNetworks = false;
             cout << endl << endl;
         }
     }
