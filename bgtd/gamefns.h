@@ -85,6 +85,11 @@ double hittingProb( const board& brd, bool forOpponent );
 double hittingProb( const set<roll>& shots );
 double hittingProb2( const board& brd, bool forOpponent );
 
+// hittingProbBar returns the probability that the player would hit an opponent blot in the opponent
+// home board if the player had an opponent on the bar (doesn't matter if he really does).
+
+double hittingProbBar( const board& brd, bool forOpponent );
+
 // doubleHittingShots calculates the rolls of the opponent that would hit
 // any of a player's blots and also cover up. Same convention as hittingShots
 // for forOpponent argument. If noBlot is true, it ignores rolls that would

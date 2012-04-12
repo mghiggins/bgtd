@@ -709,6 +709,77 @@ double hittingProb2( const board& brd, bool forOpponent )
     return prob/36.;
 }
 
+double hittingProbBar( const board& brd, bool forOpponent )
+{
+    // if we haven't initialized the hitting rolls list yet, do so now
+    
+    if( hittingRolls == 0 ) setupHittingRolls();
+    
+    // find all the blots and note which opponent rolls would hit them
+    
+    vector<bool> shots(21,false);
+    
+    vector<int> checkers, otherCheckers;
+    int otherHit;
+    
+    if( forOpponent )
+    {
+        checkers = brd.checkers();
+        otherCheckers = brd.otherCheckers();
+        otherHit = brd.otherHit();
+    }
+    else
+    {
+        checkers = brd.otherCheckers();
+        otherCheckers = brd.checkers();
+        reverse( checkers.begin(), checkers.end() );
+        reverse( otherCheckers.begin(), otherCheckers.end() );
+        
+        otherHit = brd.hit();
+    }
+    
+    int i, j;
+    set<roll>::iterator it;
+
+    for( i=0; i<6; i++ )
+    {
+        if( checkers[i] == 1 ) // a blot that could be hit
+        {
+            // add in any roll with a die roll for this slot for a direct ht
+            
+            for( j=1; j<=i+1; j++ ) shots[ (*shotIndexes)[j-1][i+1-j] ] = true;
+            for( j=i+1; j<7; j++ ) shots[ (*shotIndexes)[i+1-1][j-i-1] ] = true;
+            
+            // then check indirect hits
+            
+            for( it=hittingRolls->at(i).begin(); it!=hittingRolls->at(i).end(); it++ )
+            {
+                // if either of the slots in the hitting roll is free, include it
+                
+                if( checkers[it->die1] < 2 or checkers[it->die2] < 2 )
+                    shots[ (*shotIndexes)[it->die1-1][it->die2-it->die1] ] = true;
+            }
+        }
+    }
+    
+    // sum up all the hitting shots and weight appropriately
+    
+    double prob=0;
+    
+    for( i=0; i<21; i++ )
+    {
+        if( shots[i] )
+        {
+            if( i == 0 or i == 6 or i == 11 or i == 15 or i == 18 or i == 20 )
+                prob += 1; // double
+            else
+                prob += 2; // mixed roll
+        }
+    }
+    
+    return prob/36.;
+}
+
 int primesCount( const board& brd, bool forPlayer )
 {
     vector<int> checkers;
