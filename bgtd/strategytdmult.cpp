@@ -944,6 +944,10 @@ void strategytdmult::writeWeights( const string& filePrefix, const string& singl
             fn << 1 << endl;
         else
             fn << 0 << endl;
+        if( useBarInputs )
+            fn << 1 << endl;
+        else
+            fn << 0 << endl;
     }
     
     for( hash_map< string, vector<double> >::const_iterator itProb = outputProbWeights.begin(); itProb != outputProbWeights.end(); itProb ++ )
