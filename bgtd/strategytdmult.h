@@ -32,7 +32,7 @@ class strategytdmult : public strategytdbase
     
 public:
     strategytdmult( doublestrat * ds=0 );
-    strategytdmult( int nMiddle, bool useShotProbInput=true, bool usePrimesInput=true, bool useExtendedBearoffInputs=true, doublestrat * ds=0 );
+    strategytdmult( int nMiddle, bool useShotProbInput=true, bool usePrimesInput=true, bool useExtendedBearoffInputs=true, bool useBarInputs=false, doublestrat * ds=0 );
     strategytdmult( const string& path, const string& filePrefix, doublestrat * ds=0 );
     virtual ~strategytdmult() {};
     
@@ -78,9 +78,9 @@ public:
     bool useShotProbInput;
     bool usePrimesInput;
     bool useExtendedBearoffInputs;
-    bool useExpandedContactNetworks;
+    bool useBarInputs;
     
-    void expandContactNetworks(); // temp - used to add new contact networks
+    void addBarInputs();
     
     // interface to weights
     

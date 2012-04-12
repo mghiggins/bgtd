@@ -40,19 +40,19 @@ strategytdmult::strategytdmult( doublestrat * ds ) : strategytdbase(ds)
     useShotProbInput = true;
     usePrimesInput   = true;
     useExtendedBearoffInputs = true;
-    useExpandedContactNetworks = true;
+    useBarInputs     = true;
     setupRandomWeights( 40 ); // default # of middle nodes is 40
 }
 
-strategytdmult::strategytdmult( int nMiddle, bool useShotProbInput, bool usePrimesInput, bool useExtendedBearoffInputs, doublestrat * ds ) 
-  : useShotProbInput(useShotProbInput), usePrimesInput(usePrimesInput), useExtendedBearoffInputs(useExtendedBearoffInputs), useExpandedContactNetworks(false), strategytdbase(ds)
+strategytdmult::strategytdmult( int nMiddle, bool useShotProbInput, bool usePrimesInput, bool useExtendedBearoffInputs, bool useBarInputs, doublestrat * ds ) 
+  : useShotProbInput(useShotProbInput), usePrimesInput(usePrimesInput), useExtendedBearoffInputs(useExtendedBearoffInputs), 
+    useBarInputs(useBarInputs), strategytdbase(ds)
 {
     setupRandomWeights( nMiddle );
 }
 
 strategytdmult::strategytdmult( const string& path, const string& filePrefix, doublestrat * ds ) : strategytdbase(ds)
 {
-    useExpandedContactNetworks = false;
     loadWeights( path, filePrefix );
     setup();
 }
@@ -69,7 +69,10 @@ int strategytdmult::nInputs( const string& netName ) const
     else
     {
         if( usePrimesInput and !useShotProbInput ) throw string( "Must include shot prob input if include primes input" );
-        if( usePrimesInput )
+        if( useBarInputs and ( !usePrimesInput or !useShotProbInput ) ) throw string( "Must include primes & shot pronb inputs if include bar inputs" );
+        if( useBarInputs )
+            return 208;
+        else if( usePrimesInput )
             return 204;
         else if( useShotProbInput )
             return 200;
@@ -92,11 +95,6 @@ void strategytdmult::setupRandomWeights( int nMiddle )
     nets[0] = "contact";
     nets[1] = "crashed";
     nets[2] = "race";
-    if( useExpandedContactNetworks )
-    {
-        nets.push_back( "contact_allother" );
-        nets.push_back( "contact_hardhome" );
-    }
     
     int i, nInput;
     
@@ -326,10 +324,13 @@ vector<double> strategytdmult::getInputValues( const board& brd, const string& n
     
     if( netName != "race" )
     {
+        double hitProbOpp, hitProbPlayer;
         if( useShotProbInput )
         {
-            inputs.push_back( hittingProb2( brd, true ) );
-            inputs.push_back( hittingProb2( brd, false ) );
+            hitProbOpp    = hittingProb2( brd, true );
+            hitProbPlayer = hittingProb2( brd, false );
+            inputs.push_back( hitProbOpp );
+            inputs.push_back( hitProbPlayer );
         }
         if( usePrimesInput )
         {
@@ -359,6 +360,30 @@ vector<double> strategytdmult::getInputValues( const board& brd, const string& n
                 }
                 inputs.push_back( rollsMin / 36. );
             }
+        }
+        if( useBarInputs )
+        {
+            // two new inputs: prob of hit from bar * prob of being hit to the bar; and prob of entry from bar * prob of being hit to the bar
+            
+            // first: prob of hit from bar * prob of getting to bar; one for each player
+            
+            inputs.push_back( hittingProbBar(brd,false) * hitProbOpp );
+            inputs.push_back( hittingProbBar(brd,true)  * hitProbPlayer );
+            
+            // second: prob of entry from bar * prob of getting to bar; one for each player
+            
+            int i;
+            int entryCount=0;
+            for( i=23; i>=18; i-- )
+                if( brd.otherChecker(i) < 2 )
+                    entryCount++;
+            inputs.push_back( entryCount/3.*(1-entryCount/12.) * hitProbOpp );
+            
+            entryCount=0;
+            for( i=0; i<6; i++ )
+                if( brd.checker(i) < 2 )
+                    entryCount++;
+            inputs.push_back( entryCount/3.*(1-entryCount/12.) * hitProbPlayer );
         }
     }
     
@@ -634,78 +659,7 @@ string strategytdmult::evaluator( const board& brd ) const
         if( isCrashed( brd.bornIn(), brd.checker(0), brd.checker(1) ) ) return crashedName;
         if( isCrashed( brd.otherBornIn(), brd.otherChecker(23), brd.otherChecker(22) ) ) return crashedName;
         
-        // check expanded contact network list
-        
-        if( useExpandedContactNetworks )
-        {
-            // contact_allother is used when all a player's checkers are on the other side of the board
-            
-            bool foundOne=false;
-            for( i=0; i<12; i++ )
-                if( brd.checker(i) > 0 )
-                {
-                    foundOne = true;
-                    break;
-                }
-            if( !foundOne ) return "contact_allother";
-            
-            // ditto for the opponent
-            
-            foundOne = false;
-            for( i=12; i<24; i++ )
-                if( brd.otherChecker(i) > 0 )
-                {
-                    foundOne = true;
-                    break;
-                }
-            if( !foundOne ) return "contact_allother";
-            
-            // contact_hardhome is used when either the player has >= 3 points covered in his home
-            // board and there's at least one opponent behind them; or when the opponent has
-            // at least two points covered in the player's home board.
-            
-            int pointCount;
-            
-            int oppBack=-1;
-            for( i=0; i<3; i++ )
-                if( brd.otherChecker(i) > 0 )
-                    oppBack = i;
-            if( oppBack>-1 or brd.otherHit() > 0 )
-            {
-                pointCount=0;
-                for( i=oppBack+1; i<6; i++ )
-                    if( brd.checker(i) > 1 )
-                        pointCount++;
-                if( pointCount >= 3 ) return "contact_hardhome";
-            }
-            pointCount=0;
-            for( i=0; i<6; i++ )
-                if( brd.otherChecker(i) > 1 )
-                    pointCount++;
-            if( pointCount >= 2 ) return "contact_hardhome";
-            
-            // ditto for opponent
-            
-            int playerBack=-1;
-            for( i=23; i>=21; i-- )
-                if( brd.checker(i) > 0 )
-                    playerBack = i;
-            if( playerBack>-1 or brd.hit() > 0 )
-            {
-                pointCount=0;
-                for( i=playerBack-1; i>=19; i-- )
-                    if( brd.otherChecker(i) > 1 )
-                        pointCount++;
-                if( pointCount >= 3 ) return "contact_hardhome";
-            }
-            pointCount=0;
-            for( i=23; i>=19; i-- )
-                if( brd.checker(i) > 1 )
-                    pointCount++;
-            if( pointCount >= 2 ) return "contact_hardhome";
-        }
-        
-        // not crashed or custom contact, therefore contact
+        // not crashed, therefore contact
         
         return contactName;
     }
@@ -1087,6 +1041,9 @@ void strategytdmult::loadWeights( const string& subPath, const string& filePrefi
     getline( fn, line );
     useExtendedBearoffInputs = ( atoi( line.c_str() ) == 1 );
     if( usePrimesInput and not useShotProbInput ) throw string( "Invalid file: if usePrimesInput, cannot be not useShotProbInput" );
+    getline( fn, line );
+    useBarInputs = ( atoi( line.c_str() ) == 1 );
+    if( useBarInputs and not usePrimesInput ) throw string( "Invalid file: if useBarInputs, cannot be not usePrimesInput" );
     
     CRandomMersenne rng(1); // used for random weights if we're loading weights from a file with no shot prob weight but the network needs one
     int i, j, nInput;
@@ -1152,20 +1109,6 @@ void strategytdmult::loadWeights( const string& subPath, const string& filePrefi
                 midWeights.at(i).resize(nInput+1);
                 for( j=0; j<nInput+1; j++ )
                 {
-                    /*
-                    // base inputs - always there for any network; also last element is always the bias weight and
-                    // needs to go in the last slot. Also contact we always load all weights. 
-                    // For the race network, if we're using random extended bearoff weights, add those in between
-                    // the last base weight and the bias weight, since they're not in the file we're loading from.
-                    
-                    if( netName == "race" or !randomDoubleHitInput or j < 204 or j == nInput )
-                    {
-                        getline( fm, line );
-                        midWeights.at(i).at(j) = atof( line.c_str() );
-                    }
-                    else if( randomDoubleHitInput )
-                        midWeights.at(i).at(j) = rng.IRandom(-100,100)/1000.;
-                    */
                     getline( fm, line );
                     midWeights.at(i).at(j) = atof( line.c_str() );
                 }
@@ -1187,12 +1130,6 @@ void strategytdmult::loadWeights( const string& subPath, const string& filePrefi
             outputBgWeights[ netName ] = bgWeights;
             outputBgLossWeights[ netName ] = bgLossWeights;
             middleWeights[ netName ]       = midWeights;
-            
-            // if this net name starts with "contact" but has other stuff too, it means we're using
-            // expanded contact networks
-            
-            if( strncmp( netName.c_str(), "contact", strlen("contact") ) == 0 and netName.size() > 7 )
-                useExpandedContactNetworks = true;
         }
     }
 }
@@ -1237,21 +1174,29 @@ const vector< vector<double> >& strategytdmult::getMiddleWeights( const string& 
     return it->second;
 }
 
-void strategytdmult::expandContactNetworks()
+void strategytdmult::addBarInputs()
 {
-    vector<string> newNets;
-    newNets.push_back( "contact_allother" );
-    newNets.push_back( "contact_hardhome" );
+    if( useBarInputs ) throw string( "Already using bar inputs" );
+    if( !usePrimesInput or !useShotProbInput ) throw string( "Cannot useBarInputs if not usePrimesInput or not useShotProbInput" );
+    useBarInputs = true;
     
-    for( int i=0; i<newNets.size(); i++ )
+    // extend every network that isn't a race network; add in small random weights for the new inputs
+    
+    CRandomMersenne rng(1);
+    int i, j;
+    
+    for( hash_map<string, vector< vector<double> > >::iterator it=middleWeights.begin(); it!=middleWeights.end(); it++ )
     {
-        outputProbWeights[newNets[i]] = outputProbWeights["contact"];
-        outputGammonWeights[newNets[i]] = outputGammonWeights["contact"];
-        outputGammonLossWeights[newNets[i]] = outputGammonLossWeights["contact"];
-        outputBgWeights[newNets[i]] = outputBgWeights["contact"];
-        outputBgLossWeights[newNets[i]] = outputBgLossWeights["contact"];
-        middleWeights[newNets[i]] = middleWeights["contact"];
+        if( it->first == "race" ) continue;
+        
+        for( i=0; i<nMiddle; i++ )
+        {
+            if( it->second[i].size() != 205 ) throw string( "Should already be 205 elements long" );
+            
+            it->second[i].resize(209);
+            it->second[i][208] = it->second[i][204]; // keep the bias weight at the end
+            for( j=0; j<4; j++ )
+                it->second[i][204+j] = rng.IRandom(-100, 100)/1000.;
+        }
     }
-    
-    useExpandedContactNetworks = true;
 }
