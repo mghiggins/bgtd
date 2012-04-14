@@ -186,7 +186,11 @@ gameProbabilities strategytdmult::boardProbabilities( const board& brd, const ha
     
     board flippedBoard( brd );
     flippedBoard.setPerspective( 1 - brd.perspective() );
-    
+    return boardProbabilitiesOwnDice( flippedBoard, context ).flippedProbs();
+}
+
+gameProbabilities strategytdmult::boardProbabilitiesOwnDice( const board& brd, const hash_map<string,int>* context )
+{
     // figure out what we're optimizing: equity or any kind of win. We optimize for the latter in
     // 1-game matches or eg in a 6-6 tie in a 7-game match. We determine this state using the
     // supplied context. The context must have an element called "singleGame" and the value
@@ -209,10 +213,10 @@ gameProbabilities strategytdmult::boardProbabilities( const board& brd, const ha
     // position. Otherwise the string refers to the name of a particular neural network, since
     // we have multiple networks that focus on different stages of the game.
     
-    string eval = evaluator( flippedBoard );
+    string eval = evaluator( brd );
     if( eval == "done" )
     {
-        double val = -doneValue( flippedBoard, valIsAnyWin );
+        double val = doneValue( brd, valIsAnyWin );
         gameProbabilities probs(0,0,0,0,0);
         if( val > 0 ) probs.probWin = 1;
         if( val > 1 ) probs.probGammonWin = 1;
@@ -223,12 +227,12 @@ gameProbabilities strategytdmult::boardProbabilities( const board& brd, const ha
     }
     else if( eval == "bearoff" )
     {
-        double probWin = 1 - bearoffProbabilityWin( flippedBoard );
+        double probWin = bearoffProbabilityWin( brd );
         double probGammonWin=0, probGammonLoss=0;
         if( !valIsAnyWin )
         {
-            probGammonWin  = bearoffProbabilityGammonLoss( flippedBoard );
-            probGammonLoss = bearoffProbabilityGammon( flippedBoard );
+            probGammonWin  = bearoffProbabilityGammon( brd );
+            probGammonLoss = bearoffProbabilityGammonLoss( brd );
         }
         gameProbabilities probs( probWin, probGammonWin, probGammonLoss, 0, 0 );
         return probs;
@@ -239,7 +243,7 @@ gameProbabilities strategytdmult::boardProbabilities( const board& brd, const ha
         // of gammon loss; prob of bg win; prob of bg loss. Sanity check to make sure probs are
         // ordered sensibly.
         
-        vector<double> middles( getMiddleValues( getInputValues(flippedBoard,eval), eval ) );
+        vector<double> middles( getMiddleValues( getInputValues(brd,eval), eval ) );
         
         // get the prob of any kind of win - we always need this
         
@@ -249,7 +253,7 @@ gameProbabilities strategytdmult::boardProbabilities( const board& brd, const ha
         
         if( valIsAnyWin )
         {
-            gameProbabilities probs( 1-pWin, 0, 0, 0, 0 );
+            gameProbabilities probs( pWin, 0, 0, 0, 0 );
             return probs;
         }
         else
@@ -257,11 +261,11 @@ gameProbabilities strategytdmult::boardProbabilities( const board& brd, const ha
             // Otherwise we're optimizing for full equity. Get the probability of gammon win and loss.
             
             double pGam, pGamLoss;
-            if( flippedBoard.otherBornIn() == 0 )
+            if( brd.otherBornIn() == 0 )
                 pGam = getOutputGammonValue( middles, eval );
             else
                 pGam = 0;
-            if( flippedBoard.bornIn() == 0 )
+            if( brd.bornIn() == 0 )
                 pGamLoss = getOutputGammonLossValue( middles, eval );
             else
                 pGamLoss = 0;
@@ -274,11 +278,11 @@ gameProbabilities strategytdmult::boardProbabilities( const board& brd, const ha
             // get the probability of backgammon win and loss
             
             double pBg, pBgLoss;
-            if( flippedBoard.otherNoBackgammon() )
+            if( brd.otherNoBackgammon() )
                 pBg = 0;
             else
                 pBg = getOutputBackgammonValue( middles, eval );
-            if( flippedBoard.noBackgammon() )
+            if( brd.noBackgammon() )
                 pBgLoss = 0;
             else
                 pBgLoss = getOutputBackgammonLossValue( middles, eval );
@@ -288,7 +292,7 @@ gameProbabilities strategytdmult::boardProbabilities( const board& brd, const ha
             if( pBg > pGam ) pBg = pGam;
             if( pBgLoss > pGamLoss ) pBgLoss = pGamLoss;
             
-            gameProbabilities probs( 1-pWin, pGamLoss, pGam, pBgLoss, pBg );
+            gameProbabilities probs( pWin, pGam, pGamLoss, pBg, pBgLoss );
             return probs;
         }
     }
@@ -913,6 +917,148 @@ void strategytdmult::updateFromProbs( const board& brd, double probWin, double p
     (*itBgWeights).second.at(nMiddle)      += alpha * bgDiff * dBgdMiddle.at(nMiddle);
     (*itBgLossWeights).second.at(nMiddle)  += alpha * bgLossDiff * dBgLossdMiddle.at(nMiddle);
 }
+
+partialDerivatives strategytdmult::getPartialDerivatives( const board& brd )
+{
+    // we train the weights of the evaluator for the network corresponding to the board, if
+    // that's actually using a network. If we're in bearoff, still use the results to train the 
+    // race network which connects to bearoff.
+    
+    string eval( evaluator( brd ) );
+    if( eval == "done" ) throw string( "Cannot calculate network partials when the game is done" );
+    
+    string netName;
+    
+    if( eval == "bearoff" )
+        netName = "race";
+    else
+        netName = eval;
+    
+    // calculate the partial derivatives of the network outputs to the network weights. 
+    
+    vector<double> oldInputs( getInputValues( brd, netName ) );
+    vector<double> oldMiddles( getMiddleValues( oldInputs, netName ) );
+    double oldPWin     = getOutputProbValue( oldMiddles, netName );
+    double oldPGam     = getOutputGammonValue( oldMiddles, netName );
+    double oldPGamLoss = getOutputGammonLossValue( oldMiddles, netName );
+    double oldPBg      = getOutputBackgammonValue( oldMiddles, netName );
+    double oldPBgLoss  = getOutputBackgammonLossValue( oldMiddles, netName );
+    int nInput( nInputs( netName ) );
+    
+    vector<double> dProbdMiddle(nMiddle+1);         // derivs of prob win output to its weights vs the middle nodes, and one extra for its bias weight
+    vector<double> dGamdMiddle(nMiddle+1);          // derivs of gam win output to its weights vs the middle nodes, and one extra for its bias weight
+    vector<double> dGamLossdMiddle(nMiddle+1);      // sim for gam loss
+    vector<double> dBgdMiddle(nMiddle+1);           // sim for backgammon win
+    vector<double> dBgLossdMiddle(nMiddle+1);       // sim for backgammon loss
+    
+    vector< vector<double> > dProbdInputs(nMiddle); // derivs of prob win output to middle->input weights
+    vector< vector<double> > dGamdInputs(nMiddle);  // derivs of gam win output to middle->input weights
+    vector< vector<double> > dGamLossdInputs(nMiddle); // sim for gam loss
+    vector< vector<double> > dBgdInputs(nMiddle);   // sim for backgammon win
+    vector< vector<double> > dBgLossdInputs(nMiddle); // sim for backgammon loss
+    
+    double pWinProd = oldPWin * ( 1 - oldPWin ); // precalc since it's called a lot
+    double pGamProd = oldPGam * ( 1 - oldPGam ); // ditto
+    double pGamLossProd = oldPGamLoss * ( 1 - oldPGamLoss ); // ditto
+    double pBgProd = oldPBg * ( 1 - oldPBg );
+    double pBgLossProd = oldPBgLoss * ( 1 - oldPBgLoss );
+    
+    int i, j;
+    double input, middleProd, midProbWeight, midGamWeight, midGamLossWeight, midBgWeight, midBgLossWeight, mid;
+    
+    hash_map< string, vector<double> >::iterator itProbWeights          = outputProbWeights.find(netName);
+    hash_map< string, vector<double> >::iterator itGamWeights           = outputGammonWeights.find(netName);
+    hash_map< string, vector<double> >::iterator itGamLossWeights       = outputGammonLossWeights.find(netName);
+    hash_map< string, vector<double> >::iterator itBgWeights            = outputBgWeights.find(netName);
+    hash_map< string, vector<double> >::iterator itBgLossWeights        = outputBgLossWeights.find(netName);
+    hash_map< string, vector< vector<double> > >::iterator itMidWeights = middleWeights.find(netName);
+    
+    for( i=0; i<nMiddle; i++ )
+    {
+        mid = oldMiddles.at(i);
+        dProbdMiddle.at(i)    = pWinProd * mid;
+        dGamdMiddle.at(i)     = pGamProd * mid;
+        dGamLossdMiddle.at(i) = pGamLossProd * mid;
+        dBgdMiddle.at(i)      = pBgProd * mid;
+        dBgLossdMiddle.at(i)  = pBgLossProd * mid;
+        
+        dProbdInputs.at(i).resize(nInput+1);
+        dGamdInputs.at(i).resize(nInput+1);
+        dGamLossdInputs.at(i).resize(nInput+1);
+        dBgdInputs.at(i).resize(nInput+1);
+        dBgLossdInputs.at(i).resize(nInput+1);
+        
+        middleProd = mid * ( 1 - mid );
+        
+        midProbWeight    = (*itProbWeights).second.at(i);
+        midGamWeight     = (*itGamWeights).second.at(i);
+        midGamLossWeight = (*itGamLossWeights).second.at(i);
+        midBgWeight      = (*itBgWeights).second.at(i);
+        midBgLossWeight  = (*itBgLossWeights).second.at(i);
+        
+        vector<double>& probRow    = dProbdInputs.at(i);
+        vector<double>& gamRow     = dGamdInputs.at(i);
+        vector<double>& gamLossRow = dGamLossdInputs.at(i);
+        vector<double>& bgRow      = dBgdInputs.at(i);
+        vector<double>& bgLossRow  = dBgLossdInputs.at(i);
+        
+        for( j=0; j<nInput; j++ )
+        {
+            input = oldInputs.at(j);
+            probRow.at(j)    = pWinProd * midProbWeight * middleProd * input;
+            gamRow.at(j)     = pGamProd * midGamWeight * middleProd * input;
+            gamLossRow.at(j) = pGamLossProd * midGamLossWeight * middleProd * input;
+            bgRow.at(j)      = pBgProd * midBgWeight * middleProd * input;
+            bgLossRow.at(j)  = pBgLossProd * midBgLossWeight * middleProd * input;
+        }
+        probRow.at(nInput)    = pWinProd * midProbWeight * middleProd; // bias weight
+        gamRow.at(nInput)     = pGamProd * midGamWeight * middleProd;
+        gamLossRow.at(nInput) = pGamLossProd * midGamLossWeight * middleProd;
+        bgRow.at(nInput)      = pBgProd * midBgWeight * middleProd;
+        bgLossRow.at(nInput)  = pBgLossProd * midBgLossWeight * middleProd;
+    }
+    
+    // don't forget the partial deriv of outputs to their bias weight
+    
+    dProbdMiddle.at(nMiddle)    = pWinProd;
+    dGamdMiddle.at(nMiddle)     = pGamProd;
+    dGamLossdMiddle.at(nMiddle) = pGamLossProd;
+    dBgdMiddle.at(nMiddle)      = pBgProd;
+    dBgLossdMiddle.at(nMiddle)  = pBgLossProd;
+    
+    return partialDerivatives( netName, dProbdMiddle, dGamdMiddle, dGamLossdMiddle, dBgdMiddle, dBgLossdMiddle, dProbdInputs, dGamdInputs, dGamLossdInputs, dBgdInputs, dBgLossdInputs );
+}
+
+void strategytdmult::updateWeightMoves( const string& netName, const vector<double>& dProbWeights, const vector<double>& dGamWeights, const vector<double>& dGamLossWeights, 
+                                        const vector<double>& dBgWeights, const vector<double>& dBgLossWeights, const vector< vector<double> >& dMiddleWeights )
+{
+    hash_map< string, vector<double> >::iterator itProbWeights          = outputProbWeights.find(netName);
+    hash_map< string, vector<double> >::iterator itGamWeights           = outputGammonWeights.find(netName);
+    hash_map< string, vector<double> >::iterator itGamLossWeights       = outputGammonLossWeights.find(netName);
+    hash_map< string, vector<double> >::iterator itBgWeights            = outputBgWeights.find(netName);
+    hash_map< string, vector<double> >::iterator itBgLossWeights        = outputBgLossWeights.find(netName);
+    hash_map< string, vector< vector<double> > >::iterator itMidWeights = middleWeights.find(netName);
+    
+    int nInput(nInputs(netName));
+    
+    int i, j;
+    for( i=0; i<nMiddle; i++ )
+    {
+        itProbWeights->second.at(i) += dProbWeights.at(i);
+        itGamWeights->second.at(i) += dGamWeights.at(i);
+        itGamLossWeights->second.at(i) += dGamLossWeights.at(i);
+        itBgWeights->second.at(i) += dBgWeights.at(i);
+        itBgLossWeights->second.at(i) += dBgLossWeights.at(i);
+        for( j=0; j<nInput+1; j++ )
+            itMidWeights->second.at(i).at(j) += dMiddleWeights.at(i).at(j);
+    }
+    itProbWeights->second.at(nMiddle) += dProbWeights.at(nMiddle);
+    itGamWeights->second.at(nMiddle) += dGamWeights.at(nMiddle);
+    itGamLossWeights->second.at(nMiddle) += dGamLossWeights.at(nMiddle);
+    itBgWeights->second.at(nMiddle) += dBgWeights.at(nMiddle);
+    itBgLossWeights->second.at(nMiddle) += dBgLossWeights.at(nMiddle);
+}
+
 
 void strategytdmult::writeWeights( const string& filePrefix, const string& singleNetName ) const
 {

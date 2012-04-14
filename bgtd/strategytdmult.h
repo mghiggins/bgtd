@@ -24,6 +24,37 @@
 #include <hash_map.h>
 #include "strategytdbase.h"
 
+class partialDerivatives
+{
+    // class to hold partial derivatives of network outputs to network weights
+    
+public:
+    partialDerivatives( const string& netName, const vector<double>& dProbdMiddle, 
+                        const vector<double>& dGamdMiddle, const vector<double>& dGamLossdMiddle, 
+                        const vector<double>& dBgdMiddle, const vector<double>& dBgLossdMiddle,
+                        const vector< vector<double> >& dProbdInputs, 
+                        const vector< vector<double> >& dGamdInputs, const vector< vector<double> >& dGamLossdInputs,
+                        const vector< vector<double> >& dBgdInputs, const vector< vector<double> >& dBgLossdInputs )
+    : netName(netName), dProbdMiddle(dProbdMiddle), dGamdMiddle(dGamdMiddle), dGamLossdMiddle(dGamLossdMiddle), dBgdMiddle(dBgdMiddle), dBgLossdMiddle(dBgLossdMiddle),
+    dProbdInputs(dProbdInputs), dGamdInputs(dGamdInputs), dGamLossdInputs(dGamLossdInputs), dBgdInputs(dBgdInputs), dBgLossdInputs(dBgLossdInputs) {};
+    ~partialDerivatives() {};
+    
+    string netName;                      // name of the network we're calculating partials for
+    
+    vector<double> dProbdMiddle;         // derivs of prob win output to its weights vs the middle nodes, and one extra for its bias weight
+    vector<double> dGamdMiddle;          // derivs of gam win output to its weights vs the middle nodes, and one extra for its bias weight
+    vector<double> dGamLossdMiddle;      // sim for gam loss
+    vector<double> dBgdMiddle;           // sim for backgammon win
+    vector<double> dBgLossdMiddle;       // sim for backgammon loss
+    
+    vector< vector<double> > dProbdInputs; // derivs of prob win output to middle->input weights
+    vector< vector<double> > dGamdInputs;  // derivs of gam win output to middle->input weights
+    vector< vector<double> > dGamLossdInputs; // sim for gam loss
+    vector< vector<double> > dBgdInputs;   // sim for backgammon win
+    vector< vector<double> > dBgLossdInputs; // sim for backgammon loss
+
+};
+
 class strategytdmult : public strategytdbase
 {
     // A generalized TD strategy. Contains multiple networks for different game states
@@ -36,8 +67,17 @@ public:
     strategytdmult( const string& path, const string& filePrefix, doublestrat * ds=0 );
     virtual ~strategytdmult() {};
     
+    // boardValue returns the value the strategy optimizes on when selected boards. Equity, either cubeless or cubeful.
+    
     virtual double boardValue( const board& brd, const hash_map<string,int>* context=0 );
+    
+    // boardProbabilities returns the board probabilities assuming the opponent holds the dice
+    
     virtual gameProbabilities boardProbabilities( const board& brd, const hash_map<string,int>* context=0 ); 
+    
+    // boardProbabilitiesOwnDice returns the board probabilities assuming the player holds the dice
+    
+    gameProbabilities boardProbabilitiesOwnDice( const board& brd, const hash_map<string,int>* context=0 );
     
     string evaluator( const board& brd) const;
     
@@ -64,6 +104,13 @@ public:
     virtual bool needsUpdate() const;
     virtual void update( const board& oldBoard, const board& newBoard );
     void updateFromProbs( const board& brd, double probWin, double probGammonWin, double probGammonLoss, double probBgWin, double probBgLoss );
+    
+    // updateWeightMoves takes in a network name and a set of weight shocks and applies them
+    
+    void updateWeightMoves( const string& netName, const vector<double>& dProbWeights, const vector<double>& dGamWeights, const vector<double>& dGamLossWeights, 
+                            const vector<double>& dBgWeights, const vector<double>& dBgLossWeights, const vector< vector<double> >& dMiddleWeights );
+    
+    partialDerivatives getPartialDerivatives( const board& brd );
     
     // writeWeights writes the weights for each network to files (one per network, suffixed with the network name).
     // If singleNetName is blank it writes files for all networks' weights; otherwise it just writes files for the
