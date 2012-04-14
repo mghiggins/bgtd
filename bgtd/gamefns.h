@@ -42,21 +42,18 @@ bool isRace( const board& board );
 // be consistent with strategy boardValue calculations. depth=0 means run to end;
 // otherwise it stops after depth plies.
 
-gameProbabilities rolloutBoardProbabilities( const board& brd, strategyprob& strat, int nRuns, int seed );
-gameProbabilities rolloutBoardProbabilities( const board& brd, strategyprob& strat, int nRuns, CRandomMersenne * rng );
+gameProbabilities rolloutBoardProbabilities( const board& brd, strategyprob& strat, int nRuns, int seed, int depth=0 );
+gameProbabilities rolloutBoardProbabilities( const board& brd, strategyprob& strat, int nRuns, CRandomMersenne * rng, int depth=0 );
 
-// rolloutBoardProbabilitiesVarReduction explicitly sets the first set of rolls to the 21
-// possible dice rolls, then does the usual MC simulation under that, to reduce
-// variance. nRuns must be a multiple of 21.
+// rolloutBoardProbabilitiesVarReduction luck-adjusts the Monte Carlo simulation at each step
 
-gameProbabilities rolloutBoardProbabilitiesVarReduction( const board& brd, strategyprob& strat, int nRuns, int seed );
-gameProbabilities rolloutBoardProbabilitiesVarReduction( const board& brd, strategyprob& strat, int nRuns, CRandomMersenne * rng );
+gameProbabilities rolloutBoardProbabilitiesVarReduction( const board& brd, strategyprob& strat, int nRuns, int seed, int depth=0 );
+gameProbabilities rolloutBoardProbabilitiesVarReduction( const board& brd, strategyprob& strat, int nRuns, CRandomMersenne * rng, int depth=0 );
 
 // rolloutBoardProbabilitiesParallel does the same thing but breaks the runs into nThreads
-// threads and runs them in parallel. if varReduc is true it will use the variance-reduced
-// version, and nRuns must be a multiple of 21*nThreads.
+// threads and runs them in parallel. 
 
-gameProbabilities rolloutBoardProbabilitiesParallel( const board& brd, strategyprob& strat, int nRuns, int seed, int nThreads, bool varReduc );
+gameProbabilities rolloutBoardProbabilitiesParallel( const board& brd, strategyprob& strat, int nRuns, int seed, int nThreads, bool varReduc, int depth=0 );
 
 // roll is a simple class that holds a two-dice roll
 

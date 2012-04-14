@@ -237,60 +237,98 @@ bool isRace( const board& brd )
     return brd.isRace();
 }
 
-gameProbabilities rolloutBoardProbabilitiesVarReduction( const board& brd, strategyprob& strat, int nRuns, int seed )
+gameProbabilities rolloutBoardProbabilitiesVarReduction( const board& brd, strategyprob& strat, int nRuns, int seed, int depth )
 {
     CRandomMersenne rng(seed);
     
-    return rolloutBoardProbabilitiesVarReduction( brd, strat, nRuns, &rng );
+    return rolloutBoardProbabilitiesVarReduction( brd, strat, nRuns, &rng, depth );
 }
 
-gameProbabilities rolloutBoardProbabilitiesVarReduction( const board& brd, strategyprob& strat, int nRuns, CRandomMersenne * rng )
+gameProbabilities rolloutBoardProbabilitiesVarReduction( const board& brd, strategyprob& strat, int nRuns, CRandomMersenne * rng, int depth )
 {
-    // nRuns must be a multiple of 21
-    
-    if( nRuns % 21 != 0 ) throw "nRuns must be a multiple of 21";
-    
-    int d1, d2, count=0;
+    gameProbabilities avgVal, rollProbs, stratProbs;
+    board b, bluck, bnext;
+    int die1, die2, die1luck, die2luck;
     double weight;
-    gameProbabilities val;
     
-    for( d1=1; d1<=6; d1++ )
-        for( d2=1; d2<=d1; d2++ )
+    for( int i=0; i<nRuns; i++ )
+    {
+        // start off with board = the board they passed in and on the opponent's roll
+        
+        int turn=1-brd.perspective();
+        
+        b = brd;
+        while( true )
         {
-            if( d1 == d2 )
-                weight = 1/36.;
+            // set the board to the appropriate perspective
+            
+            b.setPerspective(turn);
+            
+            // roll the dice
+            
+            die1 = rng->IRandom(1,6);
+            die2 = rng->IRandom(1,6);
+            
+            // calculate the optimal moves for every dice roll, and the average value for
+            // each of the probabilities. Also remember the move for the dice roll they got.
+            
+            gameProbabilities avgProbs; // will hold game probabilities after the roll, averaged over all rolls
+            
+            for( die1luck=1; die1luck<=6; die1luck++ )
+                for( die2luck=1; die2luck<=die1luck; die2luck++ )
+                {
+                    set<board> moves( possibleMoves(b, die1luck, die2luck) );
+                    bluck = strat.preferredBoard(b, moves);
+                    stratProbs = strat.boardProbabilities(bluck);
+                    if( die1luck==die2luck )
+                        weight = 1./36;
+                    else
+                        weight = 1./18;
+                    avgProbs = avgProbs + stratProbs * weight;
+                    if( ( die1luck==die1 and die2luck==die2 ) or ( die1luck==die2 and die2luck==die1 ) )
+                    {
+                        bnext = bluck;
+                        rollProbs = stratProbs;
+                    }
+                }
+            
+            // luck (separately for each probability) is the accumulated luck of the rolls - include
+            // that in the total
+            
+            if( turn == brd.perspective() )
+                avgVal = avgVal - ( rollProbs - avgProbs );
             else
-                weight = 1/18.;
+                avgVal = avgVal - ( rollProbs.flippedProbs() - avgProbs.flippedProbs() );
             
-            game g(&strat,&strat,1); // seed doesn't matter here
-            g.setBoard(brd);
-            g.setTurn(1-brd.perspective()); // the oppponent's turn - we calculate board value after the player's move
-            g.stepWithDice( d1, d2 );
+            // if the game's over, break
             
-            board b( g.getBoard() );
-            b.setPerspective(1-brd.perspective());
-            
-            // rollout from this point, starting with the opponent's perspective
-            
-            gameProbabilities bv = rolloutBoardProbabilities( b, strat, nRuns/21, rng );
-            //cout << d1 << "; " << d2 << ": " << bv << endl;
-            
-            val = val - bv * weight;
-            count++;
+            b = bnext;
+            if( b.bornIn() == 15 or b.otherBornIn() == 15 ) break;
+            turn = 1 - turn;
         }
+        
+        // get the final probabilities
+        
+        b.setPerspective(brd.perspective());
+        avgVal = avgVal + strat.boardProbabilities(b);
+    }
     
-    return val;
+    // rescale by the number of runs and return
+    
+    avgVal = avgVal / nRuns;
+    return avgVal;
 }
 
-gameProbabilities rolloutBoardProbabilities( const board& brd, strategyprob& strat, int nRuns, int seed )
+gameProbabilities rolloutBoardProbabilities( const board& brd, strategyprob& strat, int nRuns, int seed, int depth )
 {
     CRandomMersenne rng(seed);
-    return rolloutBoardProbabilities( brd, strat, nRuns, &rng );
+    return rolloutBoardProbabilities( brd, strat, nRuns, &rng, depth );
 }
 
-gameProbabilities rolloutBoardProbabilities( const board& brd, strategyprob& strat, int nRuns, CRandomMersenne * rng )
+gameProbabilities rolloutBoardProbabilities( const board& brd, strategyprob& strat, int nRuns, CRandomMersenne * rng, int depth )
 {
     gameProbabilities avgVal;
+    board startBoard; // the starting board
     
     for( int i=0; i<nRuns; i++ )
     {
@@ -298,6 +336,7 @@ gameProbabilities rolloutBoardProbabilities( const board& brd, strategyprob& str
         
         game g( &strat, &strat, rng );
         g.setBoard( brd );
+        g.nSteps = ( brd == startBoard ) ? 0 : 1; // nSteps=0 means the first roll can't be a double etc
         g.setTurn( 1 - brd.perspective() ); // start with opponent on roll
         
         g.stepToEnd();
@@ -326,16 +365,16 @@ vector<gameProbabilities> valsRollout;
 class workerRollout
 {
 public:
-    workerRollout( const board& brd, strategyprob& strat, int nRuns, int seed, int index, bool varReduc ) : brd(brd), strat(strat), nRuns(nRuns), seed(seed), index(index), varReduc(varReduc) {};
+    workerRollout( const board& brd, strategyprob& strat, int nRuns, int seed, int index, bool varReduc, int depth ) : brd(brd), strat(strat), nRuns(nRuns), seed(seed), index(index), varReduc(varReduc), depth(depth) {};
     
     void operator()()
     {
         CRandomMersenne rng(seed);
         gameProbabilities val;
         if( varReduc )
-            val = rolloutBoardProbabilitiesVarReduction( brd, strat, nRuns, &rng );
+            val = rolloutBoardProbabilitiesVarReduction( brd, strat, nRuns, &rng, depth );
         else
-            val = rolloutBoardProbabilities( brd, strat, nRuns, &rng );
+            val = rolloutBoardProbabilities( brd, strat, nRuns, &rng, depth );
         valsRollout.at(index) = val;
     }
     
@@ -346,12 +385,11 @@ private:
     int seed;
     int index;
     bool varReduc;
+    int depth;
 };
 
-gameProbabilities rolloutBoardProbabilitiesParallel( const board& brd, strategyprob& strat, int nRuns, int seed, int nThreads, bool varReduc )
+gameProbabilities rolloutBoardProbabilitiesParallel( const board& brd, strategyprob& strat, int nRuns, int seed, int nThreads, bool varReduc, int depth )
 {
-    if( varReduc and nRuns % ( 21 * nThreads ) != 0 ) throw "nRuns must be a multiple of 21*nThreads";
-    
     using namespace boost;
     
     // initialize the vector that'll hold the results
@@ -368,7 +406,7 @@ gameProbabilities rolloutBoardProbabilitiesParallel( const board& brd, strategyp
     // the buckets from 0->nThreads-2 contain runsPerThread each
     
     for( int i=0; i<nThreads-1; i++ )
-        ts.create_thread( workerRollout( brd, strat, runsPerThread, seed+i*runsPerThread, i, varReduc ) );
+        ts.create_thread( workerRollout( brd, strat, runsPerThread, seed+i*runsPerThread, i, varReduc, depth ) );
     
     // the last bucket contains the rest
     
@@ -376,7 +414,7 @@ gameProbabilities rolloutBoardProbabilitiesParallel( const board& brd, strategyp
     bool useLast=false;
     if( lastNRuns > 0 )
     {
-        ts.create_thread( workerRollout( brd, strat, nRuns - runsPerThread * ( nThreads - 1 ), seed+(nThreads-1)*runsPerThread, nThreads-1, varReduc ) );
+        ts.create_thread( workerRollout( brd, strat, nRuns - runsPerThread * ( nThreads - 1 ), seed+(nThreads-1)*runsPerThread, nThreads-1, varReduc, depth ) );
         useLast = true;
     }
     
