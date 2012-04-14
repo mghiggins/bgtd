@@ -1,10 +1,20 @@
-//
-//  benchmark.cpp
-//  bgtd
-//
-//  Created by Mark Higgins on 2/4/12.
-//  Copyright 2012 __MyCompanyName__. All rights reserved.
-//
+/*****************
+ Copyright 2011, 2012 Mark Higgins
+ 
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ 
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ 
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ 
+ *****************/
 
 #include <fstream>
 #include <sstream>
@@ -768,3 +778,153 @@ double gnuBgBenchmarkER( strategy& strat, const vector< vector<benchmarkData> >&
     return ER;
 }
 
+class weightsUpdateContainer
+{
+public:
+    weightsUpdateContainer( const string& netName, const vector<double>& dProbWeights, 
+                            const vector<double>& dGamWeights, const vector<double>& dGamLossWeights,
+                            const vector<double>& dBgWeights, const vector<double>& dBgLossWeights,
+                            const vector< vector<double> >& dMiddleWeights )
+    : netName(netName), dProbWeights(dProbWeights), dGamWeights(dGamWeights), dGamLossWeights(dGamLossWeights),
+    dBgWeights(dBgWeights), dBgLossWeights(dBgLossWeights) {};
+    ~weightsUpdateContainer() {};
+    
+    string netName;
+    vector<double> dProbWeights;
+    vector<double> dGamWeights;
+    vector<double> dGamLossWeights;
+    vector<double> dBgWeights;
+    vector<double> dBgLossWeights;
+    vector< vector<double> > dMiddleWeights;
+};
+
+vector<weightsUpdateContainer> dWeightsGnuBgTraining;
+
+class workerGnuBgTraining
+{
+public:
+    workerGnuBgTraining( strategytdmult& strat, const vector<boardAndRolloutProbs>& states, const vector<int>& indexes, int bktIndex )
+    : strat(strat), states(states), indexes(indexes), bktIndex(bktIndex) {};
+    
+    void operator()()
+    {
+        for( vector<int>::const_iterator it=indexes.begin(); it!=indexes.end(); it++ )
+        {
+            const board& b( states.at((*it)).b );
+            
+            // get the partial derivatives in this state
+            
+            partialDerivatives derivs( strat.getPartialDerivatives(b) );
+            
+            // get the network estimate of the board probabilities
+            
+            gameProbabilities probs( strat.boardProbabilitiesOwnDice(b) );
+            
+            // get the weight updates and record them
+            
+            int i, j;
+            int nMiddle(strat.nMiddle);
+            int nInput(strat.nInputs(derivs.netName));
+            vector<double> dProbWeights(nMiddle+1), dGamWeights(nMiddle+1), dGamLossWeights(nMiddle+1), dBgWeights(nMiddle+1), dBgLossWeights(nMiddle+1);
+            vector< vector<double> > dMiddleWeights(nMiddle);
+            double alpha=strat.alpha;
+            double beta=strat.beta;
+            
+            // get the true vs network prob diffs
+            
+            gameProbabilities roProbs=states.at((*it)).probs;
+            
+            double probDiff=roProbs.probWin - probs.probWin;
+            double gamDiff=roProbs.probGammonWin - probs.probGammonWin;
+            double gamLossDiff=roProbs.probGammonLoss - probs.probGammonLoss;
+            double bgDiff=roProbs.probBgWin - probs.probBgWin;
+            double bgLossDiff=roProbs.probBgLoss - probs.probBgLoss;
+            
+            for( i=0; i<nMiddle; i++ )
+            {
+                dProbWeights.at(i) = alpha * probDiff * derivs.dProbdMiddle.at(i);
+                dGamWeights.at(i) = alpha * gamDiff * derivs.dGamdMiddle.at(i);
+                dGamLossWeights.at(i) = alpha * gamLossDiff * derivs.dGamLossdMiddle.at(i);
+                dBgWeights.at(i) = alpha * bgDiff * derivs.dBgdMiddle.at(i);
+                dBgLossWeights.at(i) = alpha * bgLossDiff * derivs.dBgLossdMiddle.at(i);
+                
+                dMiddleWeights.at(i).resize(nInput+1);
+                
+                vector<double>& midRow = dMiddleWeights.at(i);
+                vector<double>& prodRow = derivs.dProbdInputs.at(i);
+                vector<double>& gamRow = derivs.dGamdInputs.at(i);
+                vector<double>& gamLossRow = derivs.dGamLossdInputs.at(i);
+                vector<double>& bgRow = derivs.dBgdInputs.at(i);
+                vector<double>& bgLossRow = derivs.dBgLossdInputs.at(i);
+                
+                for( j=0; j<nInput+1; j++ )
+                    midRow.at(j) += beta * ( probDiff * prodRow.at(j)
+                                            + gamDiff * gamRow.at(j)
+                                            + gamLossDiff * gamLossRow.at(j)
+                                            + bgDiff * bgRow.at(j) 
+                                            + bgLossDiff * bgLossRow.at(j) );
+            }
+            
+            dProbWeights.at(nMiddle)    = alpha * probDiff * derivs.dProbdMiddle.at(nMiddle);
+            dGamWeights.at(nMiddle)     = alpha * gamDiff * derivs.dGamdMiddle.at(nMiddle);
+            dGamLossWeights.at(nMiddle) = alpha * gamLossDiff * derivs.dGamLossdMiddle.at(nMiddle);
+            dBgWeights.at(nMiddle)      = alpha * bgDiff * derivs.dBgdMiddle.at(nMiddle);
+            dBgLossWeights.at(nMiddle)  = alpha * bgLossDiff * derivs.dBgLossdMiddle.at(nMiddle);
+            
+            dWeightsGnuBgTraining.at(bktIndex) = weightsUpdateContainer( derivs.netName, dProbWeights, dGamWeights, dGamLossWeights, dBgWeights, dBgLossWeights, dMiddleWeights );
+        }
+    }
+    
+private:
+    strategytdmult& strat;
+    const vector<boardAndRolloutProbs>& states;
+    const vector<int>& indexes;
+    int bktIndex;
+};
+
+
+void trainMultGnuBgParallel( strategytdmult& strat, const vector<boardAndRolloutProbs>& states, int seed, int nBuckets )
+{
+    using namespace boost;
+    
+    // fill the nBuckets buckets
+    
+    int index, bktIndex=0;
+    CRandomMersenne rng(seed);
+    
+    vector<int> indexes(states.size());
+    for( int i=0; i<states.size(); i++ ) indexes[i] = i;
+    
+    vector< vector<int> > statesBuckets(nBuckets);
+    
+    bktIndex = 0;
+    
+    while( indexes.size() > 0 )
+    {
+        // randomly select the board and allocate it to the appropriate bucket
+        
+        index = rng.IRandom( 0, (int) (indexes.size() - 1) );
+        statesBuckets.at(bktIndex).push_back(index);
+        indexes.erase( indexes.begin() + index );
+        bktIndex++;
+        if( bktIndex == nBuckets ) bktIndex = 0;
+    }
+    
+    // set up the container for the results
+    
+    dWeightsGnuBgTraining.resize( nBuckets );
+    
+    // calculate the weight tweak from each bucket in parallel
+    
+    thread_group ts;
+    for( int i=0; i<nBuckets; i++ ) ts.create_thread( workerGnuBgTraining( strat, states, statesBuckets.at(i), i ) );
+    ts.join_all();
+    
+    // aggregate all the weight tweaks and update the strategy
+    
+    for( int i=0; i<nBuckets; i++ )
+    {
+        weightsUpdateContainer& info(dWeightsGnuBgTraining.at(i));
+        strat.updateWeightMoves( info.netName, info.dProbWeights, info.dGamWeights, info.dGamLossWeights, info.dBgWeights, info.dBgLossWeights, info.dMiddleWeights );
+    }
+}
