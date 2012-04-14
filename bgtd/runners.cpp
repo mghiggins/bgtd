@@ -1896,7 +1896,7 @@ runStats playParallelCubeful( strategy& s1, strategy& s2, long n, long initSeed,
                 if( p > 0 ) w0 += 1;
                 if( score == -1 )
                 {
-                    q += 1;
+                    q += cubesCubeful[i];
                     nc += 1;
                 }
                 else
@@ -1989,13 +1989,13 @@ void testCubefulMoney()
     s1.setDoublingStrategy(&ds);
     s2.setDoublingStrategy(&ds);
     s1.useCubefulEquity = true;
-    s2.useCubefulEquity = false;
+    s2.useCubefulEquity = true;
     
-    int nRuns = 100000;
-    int nBuckets = nRuns/1000;
+    int nRuns = 1000;
+    int nBuckets = nRuns/10;
     int seed = 1;
     
-    playParallelCubeful( s1, s2, nRuns, seed, nBuckets, true, 25 );
+    playParallelCubeful( s1, s2, nRuns, seed, nBuckets, true, 1 );
 }
 
 vector<int> pntsMatch;
@@ -2691,3 +2691,51 @@ void testContactClustering()
     cout << endl;
 }
 
+void testRollout()
+{
+    board b(referenceBoard(6));
+    b.print();
+    //return;
+    
+    strategytdmult s0( "benchmark", "player34" );
+    //strategytdorigbg s0( "benchmark", "benchmark2" );
+    strategytdmult sf( "benchmark", "player32q" );
+    strategyply s(0,8,0.1,s0,sf);
+    
+    cout << s.boardProbabilities(b) << endl;
+    
+    double avgProb=0, avgProbSq=0;
+    double prob;
+    int nTrials=10, nRuns=100;
+    for( int i=0; i<nTrials; i++ )
+    {
+        cout << i << " ";
+        cout.flush();
+        gameProbabilities probs = rolloutBoardProbabilitiesParallel(b, s, nRuns, i+1, 4, false );
+        prob = probs.probBgLoss;
+        avgProb += prob;
+        avgProbSq += prob * prob;
+    }
+    cout << endl;
+    
+    cout << "Average prob            = " << avgProb/nTrials << endl;
+    cout << "Regular rollout std dev = " << sqrt( avgProbSq/(nTrials-1) - avgProb*avgProb/nTrials/(nTrials-1) ) << endl;
+    cout << endl;
+    
+    avgProb = avgProbSq = 0;
+    for( int i=0; i<10; i++ )
+    {
+        cout << i << " ";
+        cout.flush();
+        gameProbabilities probs = rolloutBoardProbabilitiesParallel(b, s, nRuns, i+1, 4, true );
+        prob = probs.probBgLoss;
+        avgProb += prob;
+        avgProbSq += prob * prob;
+    }
+    cout << endl;
+    
+    cout << "Average prob            = " << avgProb/nTrials << endl;
+    cout << "Varredc rollout std dev = " << sqrt( avgProbSq/(nTrials-1) - avgProb*avgProb/nTrials/(nTrials-1) ) << endl;
+    cout << endl;
+    
+}

@@ -64,4 +64,6 @@ void testMatch();
 
 void testContactClustering();
 
+void testRollout();
+
 #endif
