@@ -92,10 +92,10 @@ vector<boardAndRolloutProbs> gnuBgBenchmarkStates( const string& fileName );
 void trainMultGnuBg( strategytdmult& strat, const vector<boardAndRolloutProbs>& states, int seed );
 
 // trainMultGnuBgParallel trains using a gnubg training file. Breaks the training set up into
-// nBuckets randomly-filled buckets and calculates net weight update across each bucket assuming
+// nBuckets buckets and calculates net weight update across each bucket assuming
 // partial derivatives don't change.
 
-void trainMultGnuBgParallel( strategytdmult& strat, const vector<boardAndRolloutProbs>& states, int seed, int nBuckets );
+void trainMultGnuBgParallel( strategytdmult& strat, const vector<boardAndRolloutProbs>& states, int nBuckets );
 
 void printErrorStatisticsGnuBg( strategytdmult& strat, const vector<boardAndRolloutProbs>& states );
 

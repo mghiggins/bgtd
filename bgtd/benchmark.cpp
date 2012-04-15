@@ -781,12 +781,13 @@ double gnuBgBenchmarkER( strategy& strat, const vector< vector<benchmarkData> >&
 class weightsUpdateContainer
 {
 public:
+    weightsUpdateContainer() {};
     weightsUpdateContainer( const string& netName, const vector<double>& dProbWeights, 
                             const vector<double>& dGamWeights, const vector<double>& dGamLossWeights,
                             const vector<double>& dBgWeights, const vector<double>& dBgLossWeights,
                             const vector< vector<double> >& dMiddleWeights )
     : netName(netName), dProbWeights(dProbWeights), dGamWeights(dGamWeights), dGamLossWeights(dGamLossWeights),
-    dBgWeights(dBgWeights), dBgLossWeights(dBgLossWeights) {};
+    dBgWeights(dBgWeights), dBgLossWeights(dBgLossWeights), dMiddleWeights(dMiddleWeights) {};
     ~weightsUpdateContainer() {};
     
     string netName;
@@ -883,29 +884,21 @@ private:
 };
 
 
-void trainMultGnuBgParallel( strategytdmult& strat, const vector<boardAndRolloutProbs>& states, int seed, int nBuckets )
+void trainMultGnuBgParallel( strategytdmult& strat, const vector<boardAndRolloutProbs>& states, int nBuckets )
 {
     using namespace boost;
     
     // fill the nBuckets buckets
     
-    int index, bktIndex=0;
-    CRandomMersenne rng(seed);
-    
-    vector<int> indexes(states.size());
-    for( int i=0; i<states.size(); i++ ) indexes[i] = i;
+    int bktIndex=0;
     
     vector< vector<int> > statesBuckets(nBuckets);
     
     bktIndex = 0;
     
-    while( indexes.size() > 0 )
+    for( int i=0; i<states.size(); i++ )
     {
-        // randomly select the board and allocate it to the appropriate bucket
-        
-        index = rng.IRandom( 0, (int) (indexes.size() - 1) );
-        statesBuckets.at(bktIndex).push_back(index);
-        indexes.erase( indexes.begin() + index );
+        statesBuckets.at(bktIndex).push_back(i);
         bktIndex++;
         if( bktIndex == nBuckets ) bktIndex = 0;
     }
