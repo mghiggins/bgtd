@@ -1582,17 +1582,14 @@ void createBenchmarks()
 void trainBenchmarks()
 {
     bool trainCrashed=true;
-    bool trainRace=false;
+    bool trainRace=true;
     
     //strategytdmult s1( "benchmark", "player24" );
     //strategytdmult s1( "", "player31_120" );
     //strategytdmult s1( 120, true, true, true, true );
-    strategytdmult s1( "benchmark", "player34" );
+    strategytdmult s1( "", "player35" );
     
-    cout << s1.useBarInputs << endl;
-    s1.addBarInputs();
-    
-    string playerName( "player34a" );
+    string playerName( "player35sl" );
     string stdName = "std" + playerName;
     cout << "Player name = " << playerName << endl;
     
@@ -1615,9 +1612,9 @@ void trainBenchmarks()
     
     cout << "Starting stats:\n";
     double minContactER, minCrashedER, minRaceER;
-    minContactER = gnuBgBenchmarkER( s1, dataSetContact );
-    if( trainCrashed ) minCrashedER = gnuBgBenchmarkER( s1, dataSetCrashed );
-    if( trainRace ) minRaceER = gnuBgBenchmarkER( s1, dataSetRace );
+    //minContactER = gnuBgBenchmarkER( s1, dataSetContact );
+    //if( trainCrashed ) minCrashedER = gnuBgBenchmarkER( s1, dataSetCrashed );
+    //if( trainRace ) minRaceER = gnuBgBenchmarkER( s1, dataSetRace );
     cout << endl;
     s1.writeWeights( playerName ); // write the initial set of weights as the best ones; we'll overwrite network by network later
     
@@ -1651,10 +1648,24 @@ void trainBenchmarks()
         cout << "Alpha = " << alpha << endl << endl;
         
         s1.alpha = s1.beta = alpha;
-        
+        /*
         trainMultGnuBg( s1, statesContact, seed );
         if( trainCrashed ) trainMultGnuBg( s1, statesCrashed, seed );
         if( trainRace ) trainMultGnuBg( s1, statesRace, seed );
+        */
+        cout << "Starting training...\n";
+        trainMultGnuBgParallel( s1, statesContact, 20 );
+        cout << "Done contact training\n";
+        if( trainCrashed ) 
+        {
+            trainMultGnuBgParallel( s1, statesCrashed, 20 );
+            cout << "Done crashed training\n";
+        }
+        if( trainRace ) 
+        {
+            trainMultGnuBgParallel( s1, statesRace, 20 );
+            cout << "Done race training\n";
+        }
         
         contactER = gnuBgBenchmarkER( s1, dataSetContact );
         if( trainCrashed ) crashedER = gnuBgBenchmarkER( s1, dataSetCrashed );
