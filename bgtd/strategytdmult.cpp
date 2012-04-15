@@ -371,8 +371,10 @@ vector<double> strategytdmult::getInputValues( const board& brd, const string& n
             
             // first: prob of hit from bar * prob of getting to bar; one for each player
             
-            inputs.push_back( hittingProbBar(brd,false) * hitProbOpp );
-            inputs.push_back( hittingProbBar(brd,true)  * hitProbPlayer );
+            //inputs.push_back( hittingProbBar(brd,false) * hitProbOpp );
+            //inputs.push_back( hittingProbBar(brd,true)  * hitProbPlayer );
+            inputs.push_back( hittingProbBar(brd, false) );
+            inputs.push_back( hittingProbBar(brd, true) );
             
             // second: prob of entry from bar * prob of getting to bar; one for each player
             
@@ -381,13 +383,15 @@ vector<double> strategytdmult::getInputValues( const board& brd, const string& n
             for( i=23; i>=18; i-- )
                 if( brd.otherChecker(i) < 2 )
                     entryCount++;
-            inputs.push_back( entryCount/3.*(1-entryCount/12.) * hitProbOpp );
+            //inputs.push_back( entryCount/3.*(1-entryCount/12.) * hitProbOpp );
+            inputs.push_back( entryCount/3.*(1-entryCount/12.) );
             
             entryCount=0;
             for( i=0; i<6; i++ )
                 if( brd.checker(i) < 2 )
                     entryCount++;
-            inputs.push_back( entryCount/3.*(1-entryCount/12.) * hitProbPlayer );
+            //inputs.push_back( entryCount/3.*(1-entryCount/12.) * hitProbPlayer );
+            inputs.push_back( entryCount/3.*(1-entryCount/12.) );
         }
     }
     
@@ -1040,7 +1044,6 @@ void strategytdmult::updateWeightMoves( const string& netName, const vector<doub
     hash_map< string, vector< vector<double> > >::iterator itMidWeights = middleWeights.find(netName);
     
     int nInput(nInputs(netName));
-    
     int i, j;
     for( i=0; i<nMiddle; i++ )
     {
