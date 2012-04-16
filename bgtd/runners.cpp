@@ -1612,15 +1612,17 @@ void trainBenchmarks()
     
     cout << "Starting stats:\n";
     double minContactER, minCrashedER, minRaceER;
-    //minContactER = gnuBgBenchmarkER( s1, dataSetContact );
-    //if( trainCrashed ) minCrashedER = gnuBgBenchmarkER( s1, dataSetCrashed );
-    //if( trainRace ) minRaceER = gnuBgBenchmarkER( s1, dataSetRace );
+    minContactER = gnuBgBenchmarkER( s1, dataSetContact );
+    if( trainCrashed ) minCrashedER = gnuBgBenchmarkER( s1, dataSetCrashed );
+    if( trainRace ) minRaceER = gnuBgBenchmarkER( s1, dataSetRace );
     cout << endl;
     s1.writeWeights( playerName ); // write the initial set of weights as the best ones; we'll overwrite network by network later
     
+    alpha = alphaMax;
+    
     string fileName = "/Users/mghiggins/bgtdres/sl_comparison_results_" + playerName + ".csv";
     ofstream fr( fileName.c_str(), fstream::trunc );
-    fr << 0 << "," << minContactER;
+    fr << 0 << "," << alpha << "," << minContactER;
     if( trainCrashed ) fr << "," << minCrashedER;
     if( trainRace ) fr << "," << minRaceER;
     fr << endl;
@@ -1631,8 +1633,6 @@ void trainBenchmarks()
     
     double lastContactER = minContactER;
     int bestLag=0;
-    
-    alpha = alphaMax;
     
     for( int i=0; i<30000; i++ )
     {
@@ -1648,11 +1648,11 @@ void trainBenchmarks()
         cout << "Alpha = " << alpha << endl << endl;
         
         s1.alpha = s1.beta = alpha;
-        /*
+        
         trainMultGnuBg( s1, statesContact, seed );
         if( trainCrashed ) trainMultGnuBg( s1, statesCrashed, seed );
         if( trainRace ) trainMultGnuBg( s1, statesRace, seed );
-        */
+        /*
         cout << "Starting training...\n";
         trainMultGnuBgParallel( s1, statesContact, 20 );
         cout << "Done contact training\n";
@@ -1666,14 +1666,14 @@ void trainBenchmarks()
             trainMultGnuBgParallel( s1, statesRace, 20 );
             cout << "Done race training\n";
         }
-        
+        */
         contactER = gnuBgBenchmarkER( s1, dataSetContact );
         if( trainCrashed ) crashedER = gnuBgBenchmarkER( s1, dataSetCrashed );
         if( trainRace ) raceER = gnuBgBenchmarkER( s1, dataSetRace );
         cout << endl;
         
         fr.open( fileName.c_str(), fstream::app );
-        fr << i+1 << "," << contactER;
+        fr << i+1 << "," << alpha << "," << contactER;
         if( trainCrashed ) fr << "," << crashedER;
         if( trainRace ) fr << "," << raceER;
         fr << endl;
@@ -1736,9 +1736,8 @@ void testBenchmark()
 {
     // plot GNUbg benchmark error rate against reference player game performance
     
-    strategytdmult s0( "benchmark", "player34" );
-    strategytdmult sf( "benchmark", "player32q" );
-    strategyply s1(1,8,0.1,s0,sf);
+    strategytdmult s1( "", "player35" );
+    strategytdmult s2( "benchmark", "player34" );
     
     //dispBoards(s1);
     
@@ -1758,7 +1757,7 @@ void testBenchmark()
     gnuBgBenchmarkER( s1, dataSetCrashed, &ctx );
     gnuBgBenchmarkER( s1, dataSetRace, &ctx );
     
-    //playParallelGen( s1, s2, 40000, 1, 40);
+    playParallelGen( s1, s2, 40000, 1, 40);
     //playParallelGen( s1, s3, 40000, 1, 40);
 }
 
