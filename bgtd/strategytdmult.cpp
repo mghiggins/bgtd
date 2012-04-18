@@ -1099,7 +1099,7 @@ void strategytdmult::writeWeights( const string& filePrefix, const string& singl
             fn << 0 << endl;
     }
     
-    for( hash_map< string, vector<double> >::const_iterator itProb = outputProbWeights.begin(); itProb != outputProbWeights.end(); itProb ++ )
+    for( hash_map< string, vector<double> >::const_iterator itProb = outputProbWeights.begin(); itProb != outputProbWeights.end(); ++itProb )
     {
         // write the network name to the file
         
@@ -1338,7 +1338,7 @@ void strategytdmult::addBarInputs()
     CRandomMersenne rng(1);
     int i, j;
     
-    for( hash_map<string, vector< vector<double> > >::iterator it=middleWeights.begin(); it!=middleWeights.end(); it++ )
+    for( hash_map<string, vector< vector<double> > >::iterator it=middleWeights.begin(); it!=middleWeights.end(); ++it )
     {
         if( it->first == "race" ) continue;
         
