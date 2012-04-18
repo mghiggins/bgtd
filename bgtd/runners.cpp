@@ -2749,3 +2749,208 @@ void testRollout()
     cout << endl;
     
 }
+
+void trainPubEval()
+{
+    double lambda=1e-3; // equity uncertainty; equity diffs much less than this are roughly zero
+    double alpha=100; // learning rate
+    int seed=1; // random seed used to determine benchmark sets
+    
+    string filePrefix = "/Users/mghiggins/bgtdres/pubeval";
+    
+    strategyPubEval s1( true, true, 0 );
+    strategyPubEval s2;
+    
+    vector< vector<benchmarkData> > dataSetContact( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/contact.bm", 4 ) );
+    vector< vector<benchmarkData> > dataSetCrashed( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/crashed.bm", 4 ) );
+    vector< vector<benchmarkData> > dataSetRace( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/race.bm", 4 ) );
+    
+    // train over epochs
+    
+    hash_map<string,int> ctxContact, ctxRace;
+    ctxContact["isRace"] = 0;
+    ctxRace["isRace" ] = 1;
+    
+    double minER=1e12, minRaceER=1e12;
+    double lastER=minER;
+    
+    double alphaMax = alpha;
+    double alphaMin = 0.1;
+    
+    CRandomMersenne rng(seed);
+    
+    int j, k, l;
+    
+    for( long epoch=0; epoch<100000000; ++epoch )
+    {
+        // every so often check the benchmark score
+        
+        if( epoch%500000 == 0 )
+        {
+            cout << "Training step " << epoch << endl;
+            
+            double ER = gnuBgBenchmarkER( s1, dataSetContact );
+            gnuBgBenchmarkER( s1, dataSetCrashed );
+            double raceER = gnuBgBenchmarkER( s1, dataSetRace );
+            if( ER < minER )
+            {
+                cout << "** Best ER " << ER << " vs previous best " << minER << endl;
+                minER = ER;
+                s1.writeWeights( filePrefix, true, false );
+            }
+            else
+                cout << "Previous best contact " << minER << endl;
+            if( raceER < minRaceER )
+            {
+                cout << "** Best Race ER " << raceER << " vs previous best " << minRaceER << endl;
+                minRaceER = raceER;
+                s1.writeWeights( filePrefix, false, true );
+            }
+            else
+                cout << "Previous best race " << minRaceER << endl;
+            
+            if( ER > lastER )
+            {
+                alpha /= sqrt(10);
+                if( alpha < alphaMin - 1e-6 ) alpha = alphaMax;
+                cout << "++ alpha now " << alpha << endl;
+            }
+            lastER = ER;
+        }
+        
+        // get a random contact benchmark set
+        
+        int bktIndex = rng.IRandom(0, (int)dataSetContact.size()-1);
+        int index    = rng.IRandom(0, (int)dataSetContact.at(bktIndex).size()-1 );
+        
+        {
+            const benchmarkData& elem(dataSetContact.at(bktIndex).at(index));
+            
+            vector<double> targets(elem.otherEquities.size()+1);
+            vector<double> scores(elem.otherEquities.size()+1);
+            vector< vector<double> > inputs(elem.otherEquities.size()+1);
+            
+            targets[0] = elem.bestEquity;
+            board b(elem.bestBoard);
+            b.setPerspective(1);
+            scores[0]  = s1.boardValue(b,&ctxContact);
+            inputs[0]  = pubEvalInputs(b);
+            for( j=0; j<elem.otherEquities.size(); ++j )
+            {
+                targets.at(j+1) = elem.otherEquities.at(j);
+                b = elem.otherBoards.at(j);
+                b.setPerspective(1);
+                scores.at(j+1)  = s1.boardValue(b,&ctxContact);
+                inputs.at(j+1)  = pubEvalInputs(b);
+            }
+            
+            vector<double>& weights( s1.getWeightsContactRef() );
+            vector<double> derivs(weights.size(),0.);
+            
+            vector<double> probsTarget(targets.size());
+            vector<double> probsScore(scores.size());
+            
+            double targetDenom=0, scoreDenom=0;
+            
+            for( j=0; j<targets.size(); ++j )
+            {
+                probsTarget.at(j) = exp(lambda*targets.at(j));
+                probsScore.at(j)  = exp(lambda*scores.at(j));
+                targetDenom += probsTarget.at(j);
+                scoreDenom  += probsScore.at(j);
+            }
+            for( j=0; j<targets.size(); ++j )
+            {
+                probsTarget.at(j) /= targetDenom;
+                probsScore.at(j)  /= scoreDenom;
+            }
+            
+            // calculate the derivatives of the cost function to the various weights
+            
+            for( k=0; k<weights.size(); ++k )
+            {
+                for( j=0; j<targets.size(); ++j )
+                {
+                    double sum=0;
+                    for( l=0; l<targets.size(); ++l )
+                        sum += probsScore[l] * inputs[l][k];
+                    
+                    derivs[k] -= probsTarget[j] * ( inputs[j][k] - sum );
+                }
+            }
+            
+            // adjust the weights
+            
+            for( k=0; k<weights.size(); ++k )
+                weights.at(k) -= alpha * derivs.at(k);
+        }
+        
+        // get a random race benchmark set
+        
+        bktIndex = rng.IRandom(0, (int)dataSetRace.size()-1 );
+        index = rng.IRandom(0, (int)dataSetRace.at(bktIndex).size()-1 );
+        
+        {
+            const benchmarkData& elem(dataSetRace.at(bktIndex).at(index));
+            
+            vector<double> targets(elem.otherEquities.size()+1);
+            vector<double> scores(elem.otherEquities.size()+1);
+            vector< vector<double> > inputs(elem.otherEquities.size()+1);
+            
+            targets[0] = elem.bestEquity;
+            board b(elem.bestBoard);
+            b.setPerspective(1);
+            scores[0]  = s1.boardValue(b,&ctxRace);
+            inputs[0]  = pubEvalInputs(b);
+            for( j=0; j<elem.otherEquities.size(); ++j )
+            {
+                targets.at(j+1) = elem.otherEquities.at(j);
+                b = elem.otherBoards.at(j);
+                b.setPerspective(1);
+                scores.at(j+1)  = s1.boardValue(b,&ctxRace);
+                inputs.at(j+1)  = pubEvalInputs(b);
+            }
+            
+            vector<double>& weights( s1.getWeightsRaceRef() );
+            vector<double> derivs(weights.size(),0.);
+            
+            vector<double> probsTarget(targets.size());
+            vector<double> probsScore(scores.size());
+            
+            double targetDenom=0, scoreDenom=0;
+            
+            for( j=0; j<targets.size(); ++j )
+            {
+                probsTarget.at(j) = exp(lambda*targets.at(j));
+                probsScore.at(j)  = exp(lambda*scores.at(j));
+                targetDenom += probsTarget.at(j);
+                scoreDenom  += probsScore.at(j);
+            }
+            for( j=0; j<targets.size(); ++j )
+            {
+                probsTarget.at(j) /= targetDenom;
+                probsScore.at(j)  /= scoreDenom;
+            }
+            
+            // calculate the derivatives of the cost function to the various weights
+            
+            for( k=0; k<weights.size(); ++k )
+            {
+                for( j=0; j<targets.size(); ++j )
+                {
+                    double sum=0;
+                    for( l=0; l<targets.size(); ++l )
+                        sum += probsScore[l] * inputs[l][k];
+                    
+                    derivs[k] -= probsTarget[j] * ( inputs[j][k] - sum );
+                }
+            }
+            
+            // adjust the weights
+            
+            for( k=0; k<weights.size(); ++k )
+                weights.at(k) -= alpha * derivs.at(k);
+        }
+    }
+}
+

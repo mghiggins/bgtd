@@ -66,4 +66,6 @@ void testContactClustering();
 
 void testRollout();
 
+void trainPubEval();
+
 #endif
