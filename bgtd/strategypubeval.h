@@ -22,16 +22,40 @@
 #include <vector>
 #include "strategy.h"
 
+vector<double> pubEvalInputs( const board& brd );
+
 class strategyPubEval : public strategy
 {
 public:
-    strategyPubEval();
+    strategyPubEval( bool randomWeights=false, bool valueIsEquity=false, double alpha=0 );
     virtual ~strategyPubEval();
     
     virtual double boardValue( const board& brd, const hash_map<string,int>* context=0 );
     virtual hash_map<string,int> boardContext( const board& brd ) const;
     
+    // update takes the old and new boards (before and after what it guesses is the optimal move)
+    // and updates the weights using TD learning. updateFromEquity does supervised learning when
+    // supplied with target equity value.
+    
+    bool learning;
+    bool valueIsEquity;
+    double alpha;
+    
+    virtual bool needsUpdate() const;
+    virtual void update( const board& oldBoard, const board& newBoard );
+    void updateFromEquity( const board& brd, double equity );
+    
+    void writeWeights( const string& filePrefix, bool writeContact=true, bool writeRace=true );
+    void loadWeights( const string& filePrefix );
+    
+    vector<double> getWeightsContact() const { return weightsContact; };
+    vector<double> getWeightsRace() const { return weightsRace; };
+    vector<double>& getWeightsContactRef() { return weightsContact; };
+    vector<double>& getWeightsRaceRef() { return weightsRace; };
+    
 private:
+    void initializeRandomWeights();
+    void initializeTesauroWeights();
     vector<double> weightsContact;
     vector<double> weightsRace;
 };

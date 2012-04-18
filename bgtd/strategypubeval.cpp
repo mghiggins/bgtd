@@ -16,14 +16,39 @@
  
  *****************/
 
+#include <cmath>
+#include <fstream>
 #include <string>
 #include "strategypubeval.h"
 #include "gamefns.h"
 
-vector<double> pubEvalInputs( const board& brd );
 
 
-strategyPubEval::strategyPubEval()
+strategyPubEval::strategyPubEval( bool randomWeights, bool valueIsEquity, double alpha ) : valueIsEquity(valueIsEquity), alpha(alpha)
+{
+    // by default, no learning
+    
+    learning = false;
+    if( randomWeights )
+        initializeRandomWeights();
+    else
+        initializeTesauroWeights();
+}
+
+void strategyPubEval::initializeRandomWeights()
+{
+    weightsContact.resize(122);
+    weightsRace.resize(122);
+    CRandomMersenne rng(1);
+    
+    for( int i=0; i<122; i++ )
+    {
+        weightsContact.at(i) = rng.IRandom(-100, 100)/1000.;
+        weightsRace.at(i) = rng.IRandom(-100, 100)/1000.;
+    }
+}
+
+void strategyPubEval::initializeTesauroWeights()
 {
     // initialize the weights for boards in contact (not a race)
     
@@ -320,9 +345,39 @@ vector<double> pubEvalInputs( const board& brd )
 
 double strategyPubEval::boardValue( const board& brd, const hash_map<string,int>* context )
 {
-    // if all the pieces are in, return the highest score
-    
-    if( brd.bornIn() == 15 ) return 1e12;
+    if( valueIsEquity )
+    {
+        if( brd.bornIn() == 15 )
+        {
+            if( brd.otherBornIn() == 0 )
+            {
+                if( brd.otherNoBackgammon() )
+                    return 2;
+                else
+                    return 3;
+            }
+            else
+                return 1;
+        }
+        else if( brd.otherBornIn() == 15 )
+        {
+            if( brd.bornIn() == 0 )
+            {
+                if( brd.noBackgammon() )
+                    return -2;
+                else
+                    return -3;
+            }
+            else
+                return -1;
+        }
+    }
+    else
+    {
+        // if all the pieces are in, return a high score
+        
+        if( brd.bornIn() == 15 ) return 1e22;
+    }
     
     // figure out which weights we're using. This comes from the context, not the current board,
     // because we need to make sure that when we're comparing possible moves based on the original
@@ -351,7 +406,6 @@ double strategyPubEval::boardValue( const board& brd, const hash_map<string,int>
     double sum=0;
     for( int i=0; i<inputs.size(); i++ )
         sum += weights->at(i) * inputs.at(i);
-    
     return sum;
 }
 
@@ -362,4 +416,91 @@ hash_map<string,int> strategyPubEval::boardContext( const board& brd ) const
     hash_map<string,int> map;
     map[ "isRace" ] = brd.isRace() ? 1 : 0;
     return map;
+}
+
+bool strategyPubEval::needsUpdate() const
+{
+    return learning;
+}
+
+void strategyPubEval::update( const board& oldBoard, const board& newBoard )
+{
+    if( !valueIsEquity ) throw string( "Training only works if board value is equity" );
+    
+    // calculate the equity from the new board state, using the state from the old board
+    
+    hash_map<string,int> ctx;
+    ctx["isRace"] = oldBoard.isRace() ? 1 : 0;
+    
+    double newEquity=boardValue(newBoard,&ctx);
+    
+    // use this as a proxy for supervised learning
+    
+    updateFromEquity( oldBoard, newEquity );
+}
+
+void strategyPubEval::updateFromEquity( const board& brd, double equity )
+{
+    vector<double> * weights;
+    if( brd.isRace() )
+        weights = &weightsRace;
+    else
+        weights = &weightsContact;
+    
+    // get the estimated equity
+    
+    hash_map<string,int> ctx;
+    ctx["isRace"] = brd.isRace() ? 1 : 0;
+    double estEquity=boardValue(brd,&ctx);
+    
+    // update weights
+    
+    vector<double> inputs = pubEvalInputs(brd);
+    
+    for( int i=0; i<122; i++ )
+        weights->at(i) += alpha * ( equity - estEquity ) * inputs.at(i);
+}
+
+void strategyPubEval::writeWeights( const string& filePrefix, bool writeContact, bool writeRace )
+{
+    string contactName = filePrefix + "_contact.txt";
+    string raceName = filePrefix + "_race.txt";
+    if( writeContact )
+    {
+        ofstream f( contactName.c_str() );
+        for( int i=0; i<122; i++ )
+            f << weightsContact.at(i) << endl;
+        f.close();
+    }
+    if( writeRace )
+    {
+        ofstream f( raceName.c_str() );
+        for( int i=0; i<122; i++ )
+            f << weightsRace.at(i) << endl;
+        f.close();
+    }
+}
+
+void strategyPubEval::loadWeights( const string& filePrefix )
+{
+    string contactName = filePrefix + "_contact.txt";
+    string raceName = filePrefix + "_race.txt";
+    ifstream f( contactName.c_str(), ios::in );
+    if( !f ) throw string( "No file named " + contactName );    
+    weightsContact.resize(122);
+    string line;
+    for( int i=0; i<122; i++ )
+    {
+        getline( f, line );
+        weightsContact.at(i) = atof( line.c_str() );
+    }
+    f.close();
+    f.open( raceName.c_str(), ios::in );
+    if( !f ) throw string( "No file named " + raceName );    
+    weightsRace.resize(122);
+    for( int i=0; i<122; i++ )
+    {
+        getline( f, line );
+        weightsRace.at(i) = atof( line.c_str() );
+    }
 }
