@@ -20,6 +20,7 @@
 #include <boost/thread.hpp>
 #include <map>
 #include <iostream>
+#include "bearofffns.h"
 #include "gamefns.h"
 #include "game.h"
 
@@ -1298,4 +1299,17 @@ double doubleHittingProb( const board& brd, bool forOpponent, bool noBlot, int m
     prob /= 36.;
     
     return prob;
+}
+
+double barAverageEscape( const board& brd, bool forOpponent )
+{
+    board useBrd(brd);
+    if( forOpponent ) useBrd.setPerspective( 1 - brd.perspective() );
+    
+    double avgEscape=0;
+    for( int i=23; i>=18; i-- )
+        if( useBrd.otherChecker(i) < 2 )
+            avgEscape += 1./6 * getBlockadeEscapeCount( useBrd, i );
+    
+    return avgEscape;
 }

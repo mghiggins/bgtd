@@ -96,6 +96,11 @@ double hittingProbBar( const board& brd, bool forOpponent );
 set<roll> doubleHittingShots( const board& brd, bool forOpponent, bool noBlot, int minIndex, int maxIndex );
 double doubleHittingProb( const board& brd, bool forOpponent, bool noBlot, int minIndex, int maxIndex );
 
+// barAverageEscape measures the expected escape weighted by the probability of landing in
+// various opens if rolling in from the bar. A number from zero to 36.
+
+double barAverageEscape( const board& brd, bool forOpponent );
+
 // primesCount counts the max number of points in a prime. forPlayer==true
 // means it does it for the player; false means for the opponent. Only
 // counts on the appropriate side of the board (ie for the player, it
