@@ -1179,9 +1179,8 @@ void test4()
 {
     // try out playing against a human
     
-    strategytdmult s1( "benchmark", "player32" );
+    strategytdmult s1( "", "player35a" );
     //strategytdorigbg s1( "benchmark", "benchmark2" );
-    s1.learning = false;
     //strategyPubEval s1;
     
     /*
@@ -1200,7 +1199,7 @@ void test4()
     for( int i=0; i<n; i++ )
     {
         cout << "NEW GAME - game # " << i+1 << endl;
-        game g(&s2,&s1,i+787);
+        game g(&s2,&s1,i+7987);
         g.verbose = true;
         g.setTurn(i%2);
         g.getBoard().print();
@@ -1582,21 +1581,22 @@ void createBenchmarks()
 void trainBenchmarks()
 {
     bool trainCrashed=true;
-    bool trainRace=true;
+    bool trainRace=false;
     
     //strategytdmult s1( "benchmark", "player24" );
     //strategytdmult s1( "", "player31_120" );
     //strategytdmult s1( 120, true, true, true, true );
-    strategytdmult s1( "", "player35" );
+    strategytdmult s1( "", "player35a" );
+    //s1.addBarInputs();
     
-    string playerName( "player35sl" );
+    string playerName( "player35b" );
     string stdName = "std" + playerName;
     cout << "Player name = " << playerName << endl;
     
     int seed = 1;
     
     double alpha;
-    double alphaMax=1, alphaMin=0.01;
+    double alphaMax=0.01, alphaMin=0.01;
     
     vector<boardAndRolloutProbs> statesContact, statesCrashed, statesRace;
     
@@ -1736,8 +1736,13 @@ void testBenchmark()
 {
     // plot GNUbg benchmark error rate against reference player game performance
     
-    strategytdmult s1( "", "player35" );
-    strategytdmult s2( "benchmark", "player34" );
+    strategytdmult s1( "benchmark", "player35" );
+    //strategytdmult s2( "benchmark", "player34" );
+    //strategyPubEval s1( true, true, 0 );
+    //s1.loadWeights( "/Users/mghiggins/bgtdres/pubeval" );
+    strategyPubEval s2;
+    //s1.writeWeights("player35");
+    //return;
     
     //dispBoards(s1);
     
@@ -1757,7 +1762,8 @@ void testBenchmark()
     gnuBgBenchmarkER( s1, dataSetCrashed, &ctx );
     gnuBgBenchmarkER( s1, dataSetRace, &ctx );
     
-    playParallelGen( s1, s2, 40000, 1, 40);
+    
+    playParallelGen( s1, s2, 100000, 1, 100,false);
     //playParallelGen( s1, s3, 40000, 1, 40);
 }
 
@@ -2752,8 +2758,8 @@ void testRollout()
 
 void trainPubEval()
 {
-    double lambda=1e-3; // equity uncertainty; equity diffs much less than this are roughly zero
-    double alpha=100; // learning rate
+    double lambda=1; // equity uncertainty; equity diffs much less than 1/this are roughly zero
+    double alpha=0.1; // learning rate
     int seed=1; // random seed used to determine benchmark sets
     
     string filePrefix = "/Users/mghiggins/bgtdres/pubeval";
@@ -2761,9 +2767,9 @@ void trainPubEval()
     strategyPubEval s1( true, true, 0 );
     strategyPubEval s2;
     
-    vector< vector<benchmarkData> > dataSetContact( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/contact.bm", 4 ) );
-    vector< vector<benchmarkData> > dataSetCrashed( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/crashed.bm", 4 ) );
-    vector< vector<benchmarkData> > dataSetRace( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/race.bm", 4 ) );
+    vector< vector<benchmarkData> > dataSetContact( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/contact.bm", 16 ) );
+    vector< vector<benchmarkData> > dataSetCrashed( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/crashed.bm", 16 ) );
+    vector< vector<benchmarkData> > dataSetRace( loadBenchmarkData( "/Users/mghiggins/bgtdres/benchdb/race.bm", 16 ) );
     
     // train over epochs
     
@@ -2775,23 +2781,37 @@ void trainPubEval()
     double lastER=minER;
     
     double alphaMax = alpha;
-    double alphaMin = 0.1;
+    double alphaMin = 0.00001;
     
     CRandomMersenne rng(seed);
     
     int j, k, l;
     
-    for( long epoch=0; epoch<100000000; ++epoch )
+    for( long epoch=0; epoch<1000000000; ++epoch )
     {
         // every so often check the benchmark score
         
         if( epoch%500000 == 0 )
         {
             cout << "Training step " << epoch << endl;
+            for( int i=0; i<s1.getWeightsContactRef().size(); ++i )
+            {
+                if( isnan( s1.getWeightsContactRef().at(i) ) )
+                {
+                    cout << "ERROR in contact weights\n";
+                    break;
+                }
+            }
+            for( int i=0; i<s1.getWeightsRaceRef().size(); ++i )
+            {
+                if( isnan( s1.getWeightsRaceRef().at(i) ) )
+                {
+                    cout << "ERROR in race weights\n";
+                    break;
+                }
+            }
             
             double ER = gnuBgBenchmarkER( s1, dataSetContact );
-            gnuBgBenchmarkER( s1, dataSetCrashed );
-            double raceER = gnuBgBenchmarkER( s1, dataSetRace );
             if( ER < minER )
             {
                 cout << "** Best ER " << ER << " vs previous best " << minER << endl;
@@ -2800,6 +2820,8 @@ void trainPubEval()
             }
             else
                 cout << "Previous best contact " << minER << endl;
+            gnuBgBenchmarkER( s1, dataSetCrashed );
+            double raceER = gnuBgBenchmarkER( s1, dataSetRace );
             if( raceER < minRaceER )
             {
                 cout << "** Best Race ER " << raceER << " vs previous best " << minRaceER << endl;
@@ -2809,6 +2831,14 @@ void trainPubEval()
             else
                 cout << "Previous best race " << minRaceER << endl;
             
+            ofstream f;
+            if( epoch == 0 )
+                f.open( "/Users/mghiggins/bgtdres/pubeval_sl.csv", fstream::trunc );
+            else
+                f.open( "/Users/mghiggins/bgtdres/pubeval_sl.csv", fstream::app );
+            f << epoch*1e-6 << "," << alpha << "," << ER << "," << raceER << endl;
+            f.close();
+            
             if( ER > lastER )
             {
                 alpha /= sqrt(10);
@@ -2816,6 +2846,7 @@ void trainPubEval()
                 cout << "++ alpha now " << alpha << endl;
             }
             lastER = ER;
+            cout << endl;
         }
         
         // get a random contact benchmark set
@@ -2954,3 +2985,12 @@ void trainPubEval()
     }
 }
 
+void testAvgEscapeCount()
+{
+    board b(referenceBoard(7));
+    b.print();
+    constructBlockadeEscapeDb();
+    cout << barAverageEscape(b,false) << endl;
+    cout << barAverageEscape(b,true) << endl;
+    
+}
