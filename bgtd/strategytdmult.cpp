@@ -71,7 +71,7 @@ int strategytdmult::nInputs( const string& netName ) const
         if( usePrimesInput and !useShotProbInput ) throw string( "Must include shot prob input if include primes input" );
         if( useBarInputs and ( !usePrimesInput or !useShotProbInput ) ) throw string( "Must include primes & shot pronb inputs if include bar inputs" );
         if( useBarInputs )
-            return 208;
+            return 206;
         else if( usePrimesInput )
             return 204;
         else if( useShotProbInput )
@@ -367,31 +367,10 @@ vector<double> strategytdmult::getInputValues( const board& brd, const string& n
         }
         if( useBarInputs )
         {
-            // two new inputs: prob of hit from bar * prob of being hit to the bar; and prob of entry from bar * prob of being hit to the bar
+            // one new input for each player (so two total): the expected escape count coming in from the bar
             
-            // first: prob of hit from bar * prob of getting to bar; one for each player
-            
-            //inputs.push_back( hittingProbBar(brd,false) * hitProbOpp );
-            //inputs.push_back( hittingProbBar(brd,true)  * hitProbPlayer );
-            inputs.push_back( hittingProbBar(brd, false) );
-            inputs.push_back( hittingProbBar(brd, true) );
-            
-            // second: prob of entry from bar * prob of getting to bar; one for each player
-            
-            int i;
-            int entryCount=0;
-            for( i=23; i>=18; i-- )
-                if( brd.otherChecker(i) < 2 )
-                    entryCount++;
-            //inputs.push_back( entryCount/3.*(1-entryCount/12.) * hitProbOpp );
-            inputs.push_back( entryCount/3.*(1-entryCount/12.) );
-            
-            entryCount=0;
-            for( i=0; i<6; i++ )
-                if( brd.checker(i) < 2 )
-                    entryCount++;
-            //inputs.push_back( entryCount/3.*(1-entryCount/12.) * hitProbPlayer );
-            inputs.push_back( entryCount/3.*(1-entryCount/12.) );
+            inputs.push_back( barAverageEscape( brd, false )/36. );
+            inputs.push_back( barAverageEscape( brd, true )/36. );
         }
     }
     
@@ -1346,9 +1325,9 @@ void strategytdmult::addBarInputs()
         {
             if( it->second[i].size() != 205 ) throw string( "Should already be 205 elements long" );
             
-            it->second[i].resize(209);
-            it->second[i][208] = it->second[i][204]; // keep the bias weight at the end
-            for( j=0; j<4; j++ )
+            it->second[i].resize(207);
+            it->second[i][206] = it->second[i][204]; // keep the bias weight at the end
+            for( j=0; j<2; j++ )
                 it->second[i][204+j] = rng.IRandom(-100, 100)/1000.;
         }
     }
