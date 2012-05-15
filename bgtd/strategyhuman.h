@@ -38,6 +38,9 @@ public:
     
     double SnowieER() const { return nMoves == 0 ? 0 : 1000 * equityError / 2. / nMoves; };
     
+    virtual bool offerDouble( const board& brd, int cube );
+    virtual bool takeDouble( const board& brd, int cube );
+    
 private:
     strategyprob& guideStrat;
     

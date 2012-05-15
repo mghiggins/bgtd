@@ -231,3 +231,26 @@ board strategyhuman::preferredBoard( const board& oldBoard, const set<board>& po
             cout << "Proposed move is not a valid move. Please try again.\n";
     }
 }
+
+bool strategyhuman::offerDouble( const board& brd, int cube )
+{
+    cout << "Would you like to double? (y for yes, anything else for no)\n";
+    string input;
+    getline( cin, input );
+    if( input[0] == 'y' )
+        return true;
+    else
+        return false;
+}
+
+bool strategyhuman::takeDouble( const board& brd, int cube )
+{
+    while( true )
+    {
+        cout << "You are being offered a double. Do you take? y for yes, n for no\n";
+        string input;
+        getline( cin, input );
+        if( input[0] == 'y' ) return true;
+        if( input[0] == 'n' ) return false;
+    }
+}
