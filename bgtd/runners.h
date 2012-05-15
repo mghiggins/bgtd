@@ -67,5 +67,6 @@ void testContactClustering();
 void testRollout();
 
 void trainPubEval();
+void testAvgEscapeCount();
 
 #endif

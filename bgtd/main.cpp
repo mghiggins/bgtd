@@ -83,7 +83,7 @@ int main( int argc, char * argv [] )
     //playEscapes();
     //createBenchmarks();
     //trainBenchmarks();
-    //testBenchmark();
+    testBenchmark();
     //test4();
     //testDoubleHittingShots();
     //testMatchEquity();
@@ -92,6 +92,7 @@ int main( int argc, char * argv [] )
     //estimateJumpVol();
     //testContactClustering();
     //testRollout();
-    trainPubEval();
+    //trainPubEval();
+    //testAvgEscapeCount();
 }
 
